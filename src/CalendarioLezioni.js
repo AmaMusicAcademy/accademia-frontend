@@ -1,47 +1,52 @@
-// src/CalendarioLezioni.js
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { useEffect, useState } from 'react';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import it from 'date-fns/locale/it';
+import React, { useEffect, useState } from 'react';
 
-const locales = {
-  'it-IT': it,
-};
+const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
-
-export default function CalendarioLezioni({ idInsegnante }) {
+function CalendarioLezioni({ idInsegnante }) {
   const [lezioni, setLezioni] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [errore, setErrore] = useState(null);
 
   useEffect(() => {
-    fetch(`https://app-docenti.onrender.com/api/insegnanti/${idInsegnante}/lezioni`)
-      .then(res => res.json())
-      .then(data => {
-        const eventi = data.map(lez => ({
-          title: `Allievo ${lez.id_allievo} - Aula ${lez.aula}`,
-          start: new Date(`${lez.data}T${lez.ora_inizio}`),
-          end: new Date(`${lez.data}T${lez.ora_fine}`),
-        }));
-        setLezioni(eventi);
-      });
+    const fetchLezioni = async () => {
+      setLoading(true);
+      setErrore(null);
+      try {
+        const res = await fetch(`${API_URL}/insegnante/${idInsegnante}`);
+        if (!res.ok) throw new Error('Errore nel recupero delle lezioni');
+        const data = await res.json();
+        setLezioni(data);
+      } catch (err) {
+        setErrore(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (idInsegnante) fetchLezioni();
   }, [idInsegnante]);
 
   return (
-    <div style={{ height: '600px', marginTop: '1rem' }}>
-      <Calendar
-        localizer={localizer}
-        events={lezioni}
-        startAccessor="start"
-        endAccessor="end"
-        style={{ height: '100%' }}
-      />
+    <div style={{ marginTop: 20 }}>
+      {loading ? (
+        <p>Caricamento lezioni...</p>
+      ) : errore ? (
+        <p style={{ color: 'red' }}>{errore}</p>
+      ) : lezioni.length === 0 ? (
+        <p>Nessuna lezione trovata</p>
+      ) : (
+        <ul>
+          {lezioni.map(({ id, data, ora, aula, stato }) => (
+            <li key={id}>
+              📅 {data} 🕒 {ora} – Aula {aula} ({stato})
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
+
+export default CalendarioLezioni;
+
+
