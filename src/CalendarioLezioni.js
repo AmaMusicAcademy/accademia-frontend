@@ -1,52 +1,52 @@
+// src/CalendarioLezioni.js
 import React, { useEffect, useState } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 
 const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
 function CalendarioLezioni({ idInsegnante }) {
   const [lezioni, setLezioni] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [errore, setErrore] = useState(null);
 
   useEffect(() => {
     const fetchLezioni = async () => {
-      setLoading(true);
-      setErrore(null);
       try {
-        const res = await fetch(`${API_URL}/insegnante/${idInsegnante}`);
-        if (!res.ok) throw new Error('Errore nel recupero delle lezioni');
+        const res = await fetch(API_URL);
         const data = await res.json();
-        setLezioni(data);
+        // Filtra solo le lezioni per l'insegnante specificato
+        const filtered = data.filter(l => l.id_insegnante === idInsegnante);
+        const eventi = filtered.map((lezione) => ({
+          id: lezione.id,
+          title: `Allievo: ${lezione.id_allievo}`,
+          start: `${lezione.data}T${lezione.ora_inizio}`,
+          end: `${lezione.data}T${lezione.ora_fine}`,
+          extendedProps: {
+            aula: lezione.aula,
+            stato: lezione.stato,
+          },
+        }));
+        setLezioni(eventi);
       } catch (err) {
-        setErrore(err.message);
-      } finally {
-        setLoading(false);
+        console.error('Errore nel caricamento lezioni:', err);
       }
     };
-
-    if (idInsegnante) fetchLezioni();
+    fetchLezioni();
   }, [idInsegnante]);
 
   return (
-    <div style={{ marginTop: 20 }}>
-      {loading ? (
-        <p>Caricamento lezioni...</p>
-      ) : errore ? (
-        <p style={{ color: 'red' }}>{errore}</p>
-      ) : lezioni.length === 0 ? (
-        <p>Nessuna lezione trovata</p>
-      ) : (
-        <ul>
-          {lezioni.map(({ id, data, ora, aula, stato }) => (
-            <li key={id}>
-              📅 {data} 🕒 {ora} – Aula {aula} ({stato})
-            </li>
-          ))}
-        </ul>
-      )}
+    <div>
+      <h2>Lezioni Insegnante #{idInsegnante}</h2>
+      <FullCalendar
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView="timeGridWeek"
+        events={lezioni}
+        locale="it"
+        height="auto"
+      />
     </div>
   );
 }
 
 export default CalendarioLezioni;
-
-
