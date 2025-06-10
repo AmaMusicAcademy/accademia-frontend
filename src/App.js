@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import CalendarioLezioni from './CalendarioLezioni';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 
@@ -8,6 +9,7 @@ function App() {
   const [cognome, setCognome] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [insegnanteSelezionato, setInsegnanteSelezionato] = useState(null);
 
   // Carica tutti gli insegnanti
   const fetchInsegnanti = async () => {
@@ -65,6 +67,9 @@ function App() {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Errore nella cancellazione insegnante');
       setInsegnanti((prev) => prev.filter((i) => i.id !== id));
+      if (insegnanteSelezionato?.id === id) {
+        setInsegnanteSelezionato(null);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -107,8 +112,14 @@ function App() {
           ) : (
             insegnanti.map(({ id, nome, cognome }) => (
               <li key={id} style={{ marginBottom: 8 }}>
-                {nome} {cognome}{' '}
-                <button onClick={() => handleDelete(id)} disabled={loading} style={{ color: 'red' }}>
+                <button onClick={() => setInsegnanteSelezionato({ id, nome, cognome })}>
+                  {nome} {cognome}
+                </button>{' '}
+                <button
+                  onClick={() => handleDelete(id)}
+                  disabled={loading}
+                  style={{ color: 'red', marginLeft: 10 }}
+                >
                   Elimina
                 </button>
               </li>
@@ -116,8 +127,18 @@ function App() {
           )}
         </ul>
       )}
+
+      {insegnanteSelezionato && (
+        <>
+          <h2 style={{ marginTop: 30 }}>
+            Lezioni di {insegnanteSelezionato.nome} {insegnanteSelezionato.cognome}
+          </h2>
+          <CalendarioLezioni idInsegnante={insegnanteSelezionato.id} />
+        </>
+      )}
     </div>
   );
 }
 
 export default App;
+
