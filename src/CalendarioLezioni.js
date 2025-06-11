@@ -4,6 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import itLocale from '@fullcalendar/core/locales/it';
 
 const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
@@ -14,39 +15,52 @@ function CalendarioLezioni({ idInsegnante }) {
     const fetchLezioni = async () => {
       try {
         const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
+
         // Filtra solo le lezioni per l'insegnante specificato
         const filtered = data.filter(l => l.id_insegnante === idInsegnante);
+
+        // Mappa lezioni in eventi per il calendario
         const eventi = filtered.map((lezione) => ({
           id: lezione.id,
-          title: `Allievo: ${lezione.id_allievo}`,
+          title: `Allievo: ${lezione.id_allievo} | Aula: ${lezione.aula}`,
           start: `${lezione.data}T${lezione.ora_inizio}`,
           end: `${lezione.data}T${lezione.ora_fine}`,
           extendedProps: {
-            aula: lezione.aula,
             stato: lezione.stato,
+            aula: lezione.aula,
           },
         }));
+
         setLezioni(eventi);
       } catch (err) {
         console.error('Errore nel caricamento lezioni:', err);
       }
     };
-    fetchLezioni();
+
+    if (idInsegnante) {
+      fetchLezioni();
+    }
   }, [idInsegnante]);
 
   return (
     <div>
-      <h2>Lezioni Insegnante #{idInsegnante}</h2>
+      <h2>Lezioni dell'insegnante #{idInsegnante}</h2>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
+        locale={itLocale}
         events={lezioni}
-        locale="it"
         height="auto"
+        nowIndicator={true}
+        slotMinTime="08:00:00"
+        slotMaxTime="22:00:00"
+        allDaySlot={false}
       />
     </div>
   );
 }
 
 export default CalendarioLezioni;
+
