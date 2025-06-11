@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import CalendarioLezioni from './CalendarioLezioni';
 
-import '@fullcalendar/daygrid/index.css';
-import '@fullcalendar/timegrid/index.css';
+import '@fullcalendar/daygrid/main.css';
+import '@fullcalendar/timegrid/main.css';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 
