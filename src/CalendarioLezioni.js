@@ -15,20 +15,20 @@ function CalendarioLezioni({ idInsegnante }) {
   const [lezioni, setLezioni] = useState([]);
 
   useEffect(() => {
-console.log('ID ins:',idInsegnante);
+//console.log('ID ins:',idInsegnante);
     
     const fetchLezioni = async () => {
       try {
         const res = await fetch(API_URL);
-console.log('risp fetch:',res);
+//console.log('risp fetch:',res);
         
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
-console.log('lez ricevute:',data);
+//console.log('lez ricevute:',data);
         
         // Filtra solo le lezioni per l'insegnante specificato
         const filtered = data.filter(l => l.id_insegnante === idInsegnante);
-console.log('lez filtrate:',filtered);
+//console.log('lez filtrate:',filtered);
         
         // Mappa lezioni in eventi per il calendario
         const eventi = filtered.map((lezione) => ({
@@ -45,7 +45,7 @@ console.log('lez filtrate:',filtered);
         setLezioni(eventi);
       } catch (err) {
         console.error('Errore nel caricamento lezioni:', err);
-        alert('errore nel caricamento lezioni: ' + err.message);
+        //alert('errore nel caricamento lezioni: ' + err.message);
       }
     };
 
