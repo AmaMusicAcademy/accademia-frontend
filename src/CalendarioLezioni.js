@@ -27,7 +27,7 @@ console.log('risp fetch:',res);
 console.log('lez ricevute:',data);
         
         // Filtra solo le lezioni per l'insegnante specificato
-        const filtered = data.filter(l => l.id_insegnante === idInsegnante);
+        const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
 console.log('lez filtrate:',filtered);
         
         // Mappa lezioni in eventi per il calendario
