@@ -12,7 +12,7 @@ function CalendarioLezioni({ idInsegnante }) {
       setLoading(true);
       setErrore(null);
       try {
-        const res = await fetch(`${API_URL}/insegnante/${idInsegnante}`);
+        const res = await fetch(`${API_URL}/insegnanti/${idInsegnante}`);
         if (!res.ok) throw new Error('Errore nel recupero delle lezioni');
         const data = await res.json();
         setLezioni(data);
