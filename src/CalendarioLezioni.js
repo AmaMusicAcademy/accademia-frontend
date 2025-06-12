@@ -20,7 +20,7 @@ console.log('ID ins:',idInsegnante);
     const fetchLezioni = async () => {
       try {
         const res = await fetch(API_URL);
-console.log('risp fetch:',res);
+console.log('risp fetch:',url);
         
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
