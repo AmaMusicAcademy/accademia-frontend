@@ -4,41 +4,37 @@ const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
 function CalendarioLezioni({ idInsegnante }) {
   const [lezioni, setLezioni] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [errore, setErrore] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLezioni = async () => {
-      setLoading(true);
-      setErrore(null);
       try {
-        const res = await fetch(`${API_URL}/insegnanti/${idInsegnante}`);
-        if (!res.ok) throw new Error('Errore nel recupero delle lezioni');
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
-        setLezioni(data);
+        const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+        setLezioni(filtered);
       } catch (err) {
-        setErrore(err.message);
-      } finally {
-        setLoading(false);
+        setError(err.message);
       }
     };
 
-    if (idInsegnante) fetchLezioni();
+    if (idInsegnante) {
+      fetchLezioni();
+    }
   }, [idInsegnante]);
 
   return (
-    <div style={{ marginTop: 20 }}>
-      {loading ? (
-        <p>Caricamento lezioni...</p>
-      ) : errore ? (
-        <p style={{ color: 'red' }}>{errore}</p>
-      ) : lezioni.length === 0 ? (
+    <div>
+      <h2>Lezioni dell'insegnante #{idInsegnante}</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {lezioni.length === 0 ? (
         <p>Nessuna lezione trovata</p>
       ) : (
         <ul>
-          {lezioni.map(({ id, data, ora, aula, stato }) => (
-            <li key={id}>
-              📅 {data} 🕒 {ora} – Aula {aula} ({stato})
+          {lezioni.map((lezione) => (
+            <li key={lezione.id}>
+              <strong>Allievo:</strong> {lezione.id_allievo} | <strong>Data:</strong> {lezione.data.split('T')[0]} | <strong>Ora:</strong> {lezione.ora_inizio} - {lezione.ora_fine} | <strong>Aula:</strong> {lezione.aula} | <strong>Stato:</strong> {lezione.stato}
             </li>
           ))}
         </ul>
