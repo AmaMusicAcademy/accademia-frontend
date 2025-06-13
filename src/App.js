@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import CalendarioLezioni from './CalendarioLezioni';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 
@@ -8,8 +9,8 @@ function App() {
   const [cognome, setCognome] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [insegnanteSelezionato, setInsegnanteSelezionato] = useState(null);
 
-  // Carica tutti gli insegnanti
   const fetchInsegnanti = async () => {
     setLoading(true);
     setError(null);
@@ -29,7 +30,6 @@ function App() {
     fetchInsegnanti();
   }, []);
 
-  // Aggiungi insegnante
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!nome || !cognome) {
@@ -56,7 +56,6 @@ function App() {
     }
   };
 
-  // Elimina insegnante
   const handleDelete = async (id) => {
     if (!window.confirm('Sei sicuro di voler eliminare questo insegnante?')) return;
     setLoading(true);
@@ -65,6 +64,7 @@ function App() {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Errore nella cancellazione insegnante');
       setInsegnanti((prev) => prev.filter((i) => i.id !== id));
+      if (insegnanteSelezionato === id) setInsegnanteSelezionato(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -73,7 +73,7 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
+    <div style={{ maxWidth: 800, margin: 'auto', padding: 20 }}>
       <h1>Gestione Insegnanti</h1>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -98,6 +98,7 @@ function App() {
         <button type="submit" disabled={loading}>Aggiungi</button>
       </form>
 
+      <h2>Lista Insegnanti</h2>
       {loading ? (
         <p>Caricamento...</p>
       ) : (
@@ -107,8 +108,17 @@ function App() {
           ) : (
             insegnanti.map(({ id, nome, cognome }) => (
               <li key={id} style={{ marginBottom: 8 }}>
-                {nome} {cognome}{' '}
-                <button onClick={() => handleDelete(id)} disabled={loading} style={{ color: 'red' }}>
+                <strong
+                  onClick={() => setInsegnanteSelezionato(id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {nome} {cognome}
+                </strong>{' '}
+                <button
+                  onClick={() => handleDelete(id)}
+                  disabled={loading}
+                  style={{ color: 'red' }}
+                >
                   Elimina
                 </button>
               </li>
@@ -116,10 +126,17 @@ function App() {
           )}
         </ul>
       )}
+
+      {insegnanteSelezionato && (
+        <div style={{ marginTop: 40 }}>
+          <CalendarioLezioni idInsegnante={insegnanteSelezionato} />
+        </div>
+      )}
     </div>
   );
 }
 
 export default App;
+
 
 
