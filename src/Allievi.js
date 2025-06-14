@@ -12,6 +12,10 @@ const Allievi = () => {
     note: '',
     attivo: true,
     data_iscrizione: '',
+    lezioni_effettuate: 0,
+    lezioni_da_pagare: 0,
+    totale_pagamenti: 0,
+    ultimo_pagamento: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -48,14 +52,26 @@ const Allievi = () => {
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          lezioni_effettuate: Number(formData.lezioni_effettuate) || 0,
+          lezioni_da_pagare: Number(formData.lezioni_da_pagare) || 0,
+          totale_pagamenti: Number(formData.totale_pagamenti) || 0,
+          ultimo_pagamento: formData.ultimo_pagamento || null
+        })
       });
+
       if (!res.ok) throw new Error('Errore creazione allievo');
 
       const nuovo = await res.json();
       setAllievi(prev => [...prev, nuovo]);
       setSuccess('Allievo aggiunto con successo');
-      setFormData({ nome: '', cognome: '', email: '', telefono: '', note: '', attivo: true, data_iscrizione: '' });
+      setFormData({
+        nome: '', cognome: '', email: '', telefono: '', note: '',
+        attivo: true, data_iscrizione: '',
+        lezioni_effettuate: 0, lezioni_da_pagare: 0,
+        totale_pagamenti: 0, ultimo_pagamento: ''
+      });
     } catch (err) {
       setError(err.message);
     }
@@ -78,6 +94,10 @@ const Allievi = () => {
         <label style={{ marginRight: 10 }}>
           Attivo: <input type="checkbox" name="attivo" checked={formData.attivo} onChange={handleChange} />
         </label>
+        <input name="lezioni_effettuate" type="number" value={formData.lezioni_effettuate} onChange={handleChange} placeholder="Lezioni effettuate" style={{ marginRight: 10 }} />
+        <input name="lezioni_da_pagare" type="number" value={formData.lezioni_da_pagare} onChange={handleChange} placeholder="Lezioni da pagare" style={{ marginRight: 10 }} />
+        <input name="totale_pagamenti" type="number" step="0.01" value={formData.totale_pagamenti} onChange={handleChange} placeholder="Totale pagamenti (€)" style={{ marginRight: 10 }} />
+        <input name="ultimo_pagamento" type="date" value={formData.ultimo_pagamento} onChange={handleChange} placeholder="Ultimo pagamento" style={{ marginRight: 10 }} />
         <button type="submit">Aggiungi</button>
       </form>
 
@@ -87,7 +107,12 @@ const Allievi = () => {
           <li>Nessun allievo trovato</li>
         ) : (
           allievi.map(a => (
-            <li key={a.id}>{a.nome} {a.cognome} - {a.email || 'N/A'} - {a.telefono || 'N/A'} ({a.attivo ? 'Attivo' : 'Non attivo'})</li>
+            <li key={a.id}>
+              {a.nome} {a.cognome} - {a.email || 'N/A'} - {a.telefono || 'N/A'} 
+              ({a.attivo ? 'Attivo' : 'Non attivo'}) - 
+              {a.lezioni_effettuate} lezioni / {a.lezioni_da_pagare} da pagare - 
+              Pagato: €{a.totale_pagamenti?.toFixed(2)} - Ultimo: {a.ultimo_pagamento || 'N/D'}
+            </li>
           ))
         )}
       </ul>
@@ -96,3 +121,5 @@ const Allievi = () => {
 };
 
 export default Allievi;
+
+
