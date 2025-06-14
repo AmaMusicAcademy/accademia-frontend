@@ -1,45 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
-//import '@fullcalendar/common/main.css';
-//import '@fullcalendar/daygrid/main.css';
-//import '@fullcalendar/timegrid/main.css';
-
-const CalendarioFull = () => {
-  const [lezioni, setLezioni] = useState([]);
-
-// useEffect(() => {
-//  fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
-
- /*   .then(response => response.json())
-    .then(data => {
-      console.log("EVENTI:", data);
-
-      setLezioni(data); // già formattati dal backend
-    });
-}, []);*/
-
-useEffect(() => {
-  const url = `${process.env.REACT_APP_API_URL}/lezioni`;
-  console.log("URL chiamato:", url);
-
-  fetch(url)
-    .then(response => {
-      console.log("Risposta fetch ricevuta:", response);
-      return response.json();
-    })
-    .then(data => {
-      console.log("Dati ricevuti:", data);
-      setLezioni(data);
-    })
-    .catch(err => {
-      console.error("Errore nella fetch:", err);
-    });
-}, []);
-
+const CalendarioFull = ({ lezioni }) => {
   const handleDateClick = (info) => {
     alert(`Hai cliccato su: ${info.dateStr}`);
   };
@@ -49,7 +14,7 @@ useEffect(() => {
       <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
+        initialView="timeGridWeek"
         editable={false}
         selectable={true}
         events={lezioni}
