@@ -11,15 +11,32 @@ import interactionPlugin from '@fullcalendar/interaction';
 const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
-  useEffect(() => {
-  fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
-  console.log("url:", REACT_APP_API_URL);
+// useEffect(() => {
+//  fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
 
-    .then(response => response.json())
+ /*   .then(response => response.json())
     .then(data => {
       console.log("EVENTI:", data);
 
       setLezioni(data); // già formattati dal backend
+    });
+}, []);*/
+
+useEffect(() => {
+  const url = `${process.env.REACT_APP_API_URL}/lezioni`;
+  console.log("URL chiamato:", url);
+
+  fetch(url)
+    .then(response => {
+      console.log("Risposta fetch ricevuta:", response);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Dati ricevuti:", data);
+      setLezioni(data);
+    })
+    .catch(err => {
+      console.error("Errore nella fetch:", err);
     });
 }, []);
 
