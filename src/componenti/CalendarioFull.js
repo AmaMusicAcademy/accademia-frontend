@@ -11,27 +11,13 @@ import interactionPlugin from '@fullcalendar/interaction';
 const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
-  useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
-      .then(response => response.json())
-      .then(data => {
-        const eventi = data.map(lezione => {
-          const dataSolo = lezione.data.split('T')[0]; // es. "2025-06-09"
-          const start = `${dataSolo}T${lezione.ora_inizio}`;
-          const end = `${dataSolo}T${lezione.ora_fine}`;
-
-          return {
-            id: lezione.id,
-            title: `${lezione.nome_allievo} (${lezione.nome_insegnante})`,
-            start,
-            end,
-          };
-        });
-
-      setLezioni(eventi);
-  });
-      
-  }, []);
+  uuseEffect(() => {
+  fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
+    .then(response => response.json())
+    .then(data => {
+      setLezioni(data); // già formattati dal backend
+    });
+}, []);
 
   const handleDateClick = (info) => {
     alert(`Hai cliccato su: ${info.dateStr}`);
