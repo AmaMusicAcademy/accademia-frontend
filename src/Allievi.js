@@ -43,39 +43,36 @@ const Allievi = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError(null);
+  setSuccess(null);
 
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          lezioni_effettuate: Number(formData.lezioni_effettuate) || 0,
-          lezioni_da_pagare: Number(formData.lezioni_da_pagare) || 0,
-          totale_pagamenti: Number(formData.totale_pagamenti) || 0,
-          ultimo_pagamento: formData.ultimo_pagamento || null
-        })
-      });
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    if (!res.ok) throw new Error('Errore creazione allievo');
 
-      if (!res.ok) throw new Error('Errore creazione allievo');
+    setFormData({
+      nome: '',
+      cognome: '',
+      email: '',
+      telefono: '',
+      note: '',
+      attivo: true,
+      data_iscrizione: ''
+    });
 
-      const nuovo = await res.json();
-      setAllievi(prev => [...prev, nuovo]);
-      setSuccess('Allievo aggiunto con successo');
-      setFormData({
-        nome: '', cognome: '', email: '', telefono: '', note: '',
-        attivo: true, data_iscrizione: '',
-        lezioni_effettuate: 0, lezioni_da_pagare: 0,
-        totale_pagamenti: 0, ultimo_pagamento: ''
-      });
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+    setSuccess('Allievo aggiunto con successo');
+    await fetchAllievi();  // 🔁 ricarica la lista completa
+  } catch (err) {
+    setError(err.message);
+  }
+};
+
 
   return (
     <div style={{ maxWidth: 800, margin: 'auto', padding: 20 }}>
