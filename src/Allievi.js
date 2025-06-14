@@ -108,7 +108,7 @@ const handleSubmit = async (e) => {
               {a.nome} {a.cognome} - {a.email || 'N/A'} - {a.telefono || 'N/A'} 
               ({a.attivo ? 'Attivo' : 'Non attivo'}) - 
               {a.lezioni_effettuate} lezioni / {a.lezioni_da_pagare} da pagare - 
-              Pagato: €{a.totale_pagamenti?.toFixed(2)} - Ultimo: {a.ultimo_pagamento || 'N/D'}
+              Pagato: {Number(a.totale_pagamenti || 0).toFixed(2)} € - Ultimo: {a.ultimo_pagamento || 'N/D'}
             </li>
           ))
         )}
