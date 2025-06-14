@@ -16,6 +16,7 @@ const NuovaLezione = () => {
 
   useEffect(() => {
     // Carica insegnanti e allievi per i dropdown
+    console.log('URL:', process.env.REACT_APP_API_URL);
     fetch(`${process.env.REACT_APP_API_URL}/insegnanti`)
       .then(res => res.json())
       .then(setInsegnanti);
