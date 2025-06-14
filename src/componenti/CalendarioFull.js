@@ -28,7 +28,7 @@ const CalendarioFull = () => {
       <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
+        initialView="dayGridMonth"
         editable={false}
         selectable={true}
         events={lezioni}
