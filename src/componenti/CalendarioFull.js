@@ -11,7 +11,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
-  uuseEffect(() => {
+  useEffect(() => {
   fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
     .then(response => response.json())
     .then(data => {
