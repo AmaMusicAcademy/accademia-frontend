@@ -13,17 +13,17 @@ const CalendarioFull = () => {
 
   useEffect(() => {
      useEffect(() => {
-    fetch(${process.env.REACT_APP_API_URL}/lezioni)
+    fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
       .then(response => response.json())
       .then(data => {
         const eventi = data.map(lezione => {
           const dataSolo = lezione.data.split('T')[0]; // es. "2025-06-09"
-          const start = ${dataSolo}T${lezione.ora_inizio};
-          const end = ${dataSolo}T${lezione.ora_fine};
+          const start = `${dataSolo}T${lezione.ora_inizio}`;
+          const end = `${dataSolo}T${lezione.ora_fine}`;
 
           return {
             id: lezione.id,
-            title: ${lezione.nome_allievo} (${lezione.nome_insegnante}),
+            title: `${lezione.nome_allievo} (${lezione.nome_insegnante})`,
             start,
             end,
           };
