@@ -13,9 +13,13 @@ const CalendarioFull = () => {
 
   useEffect(() => {
   fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
+  console.log("url:", REACT_APP_API_URL);
+
     .then(response => response.json())
+    console.log("response:", response);
     .then(data => {
       console.log("EVENTI:", data);
+      
       setLezioni(data); // già formattati dal backend
     });
 }, []);
