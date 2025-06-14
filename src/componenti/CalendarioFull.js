@@ -12,7 +12,6 @@ const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
   useEffect(() => {
-     useEffect(() => {
     fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
       .then(response => response.json())
       .then(data => {
