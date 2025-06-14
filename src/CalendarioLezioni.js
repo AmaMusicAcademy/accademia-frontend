@@ -16,6 +16,8 @@ function CalendarioLezioni({ idInsegnante }) {
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
         const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+console.log('Lezioni filtrate:', filtered);
+        
         setLezioni(filtered);
       } catch (err) {
         setError(err.message);
