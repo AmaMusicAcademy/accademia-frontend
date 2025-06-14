@@ -12,11 +12,11 @@ const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
   useEffect(() => {
-    f.then(data => {
-      const eventi = data.map(lezione => {
-      const data = lezione.data.split('T')[0]; // Es. "2025-06-09"
-      const start = `${data}T${lezione.ora_inizio}`; // "2025-06-09T15:00:00"
-      const end = `${data}T${lezione.ora_fine}`;     // "2025-06-09T16:00:00"
+      then(data => {
+        const eventi = data.map(lezione => {
+        const data = lezione.data.split('T')[0]; // Es. "2025-06-09"
+        const start = `${data}T${lezione.ora_inizio}`; // "2025-06-09T15:00:00"
+        const end = `${data}T${lezione.ora_fine}`;     // "2025-06-09T16:00:00"
 
       return {
         id: lezione.id,
