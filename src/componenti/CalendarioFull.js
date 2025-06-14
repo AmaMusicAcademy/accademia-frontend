@@ -12,17 +12,22 @@ const CalendarioFull = () => {
   const [lezioni, setLezioni] = useState([]);
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/lezioni`)
-      .then(response => response.json())
-      .then(data => {
-        const eventi = data.map(lezione => ({
-          id: lezione.id,
-          title: `${lezione.nome_allievo} (${lezione.nome_insegnante})`,
-          start: lezione.data_ora,
-          end: new Date(new Date(lezione.data_ora).getTime() + 60 * 60 * 1000).toISOString(), // fine lezione dopo 1h
-        }));
-        setLezioni(eventi);
-      });
+    f.then(data => {
+      const eventi = data.map(lezione => {
+      const data = lezione.data.split('T')[0]; // Es. "2025-06-09"
+      const start = `${data}T${lezione.ora_inizio}`; // "2025-06-09T15:00:00"
+      const end = `${data}T${lezione.ora_fine}`;     // "2025-06-09T16:00:00"
+
+      return {
+        id: lezione.id,
+        title: `${lezione.nome_allievo} (${lezione.nome_insegnante})`,
+        start,
+        end,
+      };
+    });
+      setLezioni(eventi);
+  });
+      
   }, []);
 
   const handleDateClick = (info) => {
