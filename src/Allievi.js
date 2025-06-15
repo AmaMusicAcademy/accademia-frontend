@@ -104,7 +104,7 @@ const handleSubmit = async (e) => {
         <input name="data_iscrizione" type="date" value={formData.data_iscrizione} onChange={handleChange} style={{ marginRight: 10 }} />
         <input name="note" placeholder="Note" value={formData.note} onChange={handleChange} style={{ marginRight: 10 }} />
         <label style={{ marginRight: 10 }}>
-          Attivo: <input type="checkbox" name="attivo" checked={formData.attivo} onChange={handleChange} />
+         
         </label>
         
        <button type="submit">Aggiungi</button>
