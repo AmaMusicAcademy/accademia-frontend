@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import CalendarioLezioni from './CalendarioLezioni';
 import NuovaLezione from './NuovaLezione';
-import ModificaLezione from './componenti/ModificaLezione'; // 👈 AGGIUNTO
+import ModificaLezione from './componenti/ModificaLezione';
+import CalendarioLezioniWrapper from './componenti/CalendarioLezioniWrapper'; // ✅ nuovo wrapper
 import Home from './Home';
 import Allievi from './Allievi';
 
@@ -19,7 +19,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/nuova-lezione" element={<NuovaLezione />} />
-          <Route path="/lezioni/:id/modifica" element={<ModificaLezione />} /> {/* ✅ AGGIUNTO */}
+          <Route path="/lezioni/:id/modifica" element={<ModificaLezione />} />
+          <Route path="/lezioni/:idInsegnante" element={<CalendarioLezioniWrapper />} /> {/* ✅ nuova rotta */}
           <Route path="/allievi" element={<Allievi />} />
         </Routes>
       </div>

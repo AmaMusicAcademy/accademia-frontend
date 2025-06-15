@@ -73,7 +73,7 @@ const ModificaLezione = () => {
 
     if (res.ok) {
       setMessage('✅ Lezione aggiornata');
-      setTimeout(() => navigate('/lezioni'), 1500);
+      setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500); // ✅ qui
     } else {
       setMessage('❌ Errore nel salvataggio');
     }
@@ -91,7 +91,7 @@ const ModificaLezione = () => {
     });
     if (res.ok) {
       setMessage('✅ Lezione annullata');
-      setTimeout(() => navigate('/lezioni'), 1500);
+      setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500); // ✅ qui
     } else {
       setMessage('❌ Errore nell\'annullamento');
     }
@@ -154,3 +154,4 @@ const ModificaLezione = () => {
 };
 
 export default ModificaLezione;
+
