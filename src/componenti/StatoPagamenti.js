@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const MesiNomi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
-const StatoPagamenti = ({ allievoId, apiBaseUrl }) => {
+const StatoPagamenti = ({ allievoId, apiBaseUrl, onPagamentoCorrente }) => {
   const [pagamenti, setPagamenti] = useState([]);
   const [anno, setAnno] = useState(new Date().getFullYear());
 
@@ -10,9 +10,20 @@ const StatoPagamenti = ({ allievoId, apiBaseUrl }) => {
     try {
       const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/pagamenti`);
       const data = await res.json();
-      setPagamenti(data);
+      const lista = Array.isArray(data) ? data : [];
+      setPagamenti(lista);
+
+      // Verifica mese corrente
+      const now = new Date();
+      const meseCorrente = now.getMonth() + 1;
+      const annoCorrente = now.getFullYear();
+      const pagato = lista.some(p => p.anno === annoCorrente && p.mese === meseCorrente);
+      onPagamentoCorrente?.(pagato);
+
     } catch (err) {
       console.error('Errore nel caricamento pagamenti:', err);
+      setPagamenti([]);
+      onPagamentoCorrente?.(false);
     }
   };
 
@@ -74,3 +85,4 @@ const StatoPagamenti = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default StatoPagamenti;
+
