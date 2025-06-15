@@ -77,7 +77,7 @@ function ListaLezioni({ idInsegnante }) {
                 <td>{formatTime(lez.start)}</td>
                 <td>{formatTime(lez.end)}</td>
                 <td>{lez.aula || '-'}</td>
-                <td>{lez.id_allievo || '-'}</td>
+                <td>{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
               </tr>
             ))}
           </tbody>
