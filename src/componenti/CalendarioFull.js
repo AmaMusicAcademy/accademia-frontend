@@ -3,10 +3,14 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { useNavigate } from 'react-router-dom';
 
 const CalendarioFull = ({ lezioni }) => {
-  const handleDateClick = (info) => {
-    alert(`Hai cliccato su: ${info.dateStr}`);
+  const navigate = useNavigate();
+
+  const handleEventClick = (info) => {
+    const lezioneId = info.event.id;
+    navigate(`/lezioni/${lezioneId}/modifica`);
   };
 
   return (
@@ -18,7 +22,7 @@ const CalendarioFull = ({ lezioni }) => {
         editable={false}
         selectable={true}
         events={lezioni}
-        dateClick={handleDateClick}
+        eventClick={handleEventClick} // <-- aggiunto!
         slotMinTime="08:00:00"
         slotMaxTime="22:00:00"
         locale="it"
@@ -31,3 +35,4 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
