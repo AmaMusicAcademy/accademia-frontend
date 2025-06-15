@@ -106,11 +106,8 @@ const handleSubmit = async (e) => {
         <label style={{ marginRight: 10 }}>
           Attivo: <input type="checkbox" name="attivo" checked={formData.attivo} onChange={handleChange} />
         </label>
-        <input name="lezioni_effettuate" type="number" value={formData.lezioni_effettuate} onChange={handleChange} placeholder="Lezioni effettuate" style={{ marginRight: 10 }} />
-       /* <input name="lezioni_da_pagare" type="number" value={formData.lezioni_da_pagare} onChange={handleChange} placeholder="Lezioni da pagare" style={{ marginRight: 10 }} />
-        <input name="totale_pagamenti" type="number" step="0.01" value={formData.totale_pagamenti} onChange={handleChange} placeholder="Totale pagamenti (€)" style={{ marginRight: 10 }} />
-        <input name="ultimo_pagamento" type="date" value={formData.ultimo_pagamento} onChange={handleChange} placeholder="Ultimo pagamento" style={{ marginRight: 10 }} />
-        */<button type="submit">Aggiungi</button>
+        
+       <button type="submit">Aggiungi</button>
       </form>
 
       <h2>Lista Allievi</h2>
