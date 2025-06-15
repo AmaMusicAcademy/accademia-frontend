@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import ListaAllievi from './componenti/ListaAllievi';
-import LezioniFuture from './componenti/LezioniFuture';
 
 const API_URL = `${process.env.REACT_APP_API_URL}/allievi`;
 
@@ -36,6 +35,20 @@ const Allievi = () => {
       setError('Errore nel caricamento allievi');
     }
   };
+
+  const toggleAttivo = async (id, attuale) => {
+  try {
+    await fetch(`${API_URL}/${id}/stato`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attivo: !attuale })
+    });
+    fetchAllievi();
+  } catch (err) {
+    setError('Errore nel cambio di stato');
+  }
+};
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -101,20 +114,8 @@ const handleSubmit = async (e) => {
       </form>
 
       <h2>Lista Allievi</h2>
-      <ul>
-        {allievi.length === 0 ? (
-          <li>Nessun allievo trovato</li>
-        ) : (
-          allievi.map(a => (
-            <li key={a.id}>
-              {a.nome} {a.cognome} - {a.email || 'N/A'} - {a.telefono || 'N/A'} 
-              ({a.attivo ? 'Attivo' : 'Non attivo'}) - 
-              {a.lezioni_effettuate} lezioni / {a.lezioni_da_pagare} da pagare - 
-              Pagato: {Number(a.totale_pagamenti || 0).toFixed(2)} € - Ultimo: {a.ultimo_pagamento || 'N/D'}
-            </li>
-          ))
-        )}
-      </ul>
+      <ListaAllievi allievi={allievi} toggleAttivo={toggleAttivo} apiBaseUrl={process.env.REACT_APP_API_URL} />
+
     </div>
   );
 };
