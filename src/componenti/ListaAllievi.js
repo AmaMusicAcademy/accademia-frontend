@@ -67,11 +67,6 @@ const ListaAllievi = ({ allievi, toggleAttivo, apiBaseUrl }) => {
                 </button>
               </div>
 
-              <div style={{ marginTop: 5 }}>
-                📚 Lezioni: {a.lezioni_effettuate} effettuate / {a.lezioni_da_pagare} da pagare<br />
-                💰 Pagato: {Number(a.totale_pagamenti || 0).toFixed(2)} € – Ultimo pagamento: {a.ultimo_pagamento || 'N/D'}
-              </div>
-
               <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
               <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
               <StatoPagamenti
