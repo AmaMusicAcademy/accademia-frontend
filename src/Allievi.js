@@ -49,6 +49,19 @@ const Allievi = () => {
   }
 };
 
+const eliminaAllievo = async (id) => {
+  try {
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Errore durante l\'eliminazione');
+    await fetchAllievi(); // Ricarica la lista aggiornata
+  } catch (err) {
+    console.error('Errore nella cancellazione allievo:', err);
+    alert('Errore durante l\'eliminazione dell\'allievo');
+  }
+};
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -111,7 +124,14 @@ const handleSubmit = async (e) => {
       </form>
 
       <h2>Lista Allievi</h2>
-      <ListaAllievi allievi={allievi} toggleAttivo={toggleAttivo} apiBaseUrl={process.env.REACT_APP_API_URL} />
+      <ListaAllievi
+  allievi={allievi}
+  toggleAttivo={toggleAttivo}
+  eliminaAllievo={eliminaAllievo}
+  apiBaseUrl={process.env.REACT_APP_API_URL}
+/>
+
+
 
     </div>
   );
