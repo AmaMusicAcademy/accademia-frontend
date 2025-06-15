@@ -10,6 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [insegnanteSelezionato, setInsegnanteSelezionato] = useState(null);
+  const [visualizzazione, setVisualizzazione] = useState('lista');
 
   const fetchInsegnanti = async () => {
     setLoading(true);
@@ -72,6 +73,10 @@ function App() {
     }
   };
 
+  const toggleVisualizzazione = () => {
+    setVisualizzazione((prev) => (prev === 'lista' ? 'calendario' : 'lista'));
+  };
+
   return (
     <div style={{ maxWidth: 800, margin: 'auto', padding: 20 }}>
       <h1>Gestione Insegnanti</h1>
@@ -109,7 +114,10 @@ function App() {
             insegnanti.map(({ id, nome, cognome }) => (
               <li key={id} style={{ marginBottom: 8 }}>
                 <strong
-                  onClick={() => setInsegnanteSelezionato(id)}
+                  onClick={() => {
+                    setInsegnanteSelezionato(id);
+                    setVisualizzazione('lista'); // resetta sempre su lista all'inizio
+                  }}
                   style={{ cursor: 'pointer' }}
                 >
                   {nome} {cognome}
@@ -129,7 +137,15 @@ function App() {
 
       {insegnanteSelezionato && (
         <div style={{ marginTop: 40 }}>
-          <CalendarioLezioni idInsegnante={insegnanteSelezionato} />
+          <button onClick={toggleVisualizzazione} style={{ marginBottom: 10 }}>
+            {visualizzazione === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
+          </button>
+
+          {visualizzazione === 'lista' ? (
+            <p>Hai selezionato l'insegnante #{insegnanteSelezionato}</p>
+          ) : (
+            <CalendarioLezioni idInsegnante={insegnanteSelezionato} />
+          )}
         </div>
       )}
     </div>
