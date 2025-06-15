@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CalendarioLezioni from './CalendarioLezioni';
+import ListaLezioni from './ListaLezioni';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 
@@ -142,7 +143,7 @@ function App() {
           </button>
 
           {visualizzazione === 'lista' ? (
-            <p>Hai selezionato l'insegnante #{insegnanteSelezionato}</p>
+            <ListaLezioni idInsegnante={insegnanteSelezionato} />
           ) : (
             <CalendarioLezioni idInsegnante={insegnanteSelezionato} />
           )}
