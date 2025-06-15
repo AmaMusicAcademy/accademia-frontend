@@ -1,35 +1,27 @@
-function ListaAllievi() {
-  const [allievi, setAllievi] = useState([]);
+import React from 'react';
+import LezioniFuture from './LezioniFuture';
 
-  useEffect(() => {
-    fetch('/api/allievi')
-      .then(res => res.json())
-      .then(setAllievi);
-  }, []);
-
-  const toggleStato = async (id, attivo) => {
-    await fetch(`/api/allievi/${id}/stato`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attivo: !attivo })
-    });
-    setAllievi(allievi.map(a => a.id === id ? { ...a, attivo: !attivo } : a));
-  };
-
+const ListaAllievi = ({ allievi, toggleAttivo, apiBaseUrl }) => {
   return (
-    <div>
-      <h2>Allievi</h2>
-      <ul>
-        {allievi.map(a => (
-          <li key={a.id}>
-            {a.nome} {a.cognome} - {a.attivo ? 'Attivo' : 'Non Attivo'}
-            <button onClick={() => toggleStato(a.id, a.attivo)}>
+    <ul>
+      {allievi.length === 0 ? (
+        <li>Nessun allievo trovato</li>
+      ) : (
+        allievi.map(a => (
+          <li key={a.id} style={{ marginBottom: 20 }}>
+            <strong>{a.nome} {a.cognome}</strong> - {a.email || 'N/A'} - {a.telefono || 'N/A'} <br />
+            Stato: <strong>{a.attivo ? 'Attivo' : 'Non attivo'}</strong>{' '}
+            <button onClick={() => toggleAttivo(a.id, a.attivo)}>
               {a.attivo ? 'Disattiva' : 'Attiva'}
-            </button>
-            <LezioniFuture allievoId={a.id} />
+            </button><br />
+            📚 Lezioni: {a.lezioni_effettuate} effettuate / {a.lezioni_da_pagare} da pagare <br />
+            💰 Pagato: {Number(a.totale_pagamenti || 0).toFixed(2)} € - Ultimo pagamento: {a.ultimo_pagamento || 'N/D'}
+            <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
           </li>
-        ))}
-      </ul>
-    </div>
+        ))
+      )}
+    </ul>
   );
-}
+};
+
+export default ListaAllievi;

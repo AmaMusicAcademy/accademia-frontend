@@ -1,30 +1,42 @@
-function LezioniFuture({ allievoId }) {
-  const [lezioni, setLezioni] = useState([]);
-  const [visibile, setVisibile] = useState(false);
+import React, { useState } from 'react';
 
-  const toggle = () => {
-    if (!visibile) {
-      fetch(`/api/allievi/${allievoId}/lezioni-future`)
-        .then(res => res.json())
-        .then(setLezioni);
+const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
+  const [lezioni, setLezioni] = useState([]);
+  const [aperto, setAperto] = useState(false);
+
+  const caricaLezioni = async () => {
+    if (!aperto) {
+      try {
+        const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/lezioni-future`);
+        const data = await res.json();
+        setLezioni(data);
+      } catch (err) {
+        console.error('Errore nel caricamento lezioni future:', err);
+      }
     }
-    setVisibile(!visibile);
+    setAperto(!aperto);
   };
 
   return (
-    <div>
-      <button onClick={toggle}>
-        {visibile ? 'Nascondi Lezioni' : 'Mostra Lezioni Future'}
+    <div style={{ marginTop: 5 }}>
+      <button onClick={caricaLezioni}>
+        {aperto ? 'Nascondi lezioni future' : 'Mostra lezioni future'}
       </button>
-      {visibile && (
+      {aperto && (
         <ul>
-          {lezioni.map((lez, i) => (
-            <li key={i}>
-              {lez.data} – {lez.ora_inizio}–{lez.ora_fine} | Aula: {lez.aula} | Insegnante: {lez.nome} {lez.cognome}
-            </li>
-          ))}
+          {lezioni.length === 0 ? (
+            <li>Nessuna lezione programmata</li>
+          ) : (
+            lezioni.map((lez, i) => (
+              <li key={i}>
+                📅 {lez.data} ⏰ {lez.ora_inizio}-{lez.ora_fine} | Aula: {lez.aula} | {lez.nome_insegnante} {lez.cognome_insegnante}
+              </li>
+            ))
+          )}
         </ul>
       )}
     </div>
   );
-}
+};
+
+export default LezioniFuture;
