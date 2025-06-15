@@ -1,5 +1,7 @@
 import React from 'react';
 import LezioniFuture from './LezioniFuture';
+import LezioniEffettuate from './LezioniEffettuate';
+
 
 const ListaAllievi = ({ allievi, toggleAttivo, apiBaseUrl }) => {
   return (
@@ -17,6 +19,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, apiBaseUrl }) => {
             📚 Lezioni: {a.lezioni_effettuate} effettuate / {a.lezioni_da_pagare} da pagare <br />
             💰 Pagato: {Number(a.totale_pagamenti || 0).toFixed(2)} € - Ultimo pagamento: {a.ultimo_pagamento || 'N/D'}
             <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
+            <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
           </li>
         ))
       )}
