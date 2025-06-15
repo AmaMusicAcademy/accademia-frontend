@@ -34,4 +34,11 @@ const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
       </button>
       {count !== null && (
         <div style={{ marginTop: 5 }}>
-          ✅
+          ✅ Lezioni effettuate in periodo: <strong>{count}</strong>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LezioniEffettuate;
