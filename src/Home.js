@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CalendarioLezioni from './CalendarioLezioni';
-import ListaLezioni from './ListaLezioni';
+import ListaLezioni from './componenti/ListaLezioni';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 

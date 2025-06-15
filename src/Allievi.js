@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import ListaAllievi from './componenti/ListaAllievi';
+import LezioniFuture from './componenti/LezioniFuture';
 
 const API_URL = `${process.env.REACT_APP_API_URL}/allievi`;
 
