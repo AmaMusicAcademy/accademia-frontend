@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import CalendarioLezioni from './CalendarioLezioni';
 import NuovaLezione from './NuovaLezione';
-import ModificaLezione from './ModificaLezione'; // 👈 AGGIUNTO
+import ModificaLezione from './componenti/ModificaLezione'; // 👈 AGGIUNTO
 import Home from './Home';
 import Allievi from './Allievi';
 
