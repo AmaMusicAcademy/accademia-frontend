@@ -23,20 +23,20 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
         {aperto ? 'Nascondi lezioni future' : 'Mostra lezioni future'}
       </button>
       {aperto && (
-        <ul style={{ marginTop: 10 }}>
+        <ul>
           {lezioni.length === 0 ? (
             <li>Nessuna lezione programmata</li>
           ) : (
             lezioni.map((lez, i) => (
               <li key={i}>
-                {lez.stato === 'rimandata' && !lez.data ? (
-                  <>
-                    🔁 Lezione da recuperare (non ancora riprogrammata)
-                  </>
+                {lez.stato === 'rimandata' ? (
+                  <span>
+                    🔁 <strong>Lezione rimandata</strong> del {lez.data} | Insegnante: {lez.nome_insegnante} {lez.cognome_insegnante}
+                  </span>
                 ) : (
-                  <>
+                  <span>
                     📅 {lez.data} ⏰ {lez.ora_inizio}-{lez.ora_fine} | Aula: {lez.aula} | {lez.nome_insegnante} {lez.cognome_insegnante}
-                  </>
+                  </span>
                 )}
               </li>
             ))
@@ -48,5 +48,6 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
