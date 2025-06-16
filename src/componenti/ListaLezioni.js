@@ -1,4 +1,3 @@
-// ListaLezioni.js aggiornato
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -34,8 +33,11 @@ function ListaLezioni({ idInsegnante }) {
   }, [idInsegnante]);
 
   const handleAnnulla = async (lezione) => {
-    const motivazione = prompt(`Motivazione per il rinvio della lezione del ${formatDate(lezione.start)}:`);
-    if (motivazione === null) return;
+    const motivazione = prompt("Motivazione del rinvio:");
+    if (!motivazione) return;
+
+    const conferma = window.confirm(`Vuoi davvero rimandare la lezione del ${formatDate(lezione.start)}?`);
+    if (!conferma) return;
 
     try {
       const res = await fetch(`${API_URL}/${lezione.id}`, {
@@ -65,6 +67,13 @@ function ListaLezioni({ idInsegnante }) {
     return true;
   });
 
+  const getStatoColor = (stato) => {
+    if (stato === 'svolta') return 'green';
+    if (stato === 'rimandata') return 'orange';
+    if (stato === 'annullata') return 'red';
+    return 'black';
+  };
+
   return (
     <div>
       <h3>Lezioni di Insegnante #{idInsegnante}</h3>
@@ -91,6 +100,7 @@ function ListaLezioni({ idInsegnante }) {
               <th>Ora Fine</th>
               <th>Aula</th>
               <th>Allievo</th>
+              <th>Stato</th>
               <th>Azioni</th>
             </tr>
           </thead>
@@ -102,6 +112,9 @@ function ListaLezioni({ idInsegnante }) {
                 <td>{formatTime(lez.end)}</td>
                 <td>{lez.aula || '-'}</td>
                 <td>{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
+                <td style={{ color: getStatoColor(lez.stato), fontWeight: 'bold' }}>
+                  {lez.stato}
+                </td>
                 <td>
                   <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
                   <button
@@ -121,4 +134,5 @@ function ListaLezioni({ idInsegnante }) {
 }
 
 export default ListaLezioni;
+
 
