@@ -1,3 +1,4 @@
+// ListaLezioni.js aggiornato
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -10,7 +11,6 @@ function ListaLezioni({ idInsegnante }) {
 
   const [dataDa, setDataDa] = useState('');
   const [dataA, setDataA] = useState('');
-  const [mostraRimandate, setMostraRimandate] = useState(false);
 
   const fetchLezioni = async () => {
     setLoading(true);
@@ -34,14 +34,14 @@ function ListaLezioni({ idInsegnante }) {
   }, [idInsegnante]);
 
   const handleAnnulla = async (lezione) => {
-    const conferma = window.confirm(`Vuoi davvero rimandare la lezione del ${formatDate(lezione.start)}?`);
-    if (!conferma) return;
+    const motivazione = prompt(`Motivazione per il rinvio della lezione del ${formatDate(lezione.start)}:`);
+    if (motivazione === null) return;
 
     try {
       const res = await fetch(`${API_URL}/${lezione.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lezione, stato: 'rimandata' })
+        body: JSON.stringify({ ...lezione, stato: 'rimandata', motivazione })
       });
       if (res.ok) {
         alert("✅ Lezione rimandata");
@@ -62,27 +62,19 @@ function ListaLezioni({ idInsegnante }) {
     const dataLezione = formatDate(l.start);
     if (dataDa && dataLezione < dataDa) return false;
     if (dataA && dataLezione > dataA) return false;
-    if (mostraRimandate && l.stato !== 'rimandata') return false;
     return true;
   });
 
   return (
     <div>
       <h3>Lezioni di Insegnante #{idInsegnante}</h3>
-
       <div style={{ marginBottom: 10 }}>
         <label>
           Da: <input type="date" value={dataDa} onChange={e => setDataDa(e.target.value)} />
         </label>{' '}
         <label>
           A: <input type="date" value={dataA} onChange={e => setDataA(e.target.value)} />
-        </label>{' '}
-        <button
-          onClick={() => setMostraRimandate(!mostraRimandate)}
-          className="px-3 py-1 bg-gray-200 rounded"
-        >
-          {mostraRimandate ? '🔙 Tutte le lezioni' : '📅 Solo rimandate'}
-        </button>
+        </label>
       </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -99,7 +91,6 @@ function ListaLezioni({ idInsegnante }) {
               <th>Ora Fine</th>
               <th>Aula</th>
               <th>Allievo</th>
-              <th>Stato</th>
               <th>Azioni</th>
             </tr>
           </thead>
@@ -111,19 +102,6 @@ function ListaLezioni({ idInsegnante }) {
                 <td>{formatTime(lez.end)}</td>
                 <td>{lez.aula || '-'}</td>
                 <td>{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
-                <td>
-                  <span style={{
-                    padding: '2px 6px',
-                    borderRadius: '6px',
-                    color: 'white',
-                    backgroundColor:
-                      lez.stato === 'svolta' ? 'green' :
-                      lez.stato === 'rimandata' ? 'orange' :
-                      lez.stato === 'annullata' ? 'red' : 'gray'
-                  }}>
-                    {lez.stato}
-                  </span>
-                </td>
                 <td>
                   <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
                   <button
