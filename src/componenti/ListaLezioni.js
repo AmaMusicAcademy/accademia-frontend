@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
@@ -7,30 +8,51 @@ function ListaLezioni({ idInsegnante }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Filtro data
   const [dataDa, setDataDa] = useState('');
   const [dataA, setDataA] = useState('');
 
-  useEffect(() => {
-    const fetchLezioni = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Errore nel recupero lezioni');
-        const data = await res.json();
-        const filtrate = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
-        setLezioni(filtrate);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchLezioni = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Errore nel recupero lezioni');
+      const data = await res.json();
+      const filtrate = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+      setLezioni(filtrate);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (idInsegnante) {
       fetchLezioni();
     }
   }, [idInsegnante]);
+
+  const handleAnnulla = async (lezione) => {
+    const conferma = window.confirm(`Vuoi davvero rimandare la lezione del ${formatDate(lezione.start)}?`);
+    if (!conferma) return;
+
+    try {
+      const res = await fetch(`${API_URL}/${lezione.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...lezione, stato: 'rimandata' })
+      });
+      if (res.ok) {
+        alert("✅ Lezione rimandata");
+        fetchLezioni();
+      } else {
+        alert("❌ Errore nell'annullamento");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Errore di rete");
+    }
+  };
 
   const formatDate = (isoDate) => isoDate.split('T')[0];
   const formatTime = (isoDate) => isoDate.split('T')[1].slice(0, 5);
@@ -67,7 +89,8 @@ function ListaLezioni({ idInsegnante }) {
               <th>Ora Inizio</th>
               <th>Ora Fine</th>
               <th>Aula</th>
-              <th>ID Allievo</th>
+              <th>Allievo</th>
+              <th>Azioni</th>
             </tr>
           </thead>
           <tbody>
@@ -78,6 +101,15 @@ function ListaLezioni({ idInsegnante }) {
                 <td>{formatTime(lez.end)}</td>
                 <td>{lez.aula || '-'}</td>
                 <td>{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
+                <td>
+                  <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
+                  <button
+                    onClick={() => handleAnnulla(lez)}
+                    className="text-red-600 underline"
+                  >
+                    Rimanda
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
