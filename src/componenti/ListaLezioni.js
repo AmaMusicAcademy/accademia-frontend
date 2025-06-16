@@ -34,22 +34,35 @@ function ListaLezioni({ idInsegnante }) {
 
   const handleAnnulla = async (lezione) => {
     const motivazione = prompt("Motivazione del rinvio:");
-    if (!motivazione) return;
+    if (motivazione === null) return;
 
     const conferma = window.confirm(`Vuoi davvero rimandare la lezione del ${formatDate(lezione.start)}?`);
     if (!conferma) return;
+
+    const data = formatDate(lezione.start);
+    const ora_inizio = formatTime(lezione.start);
+    const ora_fine = formatTime(lezione.end);
 
     try {
       const res = await fetch(`${API_URL}/${lezione.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...lezione, stato: 'rimandata', motivazione })
+        body: JSON.stringify({
+          id_insegnante: lezione.id_insegnante,
+          id_allievo: lezione.id_allievo,
+          data,
+          ora_inizio,
+          ora_fine,
+          aula: lezione.aula,
+          stato: 'rimandata',
+          motivazione
+        })
       });
       if (res.ok) {
         alert("✅ Lezione rimandata");
         fetchLezioni();
       } else {
-        alert("❌ Errore nell'annullamento");
+        alert("❌ Errore nel salvataggio");
       }
     } catch (err) {
       console.error(err);
@@ -57,8 +70,8 @@ function ListaLezioni({ idInsegnante }) {
     }
   };
 
-  const formatDate = (isoDate) => isoDate.split('T')[0];
-  const formatTime = (isoDate) => isoDate.split('T')[1].slice(0, 5);
+  const formatDate = (isoDate) => isoDate?.split('T')[0] || '';
+  const formatTime = (isoDate) => isoDate?.split('T')[1]?.slice(0, 5) || '';
 
   const lezioniFiltrate = lezioni.filter(l => {
     const dataLezione = formatDate(l.start);
@@ -134,5 +147,6 @@ function ListaLezioni({ idInsegnante }) {
 }
 
 export default ListaLezioni;
+
 
 
