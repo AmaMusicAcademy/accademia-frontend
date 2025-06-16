@@ -15,6 +15,9 @@ const ModificaLezione = () => {
   const [formData, setFormData] = useState(null);
   const [message, setMessage] = useState('');
 
+  const [showConferma, setShowConferma] = useState(false);
+  const [daRecuperare, setDaRecuperare] = useState(false);
+
   useEffect(() => {
     const fetchData = async () => {
       const lz = await fetch(`${process.env.REACT_APP_API_URL}/lezioni/${id}`).then(r => r.json());
@@ -73,27 +76,9 @@ const ModificaLezione = () => {
 
     if (res.ok) {
       setMessage('✅ Lezione aggiornata');
-      setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500); // ✅ qui
+      setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500);
     } else {
       setMessage('❌ Errore nel salvataggio');
-    }
-  };
-
-  const annullaLezione = async () => {
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/lezioni/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...formData,
-        data: formData.data.toISOString().split('T')[0],
-        stato: 'annullata'
-      })
-    });
-    if (res.ok) {
-      setMessage('✅ Lezione annullata');
-      setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500); // ✅ qui
-    } else {
-      setMessage('❌ Errore nell\'annullamento');
     }
   };
 
@@ -146,12 +131,66 @@ const ModificaLezione = () => {
 
         <div className="flex gap-2">
           <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Salva modifiche</button>
-          <button type="button" onClick={annullaLezione} className="bg-red-500 text-white px-4 py-2 rounded">Annulla lezione</button>
+          <button type="button" onClick={() => setShowConferma(true)} className="bg-red-500 text-white px-4 py-2 rounded">Annulla lezione</button>
         </div>
       </form>
+
+      {showConferma && (
+        <div className="mt-6 p-4 border border-red-400 bg-red-100 rounded">
+          <p className="font-semibold text-red-700 mb-2">Confermi di voler annullare la lezione?</p>
+
+          <label className="flex items-center gap-2 mb-4">
+            <input
+              type="checkbox"
+              checked={daRecuperare}
+              onChange={(e) => setDaRecuperare(e.target.checked)}
+            />
+            <span>Segna come "rimandata" per recupero</span>
+          </label>
+
+          <div className="flex gap-2">
+            <button
+              className="bg-red-600 text-white px-4 py-2 rounded"
+              onClick={async () => {
+                const nuovoStato = daRecuperare ? 'rimandata' : 'annullata';
+                const res = await fetch(`${process.env.REACT_APP_API_URL}/lezioni/${id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    ...formData,
+                    data: formData.data.toISOString().split('T')[0],
+                    stato: nuovoStato
+                  })
+                });
+                if (res.ok) {
+                  setMessage(`✅ Lezione ${nuovoStato}`);
+                  setTimeout(() => navigate(`/lezioni/${formData.id_insegnante}`), 1500);
+                } else {
+                  setMessage('❌ Errore nell\'aggiornamento');
+                }
+                setShowConferma(false);
+                setDaRecuperare(false);
+              }}
+            >
+              ✅ Sì, conferma
+            </button>
+
+            <button
+              className="bg-gray-400 text-white px-4 py-2 rounded"
+              onClick={() => {
+                setShowConferma(false);
+                setDaRecuperare(false);
+              }}
+            >
+              ❌ Annulla
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ModificaLezione;
+
 
