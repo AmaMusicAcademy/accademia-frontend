@@ -3,19 +3,19 @@ import React, { useState } from 'react';
 const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
-  const [count, setCount] = useState(null);
+  const [conteggi, setConteggi] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const calcola = async () => {
     if (!start || !end) return;
     setLoading(true);
     try {
-      const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/lezioni-effettuate?start=${start}&end=${end}`);
+      const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/conteggio-lezioni?start=${start}&end=${end}`);
       const data = await res.json();
-      setCount(data.count);
+      setConteggi(data);
     } catch (err) {
       console.error('Errore nel conteggio lezioni:', err);
-      setCount(null);
+      setConteggi(null);
     } finally {
       setLoading(false);
     }
@@ -30,11 +30,13 @@ const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
         Al: <input type="date" value={end} onChange={e => setEnd(e.target.value)} />
       </label>
       <button onClick={calcola} disabled={!start || !end || loading} style={{ marginLeft: 10 }}>
-        {loading ? 'Calcolo...' : 'Mostra lezioni'}
+        {loading ? 'Calcolo...' : 'Mostra riepilogo'}
       </button>
-      {count !== null && (
-        <div style={{ marginTop: 5 }}>
-          ✅ Lezioni effettuate in periodo: <strong>{count}</strong>
+      {conteggi && (
+        <div style={{ marginTop: 10 }}>
+          <p>✅ Lezioni svolte: <strong>{conteggi.svolte}</strong></p>
+          <p>❌ Lezioni annullate: <strong>{conteggi.annullate}</strong></p>
+          <p>🔁 Lezioni da recuperare: <strong>{conteggi.rimandate}</strong></p>
         </div>
       )}
     </div>
@@ -42,3 +44,4 @@ const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniEffettuate;
+
