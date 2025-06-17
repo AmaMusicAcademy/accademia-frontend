@@ -55,7 +55,8 @@ function ListaLezioni({ idInsegnante }) {
           ora_fine,
           aula: lezione.aula,
           stato: 'rimandata',
-          motivazione
+          motivazione,
+          riprogrammata: false
         })
       });
       if (res.ok) {

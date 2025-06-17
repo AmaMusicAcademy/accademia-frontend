@@ -49,7 +49,8 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
           ora_inizio: formData.ora_inizio,
           ora_fine: formData.ora_fine,
           aula: formData.aula,
-          stato: 'svolta' // per considerarla pianificata
+          stato: 'svolta', // per considerarla pianificata
+          riprogrammata: true
         })
       });
 
