@@ -49,7 +49,9 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
           ora_inizio: formData.ora_inizio,
           ora_fine: formData.ora_fine,
           aula: formData.aula,
-          stato: 'svolta'
+          stato: formData.data && formData.ora_inizio && formData.ora_fine && formData.aula
+                ? 'svolta'
+                : 'rimandata'
         })
       });
 
