@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 
+const formattaData = iso => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const giorno = String(date.getDate()).padStart(2, '0');
+  const mese = String(date.getMonth() + 1).padStart(2, '0');
+  const anno = date.getFullYear();
+  return `${giorno}-${mese}-${anno}`;
+};
+
 const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const [lezioni, setLezioni] = useState([]);
   const [aperto, setAperto] = useState(false);
@@ -71,7 +80,8 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
               <li key={i} style={{ marginBottom: 10 }}>
                 {lez.stato === 'rimandata' ? (
                   <div>
-                    🔁 <strong>Lezione rimandata</strong> ({lez.data}):
+                    🔁 <strong>Lezione rimandata</strong> ({formattaData(lez.data)}
+):
                     <br />
                     ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula}
                     <br />
@@ -135,7 +145,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                   </div>
                 ) : (
                   <span>
-                    📅 {lez.data} ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula} | 👨‍🏫{' '}
+                    📅 {formattaData(lez.data)} ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula} | 👨‍🏫{' '}
                     {lez.nome_insegnante} {lez.cognome_insegnante}
                   </span>
                 )}
