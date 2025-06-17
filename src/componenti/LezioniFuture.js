@@ -49,16 +49,14 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
           ora_inizio: formData.ora_inizio,
           ora_fine: formData.ora_fine,
           aula: formData.aula,
-          stato: formData.data && formData.ora_inizio && formData.ora_fine && formData.aula
-                ? 'svolta'
-                : 'rimandata'
+          stato: 'svolta' // per considerarla pianificata
         })
       });
 
       if (res.ok) {
         alert('Lezione riprogrammata con successo');
         setEditingId(null);
-        caricaLezioni(); // ricarica elenco aggiornato
+        caricaLezioni();
       } else {
         alert('Errore nella riprogrammazione');
       }
@@ -80,10 +78,9 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
           ) : (
             lezioni.map((lez, i) => (
               <li key={i} style={{ marginBottom: 10 }}>
-                {lez.stato === 'rimandata' ? (
+                {lez.stato === 'rimandata' && !lez.riprogrammata ? (
                   <div>
-                    🔁 <strong>Lezione rimandata</strong> ({formattaData(lez.data)}
-):
+                    🔁 <strong>Lezione rimandata</strong> ({formattaData(lez.data)}):
                     <br />
                     ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula}
                     <br />
@@ -96,7 +93,6 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                     <button onClick={() => handleRiprogramma(lez)} style={{ marginTop: 5 }}>
                       ✏️ Riprogramma
                     </button>
-
                     {editingId === lez.id && (
                       <div style={{ marginTop: 8, paddingLeft: 10 }}>
                         <label>
@@ -147,7 +143,8 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                   </div>
                 ) : (
                   <span>
-                    📅 {formattaData(lez.data)} ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula} | 👨‍🏫{' '}
+                    {lez.stato === 'rimandata' && lez.riprogrammata ? '🔄 Lezione riprogrammata: ' : '📅 '}
+                    {formattaData(lez.data)} ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula} | 👨‍🏫{' '}
                     {lez.nome_insegnante} {lez.cognome_insegnante}
                   </span>
                 )}
@@ -161,6 +158,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
 
