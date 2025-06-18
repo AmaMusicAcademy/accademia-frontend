@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 
-
-
 const formattaData = iso => {
   if (!iso) return '';
   const date = new Date(iso);
@@ -16,7 +14,8 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const [aperto, setAperto] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
-  const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3']; // ← aggiunto
+
+  const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3'];
 
   const caricaLezioni = async () => {
     if (!aperto) {
@@ -52,7 +51,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
           ora_inizio: formData.ora_inizio,
           ora_fine: formData.ora_fine,
           aula: formData.aula,
-          stato: 'svolta', // per considerarla pianificata
+          stato: 'svolta',
           riprogrammata: true
         })
       });
@@ -128,11 +127,15 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                         <br />
                         <label>
                           🏫 Aula:{' '}
-                          <input
-                            type="text"
+                          <select
                             value={formData.aula}
                             onChange={e => setFormData({ ...formData, aula: e.target.value })}
-                          />
+                          >
+                            <option value="">Seleziona aula</option>
+                            {auleDisponibili.map((aula, idx) => (
+                              <option key={idx} value={aula}>{aula}</option>
+                            ))}
+                          </select>
                         </label>
                         <br />
                         <button
@@ -162,6 +165,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
 
