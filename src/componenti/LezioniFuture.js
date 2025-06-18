@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 
+
+
 const formattaData = iso => {
   if (!iso) return '';
   const date = new Date(iso);
@@ -14,6 +16,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const [aperto, setAperto] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
+  const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3']; // ← aggiunto
 
   const caricaLezioni = async () => {
     if (!aperto) {
