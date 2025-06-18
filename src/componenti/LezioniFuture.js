@@ -18,14 +18,18 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3'];
 
   const caricaLezioni = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/lezioni-future`);
+      const data = await res.json();
+      setLezioni(data);
+    } catch (err) {
+      console.error('Errore nel caricamento lezioni future:', err);
+    }
+  };
+
+  const toggleLista = () => {
     if (!aperto) {
-      try {
-        const res = await fetch(`${apiBaseUrl}/allievi/${allievoId}/lezioni-future`);
-        const data = await res.json();
-        setLezioni(data);
-      } catch (err) {
-        console.error('Errore nel caricamento lezioni future:', err);
-      }
+      caricaLezioni();
     }
     setAperto(!aperto);
   };
@@ -71,7 +75,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 
   return (
     <div style={{ marginTop: 5 }}>
-      <button onClick={caricaLezioni}>
+      <button onClick={toggleLista}>
         {aperto ? 'Nascondi lezioni future' : 'Mostra lezioni future'}
       </button>
       {aperto && (
@@ -165,6 +169,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
 
