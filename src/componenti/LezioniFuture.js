@@ -45,36 +45,36 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   };
 
   const confermaRiprogrammazione = async (lezione) => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/lezioni/${lezione.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  id_insegnante: lezione.id_insegnante,
-  id_allievo: lezione.id_allievo,
-  data: formData.data,
-  ora_inizio: formData.ora_inizio,
-  ora_fine: formData.ora_fine,
-  aula: formData.aula,
-  stato: 'rimandata',
-  motivazione: lezione.motivazione || '',
-  riprogrammata: true
-})
+  try {
+    const res = await fetch(`${apiBaseUrl}/lezioni/${lezione.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id_insegnante: lezione.id_insegnante,
+        id_allievo: allievoId,
+        data: formData.data,
+        ora_inizio: formData.ora_inizio,
+        ora_fine: formData.ora_fine,
+        aula: formData.aula,
+        stato: 'rimandata',
+        motivazione: lezione.motivazione || '',
+        riprogrammata: true
+      })
+    });
 
-      });
-
-      if (res.ok) {
-        alert('Lezione riprogrammata con successo');
-        setEditingId(null);
-        caricaLezioni();
-      } else {
-        alert('Errore nella riprogrammazione');
-      }
-    } catch (err) {
-      console.error('Errore:', err);
+    if (res.ok) {
+      alert('Lezione riprogrammata con successo');
+      setEditingId(null);
+      caricaLezioni();
+    } else {
       alert('Errore nella riprogrammazione');
     }
-  };
+  } catch (err) {
+    console.error('Errore:', err);
+    alert('Errore nella riprogrammazione');
+  }
+};
+
 
   return (
     <div style={{ marginTop: 5 }}>
