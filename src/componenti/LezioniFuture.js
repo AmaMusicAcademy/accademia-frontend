@@ -50,14 +50,17 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...lezione,
-          data: formData.data,
-          ora_inizio: formData.ora_inizio,
-          ora_fine: formData.ora_fine,
-          aula: formData.aula,
-          stato: 'svolta',
-          riprogrammata: true
-        })
+  id_insegnante: lezione.id_insegnante,
+  id_allievo: lezione.id_allievo,
+  data: formData.data,
+  ora_inizio: formData.ora_inizio,
+  ora_fine: formData.ora_fine,
+  aula: formData.aula,
+  stato: 'rimandata',
+  motivazione: lezione.motivazione || '',
+  riprogrammata: true
+})
+
       });
 
       if (res.ok) {
