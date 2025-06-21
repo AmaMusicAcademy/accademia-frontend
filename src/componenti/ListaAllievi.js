@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import ModificaAllievo from './ModificaAllievo';
 import LezioniFuture from './LezioniFuture';
 import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
-import ModificaAllievo from './ModificaAllievo';
 
 const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggiornaAllievi }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
@@ -10,75 +10,63 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
 
-  const fetchAllievi = aggiornaAllievi; // usa la funzione passata dal componente genitore
-
-
-  useEffect(() => {
-    const fetchPagamenti = async () => {
-      const aggiornati = {};
-      const now = new Date();
-      const meseCorrente = now.getMonth() + 1;
-      const annoCorrente = now.getFullYear();
-
-      for (const allievo of allievi) {
-        try {
-          const res = await fetch(`${apiBaseUrl}/allievi/${allievo.id}/pagamenti`);
-          const dati = await res.json();
-          aggiornati[allievo.id] = dati.some(p => p.mese === meseCorrente && p.anno === annoCorrente);
-        } catch (err) {
-          aggiornati[allievo.id] = false;
-        }
-      }
-      setPagamentiCorrenti(aggiornati);
-    };
-
-    fetchPagamenti();
-  }, [allievi, apiBaseUrl]);
-
   const allieviFiltrati = allievi.filter(a => {
-    const filtroStatoMatch = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
-    const filtroPagamentiMatch = filtroPagamenti === 'tutti' ||
-      (filtroPagamenti === 'paganti' && pagamentiCorrenti[a.id]) ||
-      (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
-    return filtroStatoMatch && filtroPagamentiMatch;
+    const matchStato = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
+    const matchPagamento = filtroPagamenti === 'tutti'
+      || (filtroPagamenti === 'paganti' && pagamentiCorrenti[a.id])
+      || (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
+    return matchStato && matchPagamento;
   });
 
   return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <label>Filtro stato: </label>
-        <select value={filtroStato} onChange={e => setFiltroStato(e.target.value)} style={{ marginRight: 20 }}>
+    <div className="p-4">
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Filtro stato:</label>
+        <select
+          value={filtroStato}
+          onChange={e => setFiltroStato(e.target.value)}
+          className="w-full mt-1 p-2 border rounded"
+        >
           <option value="tutti">Tutti</option>
           <option value="attivi">Solo attivi</option>
           <option value="nonattivi">Solo non attivi</option>
         </select>
 
-        <label>Filtro pagamenti: </label>
-        <select value={filtroPagamenti} onChange={e => setFiltroPagamenti(e.target.value)}>
+        <label className="block text-sm font-medium mt-4">Filtro pagamenti:</label>
+        <select
+          value={filtroPagamenti}
+          onChange={e => setFiltroPagamenti(e.target.value)}
+          className="w-full mt-1 p-2 border rounded"
+        >
           <option value="tutti">Tutti</option>
           <option value="paganti">In regola</option>
           <option value="morosi">Non in regola</option>
         </select>
       </div>
 
-      <ul>
+      <div className="space-y-4">
         {allieviFiltrati.map(a => (
-          <li key={a.id} style={{ marginBottom: 30 }}>
-            <div style={{ fontSize: '1.1rem', marginBottom: 5 }}>
-              <strong>{a.nome} {a.cognome}</strong>
-              {pagamentiCorrenti[a.id] === false && (
-                <span style={{
-                  color: 'white',
-                  backgroundColor: 'red',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  marginLeft: '8px',
-                  fontSize: '0.8rem'
-                }}>
-                  NON IN REGOLA
-                </span>
+          <div key={a.id} className="bg-white rounded-xl shadow-md p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold">
+                {a.nome} {a.cognome}
+              </h3>
+              {!a.attivo && (
+                <span className="text-xs px-2 py-1 rounded bg-gray-300">Non attivo</span>
               )}
             </div>
+
+            <p className="text-sm text-gray-700">Email: {a.email || 'N/A'}</p>
+            <p className="text-sm text-gray-700">Tel: {a.telefono || 'N/A'}</p>
+            <p className="text-sm text-gray-700">Quota: {a.quota_mensile ? `${a.quota_mensile}€` : 'N/D'}</p>
+            <p className="text-sm text-gray-700">
+              Iscritto il: {new Date(a.data_iscrizione).toLocaleDateString('it-IT')}
+            </p>
+            {pagamentiCorrenti[a.id] === false && (
+              <span className="inline-block mt-2 text-xs text-white bg-red-500 px-2 py-1 rounded">
+                NON IN REGOLA
+              </span>
+            )}
 
             {editingAllievo === a.id ? (
               <ModificaAllievo
@@ -86,34 +74,34 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
                 apiBaseUrl={apiBaseUrl}
                 onClose={() => {
                   setEditingAllievo(null);
-                  fetchAllievi();
+                  aggiornaAllievi();
                 }}
-                aggiornaLista={fetchAllievi}
+                aggiornaLista={aggiornaAllievi}
               />
             ) : (
-              <div>
-                Data iscrizione: <strong>{new Date(a.data_iscrizione).toLocaleDateString('it-IT')}</strong><br />
-                Email: {a.email || 'N/A'} – Tel: {a.telefono || 'N/A'}<br />
-                Quota mensile: <strong>{a.quota_mensile ? `${a.quota_mensile}€` : 'N/D'}</strong><br />
-                Stato: <strong>{a.attivo ? 'Attivo' : 'Non attivo'}</strong>{' '}
-                <button onClick={() => toggleAttivo(a.id, a.attivo)} style={{ marginLeft: 10 }}>
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button
+                  onClick={() => toggleAttivo(a.id, a.attivo)}
+                  className="px-3 py-1 text-sm rounded bg-gray-200"
+                >
                   {a.attivo ? 'Disattiva' : 'Attiva'}
                 </button>
                 <button
+                  onClick={() => setEditingAllievo(a.id)}
+                  className="px-3 py-1 text-sm rounded text-white"
+                  style={{ backgroundColor: '#ef4d48' }}
+                >
+                  ✏️ Modifica
+                </button>
+                <button
                   onClick={() => {
-                    if (window.confirm(`Sei sicuro di voler eliminare ${a.nome} ${a.cognome}?`)) {
+                    if (window.confirm(`Eliminare ${a.nome} ${a.cognome}?`)) {
                       eliminaAllievo(a.id);
                     }
                   }}
-                  style={{ marginLeft: 10, color: 'red' }}
+                  className="px-3 py-1 text-sm rounded bg-red-100 text-red-700"
                 >
-                  Elimina
-                </button>
-                <button
-                  onClick={() => setEditingAllievo(a.id)}
-                  style={{ marginLeft: 10 }}
-                >
-                  ✏️ Modifica
+                  🗑️ Elimina
                 </button>
               </div>
             )}
@@ -121,14 +109,15 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
             <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
             <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
             <StatoPagamenti allievoId={a.id} apiBaseUrl={apiBaseUrl} />
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
 
 export default ListaAllievi;
+
 
 
 
