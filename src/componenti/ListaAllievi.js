@@ -59,6 +59,13 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
 
           return (
             <div key={a.id} className="relative bg-white rounded-xl shadow-md p-4">
+            <StatoPagamenti
+  allievoId={a.id}
+  apiBaseUrl={apiBaseUrl}
+  onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
+  hidden
+/>
+
               {/* Badge di stato */}
               <div className={`absolute top-2 right-2 text-xs text-white px-2 py-1 rounded-full ${statoBadge.className}`}>
                 {statoBadge.label}
@@ -123,11 +130,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
                     <div className="mt-4 space-y-2">
                       <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
                       <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
-                      <StatoPagamenti
-                        allievoId={a.id}
-                        apiBaseUrl={apiBaseUrl}
-                        onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
-                      />
+                      
                     </div>
                   )}
                 </>
