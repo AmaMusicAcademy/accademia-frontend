@@ -97,78 +97,88 @@ const Allievi = () => {
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: 'auto', padding: 20 }}>
-      <h1>Gestione Allievi</h1>
+    <div className="max-w-3xl mx-auto p-4">
+      <h1 className="text-xl font-bold mb-4 text-primary">Gestione Allievi</h1>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {success && <p style={{ color: 'green' }}>{success}</p>}
+      {error && <p className="text-red-600 mb-2">{error}</p>}
+      {success && <p className="text-green-600 mb-2">{success}</p>}
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: 20 }}>
-        <input
-          name="nome"
-          placeholder="Nome"
-          value={formData.nome}
-          onChange={handleChange}
-          required
-          style={{ marginRight: 10 }}
-        />
-        <input
-          name="cognome"
-          placeholder="Cognome"
-          value={formData.cognome}
-          onChange={handleChange}
-          required
-          style={{ marginRight: 10 }}
-        />
-        <input
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          style={{ marginRight: 10 }}
-        />
-        <input
-          name="telefono"
-          placeholder="Telefono"
-          value={formData.telefono}
-          onChange={handleChange}
-          style={{ marginRight: 10 }}
-        />
-        <input
-          name="data_iscrizione"
-          type="date"
-          value={formData.data_iscrizione}
-          onChange={handleChange}
-          style={{ marginRight: 10 }}
-        />
-        <input
-          name="quota_mensile"
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="Quota mensile (€)"
-          value={formData.quota_mensile}
-          onChange={handleChange}
-          style={{ marginRight: 10 }}
-          required
-        />
-        <button type="submit">Aggiungi</button>
+      <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg shadow space-y-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input
+            name="nome"
+            placeholder="Nome"
+            value={formData.nome}
+            onChange={handleChange}
+            required
+            className="p-2 border rounded"
+          />
+          <input
+            name="cognome"
+            placeholder="Cognome"
+            value={formData.cognome}
+            onChange={handleChange}
+            required
+            className="p-2 border rounded"
+          />
+          <input
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            className="p-2 border rounded"
+          />
+          <input
+            name="telefono"
+            placeholder="Telefono"
+            value={formData.telefono}
+            onChange={handleChange}
+            className="p-2 border rounded"
+          />
+          <input
+            name="data_iscrizione"
+            type="date"
+            value={formData.data_iscrizione}
+            onChange={handleChange}
+            className="p-2 border rounded"
+          />
+          <input
+            name="quota_mensile"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="Quota mensile (€)"
+            value={formData.quota_mensile}
+            onChange={handleChange}
+            required
+            className="p-2 border rounded"
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="bg-primary text-white px-4 py-2 rounded"
+            style={{ backgroundColor: '#ef4d48' }}
+          >
+            ➕ Aggiungi
+          </button>
+        </div>
       </form>
 
-      <h2>Lista Allievi</h2>
       <ListaAllievi
-  allievi={allievi}
-  toggleAttivo={toggleAttivo}
-  eliminaAllievo={eliminaAllievo}
-  apiBaseUrl={process.env.REACT_APP_API_URL}
-  aggiornaAllievi={fetchAllievi}
-/>
-
+        allievi={allievi}
+        toggleAttivo={toggleAttivo}
+        eliminaAllievo={eliminaAllievo}
+        apiBaseUrl={process.env.REACT_APP_API_URL}
+        aggiornaAllievi={fetchAllievi}
+      />
     </div>
   );
 };
 
 export default Allievi;
+
 
 
 
