@@ -25,8 +25,9 @@ const ModificaAllievo = ({ allievo, apiBaseUrl, onClose, aggiornaLista }) => {
 
       if (!res.ok) throw new Error('Errore aggiornamento');
       alert('Allievo aggiornato con successo');
-      aggiornaLista();
+      if (aggiornaLista) aggiornaLista();
       onClose();
+
     } catch (err) {
       alert('Errore durante l\'aggiornamento');
       console.error(err);
