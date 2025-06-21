@@ -4,21 +4,14 @@ import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 import ModificaAllievo from './ModificaAllievo';
 
-const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => {
+const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggiornaAllievi }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
 
-  const fetchAllievi = async () => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/allievi`);
-      const data = await res.json();
-      // Puoi aggiornare allievi da qui se necessario tramite prop o stato condiviso
-    } catch (err) {
-      console.error("Errore nel ricaricamento allievi:", err);
-    }
-  };
+  const fetchAllievi = aggiornaAllievi; // usa la funzione passata dal componente genitore
+
 
   useEffect(() => {
     const fetchPagamenti = async () => {

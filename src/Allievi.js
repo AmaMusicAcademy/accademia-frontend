@@ -157,11 +157,13 @@ const Allievi = () => {
 
       <h2>Lista Allievi</h2>
       <ListaAllievi
-        allievi={allievi}
-        toggleAttivo={toggleAttivo}
-        eliminaAllievo={eliminaAllievo}
-        apiBaseUrl={process.env.REACT_APP_API_URL}
-      />
+  allievi={allievi}
+  toggleAttivo={toggleAttivo}
+  eliminaAllievo={eliminaAllievo}
+  apiBaseUrl={process.env.REACT_APP_API_URL}
+  aggiornaAllievi={fetchAllievi}
+/>
+
     </div>
   );
 };
