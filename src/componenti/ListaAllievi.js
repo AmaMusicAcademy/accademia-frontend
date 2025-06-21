@@ -4,12 +4,11 @@ import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 import ModificaAllievo from './ModificaAllievo';
 
-const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => {
+const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, fetchAllievi }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
-  const [reload, setReload] = useState(false);
 
   useEffect(() => {
     const fetchPagamenti = async () => {
@@ -31,7 +30,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
     };
 
     fetchPagamenti();
-  }, [allievi, apiBaseUrl, reload]);
+  }, [allievi, apiBaseUrl]);
 
   const allieviFiltrati = allievi.filter(a => {
     const filtroStatoMatch = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
@@ -40,11 +39,6 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
       (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
     return filtroStatoMatch && filtroPagamentiMatch;
   });
-
-  const handleCloseModifica = () => {
-    setEditingAllievo(null);
-    setReload(prev => !prev);
-  };
 
   return (
     <div>
@@ -87,7 +81,10 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
               <ModificaAllievo
                 allievo={a}
                 apiBaseUrl={apiBaseUrl}
-                onClose={handleCloseModifica}
+                onClose={() => {
+                  setEditingAllievo(null);
+                  fetchAllievi();
+                }}
               />
             ) : (
               <div>
@@ -127,6 +124,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
 };
 
 export default ListaAllievi;
+
 
 
 
