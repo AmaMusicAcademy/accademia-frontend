@@ -1,6 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import CalendarioLezioni from './CalendarioLezioni';
-import ListaLezioni from './componenti/ListaLezioni';
 import ListaInsegnanti from './componenti/ListaInsegnanti';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
@@ -11,8 +9,6 @@ function App() {
   const [cognome, setCognome] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [insegnanteSelezionato, setInsegnanteSelezionato] = useState(null);
-  const [visualizzazione, setVisualizzazione] = useState('lista');
 
   const fetchInsegnanti = async () => {
     setLoading(true);
@@ -67,16 +63,11 @@ function App() {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Errore nella cancellazione insegnante');
       setInsegnanti((prev) => prev.filter((i) => i.id !== id));
-      if (insegnanteSelezionato?.id === id) setInsegnanteSelezionato(null);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleVisualizzazione = () => {
-    setVisualizzazione((prev) => (prev === 'lista' ? 'calendario' : 'lista'));
   };
 
   return (
@@ -113,40 +104,15 @@ function App() {
       ) : (
         <ListaInsegnanti
           insegnanti={insegnanti}
-          onSeleziona={(ins) => {
-            setInsegnanteSelezionato(ins);
-            setVisualizzazione('lista');
-          }}
           onElimina={handleDelete}
         />
-      )}
-
-      {insegnanteSelezionato && (
-        <div className="mt-8">
-          <button onClick={toggleVisualizzazione} className="mb-4 text-primary underline text-sm">
-            {visualizzazione === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
-          </button>
-
-          {visualizzazione === 'lista' ? (
-            <ListaLezioni
-              idInsegnante={insegnanteSelezionato.id}
-              nome={insegnanteSelezionato.nome}
-              cognome={insegnanteSelezionato.cognome}
-            />
-          ) : (
-            <CalendarioLezioni
-              idInsegnante={insegnanteSelezionato.id}
-              nome={insegnanteSelezionato.nome}
-              cognome={insegnanteSelezionato.cognome}
-            />
-          )}
-        </div>
       )}
     </div>
   );
 }
 
 export default App;
+
 
 
 

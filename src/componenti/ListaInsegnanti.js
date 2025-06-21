@@ -1,6 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ListaLezioni from './ListaLezioni';
+import CalendarioLezioni from '../CalendarioLezioni';
 
-const ListaInsegnanti = ({ insegnanti, onSeleziona, onElimina }) => {
+const ListaInsegnanti = ({ insegnanti, onElimina }) => {
+  const [insegnanteAperto, setInsegnanteAperto] = useState(null);
+  const [visualizzazioneAperta, setVisualizzazioneAperta] = useState('lista');
+
+  const toggleApertura = (id) => {
+    if (insegnanteAperto === id) {
+      setInsegnanteAperto(null); // Chiude se clicchi di nuovo
+    } else {
+      setInsegnanteAperto(id);
+      setVisualizzazioneAperta('lista'); // Resetta alla lista
+    }
+  };
+
   return (
     <div className="space-y-4">
       {insegnanti.length === 0 ? (
@@ -14,12 +28,13 @@ const ListaInsegnanti = ({ insegnanti, onSeleziona, onElimina }) => {
 
             <div className="flex flex-wrap gap-2 mt-4">
               <button
-                onClick={() => onSeleziona(ins)}
+                onClick={() => toggleApertura(ins.id)}
                 className="px-3 py-1 text-sm rounded text-white"
                 style={{ backgroundColor: '#ef4d48' }}
               >
-                📋 Visualizza Lezioni
+                {insegnanteAperto === ins.id ? '🔽 Nascondi Lezioni' : '📋 Visualizza Lezioni'}
               </button>
+
               <button
                 onClick={() => {
                   if (window.confirm(`Eliminare ${ins.nome} ${ins.cognome}?`)) {
@@ -31,6 +46,37 @@ const ListaInsegnanti = ({ insegnanti, onSeleziona, onElimina }) => {
                 🗑️ Elimina
               </button>
             </div>
+
+            {insegnanteAperto === ins.id && (
+              <div className="mt-4">
+                <button
+                  onClick={() =>
+                    setVisualizzazioneAperta(prev =>
+                      prev === 'lista' ? 'calendario' : 'lista'
+                    )
+                  }
+                  className="mb-3 text-sm underline text-primary"
+                >
+                  {visualizzazioneAperta === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
+                </button>
+
+                <div className="border-t pt-4">
+                  {visualizzazioneAperta === 'lista' ? (
+                    <ListaLezioni
+                      idInsegnante={ins.id}
+                      nome={ins.nome}
+                      cognome={ins.cognome}
+                    />
+                  ) : (
+                    <CalendarioLezioni
+                      idInsegnante={ins.id}
+                      nome={ins.nome}
+                      cognome={ins.cognome}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))
       )}
@@ -39,3 +85,4 @@ const ListaInsegnanti = ({ insegnanti, onSeleziona, onElimina }) => {
 };
 
 export default ListaInsegnanti;
+
