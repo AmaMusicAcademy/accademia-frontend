@@ -28,139 +28,131 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   };
 
   const toggleLista = () => {
-    if (!aperto) {
-      caricaLezioni();
-    }
+    if (!aperto) caricaLezioni();
     setAperto(!aperto);
   };
 
   const handleRiprogramma = (lezione) => {
     setEditingId(lezione.id);
-    setFormData({
-      data: '',
-      ora_inizio: '',
-      ora_fine: '',
-      aula: ''
-    });
+    setFormData({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
   };
 
   const confermaRiprogrammazione = async (lezione) => {
-  try {
-    const res = await fetch(`${apiBaseUrl}/lezioni/${lezione.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_insegnante: lezione.id_insegnante,
-        id_allievo: allievoId,
-        data: formData.data,
-        ora_inizio: formData.ora_inizio,
-        ora_fine: formData.ora_fine,
-        aula: formData.aula,
-        stato: 'rimandata',
-        motivazione: lezione.motivazione || '',
-        riprogrammata: true
-      })
-    });
+    try {
+      const res = await fetch(`${apiBaseUrl}/lezioni/${lezione.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_insegnante: lezione.id_insegnante,
+          id_allievo: allievoId,
+          data: formData.data,
+          ora_inizio: formData.ora_inizio,
+          ora_fine: formData.ora_fine,
+          aula: formData.aula,
+          stato: 'rimandata',
+          motivazione: lezione.motivazione || '',
+          riprogrammata: true
+        })
+      });
 
-    if (res.ok) {
-      alert('Lezione riprogrammata con successo');
-      setEditingId(null);
-      caricaLezioni();
-    } else {
+      if (res.ok) {
+        alert('Lezione riprogrammata con successo');
+        setEditingId(null);
+        caricaLezioni();
+      } else {
+        alert('Errore nella riprogrammazione');
+      }
+    } catch (err) {
+      console.error('Errore:', err);
       alert('Errore nella riprogrammazione');
     }
-  } catch (err) {
-    console.error('Errore:', err);
-    alert('Errore nella riprogrammazione');
-  }
-};
-
+  };
 
   return (
-    <div style={{ marginTop: 5 }}>
-      <button onClick={toggleLista}>
+    <div className="mt-4">
+      <button
+        onClick={toggleLista}
+        className="text-sm text-primary underline"
+      >
         {aperto ? 'Nascondi lezioni future' : 'Mostra lezioni future'}
       </button>
+
       {aperto && (
-        <ul style={{ paddingLeft: 20, marginTop: 10 }}>
+        <ul className="mt-2 space-y-4">
           {lezioni.length === 0 ? (
-            <li>Nessuna lezione programmata</li>
+            <li className="text-sm text-gray-500">Nessuna lezione programmata</li>
           ) : (
             lezioni.map((lez, i) => (
-              <li key={i} style={{ marginBottom: 10 }}>
+              <li key={i} className="text-sm bg-gray-50 p-3 rounded-lg shadow">
                 {lez.stato === 'rimandata' && !lez.riprogrammata ? (
                   <div>
-                    🔁 <strong>Lezione rimandata</strong> ({formattaData(lez.data)}):
-                    <br />
-                    ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula}
-                    <br />
-                    👨‍🏫 {lez.nome_insegnante} {lez.cognome_insegnante}
+                    <p className="font-semibold text-red-600">🔁 Lezione rimandata ({formattaData(lez.data)})</p>
+                    <p>⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula}</p>
+                    <p>👨‍🏫 {lez.nome_insegnante} {lez.cognome_insegnante}</p>
                     {lez.motivazione && (
-                      <div style={{ fontStyle: 'italic', color: '#555' }}>
-                        📝 Motivo: {lez.motivazione}
-                      </div>
+                      <p className="italic text-gray-600">📝 Motivo: {lez.motivazione}</p>
                     )}
-                    <button onClick={() => handleRiprogramma(lez)} style={{ marginTop: 5 }}>
+                    <button
+                      onClick={() => handleRiprogramma(lez)}
+                      className="mt-2 text-sm text-primary underline"
+                    >
                       ✏️ Riprogramma
                     </button>
+
                     {editingId === lez.id && (
-                      <div style={{ marginTop: 8, paddingLeft: 10 }}>
-                        <label>
-                          📅 Data:{' '}
-                          <input
-                            type="date"
-                            value={formData.data}
-                            onChange={e => setFormData({ ...formData, data: e.target.value })}
-                          />
-                        </label>
-                        <br />
-                        <label>
-                          ⏰ Ora inizio:{' '}
-                          <input
-                            type="time"
-                            value={formData.ora_inizio}
-                            onChange={e => setFormData({ ...formData, ora_inizio: e.target.value })}
-                          />
-                        </label>
-                        <br />
-                        <label>
-                          ⏰ Ora fine:{' '}
-                          <input
-                            type="time"
-                            value={formData.ora_fine}
-                            onChange={e => setFormData({ ...formData, ora_fine: e.target.value })}
-                          />
-                        </label>
-                        <br />
-                        <label>
-                          🏫 Aula:{' '}
-                          <select
-                            value={formData.aula}
-                            onChange={e => setFormData({ ...formData, aula: e.target.value })}
-                          >
-                            <option value="">Seleziona aula</option>
-                            {auleDisponibili.map((aula, idx) => (
-                              <option key={idx} value={aula}>{aula}</option>
-                            ))}
-                          </select>
-                        </label>
-                        <br />
-                        <button
-                          onClick={() => confermaRiprogrammazione(lez)}
-                          style={{ marginTop: 5 }}
+                      <div className="mt-3 space-y-2">
+                        <input
+                          type="date"
+                          value={formData.data}
+                          onChange={e => setFormData({ ...formData, data: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                        <input
+                          type="time"
+                          value={formData.ora_inizio}
+                          onChange={e => setFormData({ ...formData, ora_inizio: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                        <input
+                          type="time"
+                          value={formData.ora_fine}
+                          onChange={e => setFormData({ ...formData, ora_fine: e.target.value })}
+                          className="w-full p-2 border rounded"
+                        />
+                        <select
+                          value={formData.aula}
+                          onChange={e => setFormData({ ...formData, aula: e.target.value })}
+                          className="w-full p-2 border rounded"
                         >
-                          ✅ Conferma
-                        </button>{' '}
-                        <button onClick={() => setEditingId(null)}>Annulla</button>
+                          <option value="">Seleziona aula</option>
+                          {auleDisponibili.map((aula, idx) => (
+                            <option key={idx} value={aula}>{aula}</option>
+                          ))}
+                        </select>
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={() => confermaRiprogrammazione(lez)}
+                            className="px-3 py-1 text-white rounded"
+                            style={{ backgroundColor: '#ef4d48' }}
+                          >
+                            ✅ Conferma
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="px-3 py-1 bg-gray-200 rounded"
+                          >
+                            Annulla
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <span>
-                    {lez.stato === 'rimandata' && lez.riprogrammata ? '🔄 Lezione riprogrammata: ' : '📅 '}
+                  <p>
+                    {lez.stato === 'rimandata' && lez.riprogrammata ? '🔄 Lezione riprogrammata:' : '📅'}{' '}
                     {formattaData(lez.data)} ⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula} | 👨‍🏫{' '}
                     {lez.nome_insegnante} {lez.cognome_insegnante}
-                  </span>
+                  </p>
                 )}
               </li>
             ))
@@ -172,6 +164,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
 
