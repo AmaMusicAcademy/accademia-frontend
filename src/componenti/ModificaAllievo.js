@@ -2,24 +2,26 @@ import React, { useState } from 'react';
 
 const ModificaAllievo = ({ allievo, apiBaseUrl, onClose, aggiornaLista }) => {
   const [formData, setFormData] = useState({
-    nome: allievo.nome || '',
-    cognome: allievo.cognome || '',
-    email: allievo.email || '',
-    telefono: allievo.telefono || '',
-    data_iscrizione: allievo.data_iscrizione || '',
+    nome: allievo.nome,
+    cognome: allievo.cognome,
+    email: allievo.email,
+    telefono: allievo.telefono,
+    data_iscrizione: allievo.data_iscrizione ? allievo.data_iscrizione.slice(0, 10) : '',
     quota_mensile: allievo.quota_mensile || ''
   });
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
     try {
       const res = await fetch(`${apiBaseUrl}/allievi/${allievo.id}`, {
         method: 'PUT',
@@ -27,71 +29,42 @@ const ModificaAllievo = ({ allievo, apiBaseUrl, onClose, aggiornaLista }) => {
         body: JSON.stringify(formData)
       });
 
-      if (!res.ok) throw new Error('Errore salvataggio');
+      if (!res.ok) throw new Error('Errore aggiornamento allievo');
+      setSuccess('Aggiornato con successo');
 
-      alert('Allievo aggiornato con successo');
-      if (aggiornaLista) aggiornaLista();
-      if (onClose) onClose();
+      if (typeof aggiornaLista === 'function') {
+        await aggiornaLista();
+      }
+
+      setTimeout(() => {
+        onClose();
+      }, 1000);
     } catch (err) {
       console.error(err);
-      alert('Errore durante la modifica');
+      setError('Errore durante l'aggiornamento');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginTop: 10, marginBottom: 20 }}>
-      <input
-        name="nome"
-        placeholder="Nome"
-        value={formData.nome}
-        onChange={handleChange}
-        required
-        style={{ marginRight: 10 }}
-      />
-      <input
-        name="cognome"
-        placeholder="Cognome"
-        value={formData.cognome}
-        onChange={handleChange}
-        required
-        style={{ marginRight: 10 }}
-      />
-      <input
-        name="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={handleChange}
-        style={{ marginRight: 10 }}
-      />
-      <input
-        name="telefono"
-        placeholder="Telefono"
-        value={formData.telefono}
-        onChange={handleChange}
-        style={{ marginRight: 10 }}
-      />
-      <input
-        name="data_iscrizione"
-        type="date"
-        value={formData.data_iscrizione}
-        onChange={handleChange}
-        style={{ marginRight: 10 }}
-      />
-      <input
-        name="quota_mensile"
-        type="number"
-        placeholder="Quota (€)"
-        value={formData.quota_mensile}
-        onChange={handleChange}
-        style={{ marginRight: 10 }}
-        min="0"
-      />
-      <button type="submit">💾 Salva</button>
-      <button type="button" onClick={onClose} style={{ marginLeft: 10 }}>❌ Annulla</button>
-    </form>
+    <div style={{ marginTop: 10, marginBottom: 10, padding: 10, border: '1px solid #ccc' }}>
+      <h4>Modifica Allievo</h4>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {success && <p style={{ color: 'green' }}>{success}</p>}
+      <form onSubmit={handleSubmit}>
+        <input name="nome" value={formData.nome} onChange={handleChange} placeholder="Nome" required />{' '}
+        <input name="cognome" value={formData.cognome} onChange={handleChange} placeholder="Cognome" required />{' '}
+        <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" />{' '}
+        <input name="telefono" value={formData.telefono} onChange={handleChange} placeholder="Telefono" />{' '}
+        <input name="data_iscrizione" type="date" value={formData.data_iscrizione} onChange={handleChange} />{' '}
+        <input name="quota_mensile" type="number" step="0.01" value={formData.quota_mensile} onChange={handleChange} placeholder="Quota mensile (€)" />{' '}
+        <button type="submit">Salva</button>{' '}
+        <button type="button" onClick={onClose}>Annulla</button>
+      </form>
+    </div>
   );
 };
 
 export default ModificaAllievo;
+
 
 
