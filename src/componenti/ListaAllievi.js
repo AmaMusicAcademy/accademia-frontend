@@ -68,14 +68,6 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
               />
             </div>
 
-
-            <StatoPagamenti
-  allievoId={a.id}
-  apiBaseUrl={apiBaseUrl}
-  onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
-  hidden
-/>
-
               {/* Badge di stato */}
               <div className={`absolute top-2 right-2 text-xs text-white px-2 py-1 rounded-full ${statoBadge.className}`}>
                 {statoBadge.label}
