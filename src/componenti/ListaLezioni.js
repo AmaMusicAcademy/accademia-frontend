@@ -3,11 +3,10 @@ import { Link } from 'react-router-dom';
 
 const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
-function ListaLezioni({ idInsegnante }) {
+function ListaLezioni({ idInsegnante, nome, cognome }) {
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const [dataDa, setDataDa] = useState('');
   const [dataA, setDataA] = useState('');
 
@@ -89,47 +88,50 @@ function ListaLezioni({ idInsegnante }) {
   };
 
   return (
-    <div>
-      <h3>Lezioni di Insegnante #{idInsegnante}</h3>
-      <div style={{ marginBottom: 10 }}>
+    <div className="p-4">
+      <h2 className="text-lg font-semibold text-primary mb-2">
+        📋 Lezioni di {nome} {cognome}
+      </h2>
+
+      <div className="mb-4 flex flex-wrap gap-2 text-sm">
         <label>
           Da: <input type="date" value={dataDa} onChange={e => setDataDa(e.target.value)} />
-        </label>{' '}
+        </label>
         <label>
           A: <input type="date" value={dataA} onChange={e => setDataA(e.target.value)} />
         </label>
       </div>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-600">{error}</p>}
       {loading ? (
-        <p>Caricamento lezioni...</p>
+        <p className="text-gray-500">Caricamento lezioni...</p>
       ) : lezioniFiltrate.length === 0 ? (
-        <p>Nessuna lezione trovata.</p>
+        <p className="text-gray-500">Nessuna lezione trovata.</p>
       ) : (
-        <table border="1" cellPadding="6" style={{ width: '100%', marginTop: 10 }}>
+        <table className="w-full text-sm border">
           <thead>
-            <tr>
-              <th>Data</th>
-              <th>Ora Inizio</th>
-              <th>Ora Fine</th>
-              <th>Aula</th>
-              <th>Allievo</th>
-              <th>Stato</th>
-              <th>Azioni</th>
+            <tr className="bg-gray-100 text-left">
+              <th className="p-2">Data</th>
+              <th className="p-2">Ora Inizio</th>
+              <th className="p-2">Ora Fine</th>
+              <th className="p-2">Aula</th>
+              <th className="p-2">Allievo</th>
+              <th className="p-2">Stato</th>
+              <th className="p-2">Azioni</th>
             </tr>
           </thead>
           <tbody>
             {lezioniFiltrate.map(lez => (
-              <tr key={lez.id}>
-                <td>{formatDate(lez.start)}</td>
-                <td>{formatTime(lez.start)}</td>
-                <td>{formatTime(lez.end)}</td>
-                <td>{lez.aula || '-'}</td>
-                <td>{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
-                <td style={{ color: getStatoColor(lez.stato), fontWeight: 'bold' }}>
+              <tr key={lez.id} className="border-t">
+                <td className="p-2">{formatDate(lez.start)}</td>
+                <td className="p-2">{formatTime(lez.start)}</td>
+                <td className="p-2">{formatTime(lez.end)}</td>
+                <td className="p-2">{lez.aula || '-'}</td>
+                <td className="p-2">{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
+                <td className="p-2 font-bold" style={{ color: getStatoColor(lez.stato) }}>
                   {lez.stato}
                 </td>
-                <td>
+                <td className="p-2">
                   <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
                   <button
                     onClick={() => handleAnnulla(lez)}
@@ -148,6 +150,7 @@ function ListaLezioni({ idInsegnante }) {
 }
 
 export default ListaLezioni;
+
 
 
 

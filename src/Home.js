@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import CalendarioLezioni from './CalendarioLezioni';
 import ListaLezioni from './componenti/ListaLezioni';
+import ListaInsegnanti from './componenti/ListaInsegnanti';
 
 const API_URL = 'https://app-docenti.onrender.com/api/insegnanti';
 
@@ -66,7 +67,7 @@ function App() {
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Errore nella cancellazione insegnante');
       setInsegnanti((prev) => prev.filter((i) => i.id !== id));
-      if (insegnanteSelezionato === id) setInsegnanteSelezionato(null);
+      if (insegnanteSelezionato?.id === id) setInsegnanteSelezionato(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -79,19 +80,19 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 800, margin: 'auto', padding: 20 }}>
-      <h1>Gestione Insegnanti</h1>
+    <div className="max-w-xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Gestione Insegnanti</h1>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-600 mb-2">{error}</p>}
 
-      <form onSubmit={handleAdd} style={{ marginBottom: 20 }}>
+      <form onSubmit={handleAdd} className="mb-6 flex flex-wrap gap-2">
         <input
           type="text"
           placeholder="Nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           disabled={loading}
-          style={{ marginRight: 10 }}
+          className="p-2 border rounded w-full sm:w-auto flex-1"
         />
         <input
           type="text"
@@ -99,53 +100,45 @@ function App() {
           value={cognome}
           onChange={(e) => setCognome(e.target.value)}
           disabled={loading}
-          style={{ marginRight: 10 }}
+          className="p-2 border rounded w-full sm:w-auto flex-1"
         />
-        <button type="submit" disabled={loading}>Aggiungi</button>
+        <button type="submit" disabled={loading} className="bg-primary text-white px-4 py-2 rounded">
+          Aggiungi
+        </button>
       </form>
 
-      <h2>Lista Insegnanti</h2>
+      <h2 className="text-xl font-semibold mb-2">Lista Insegnanti</h2>
       {loading ? (
         <p>Caricamento...</p>
       ) : (
-        <ul>
-          {insegnanti.length === 0 ? (
-            <li>Nessun insegnante trovato</li>
-          ) : (
-            insegnanti.map(({ id, nome, cognome }) => (
-              <li key={id} style={{ marginBottom: 8 }}>
-                <strong
-                  onClick={() => {
-                    setInsegnanteSelezionato(id);
-                    setVisualizzazione('lista'); // resetta sempre su lista all'inizio
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {nome} {cognome}
-                </strong>{' '}
-                <button
-                  onClick={() => handleDelete(id)}
-                  disabled={loading}
-                  style={{ color: 'red' }}
-                >
-                  Elimina
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
+        <ListaInsegnanti
+          insegnanti={insegnanti}
+          onSeleziona={(ins) => {
+            setInsegnanteSelezionato(ins);
+            setVisualizzazione('lista');
+          }}
+          onElimina={handleDelete}
+        />
       )}
 
       {insegnanteSelezionato && (
-        <div style={{ marginTop: 40 }}>
-          <button onClick={toggleVisualizzazione} style={{ marginBottom: 10 }}>
+        <div className="mt-8">
+          <button onClick={toggleVisualizzazione} className="mb-4 text-primary underline text-sm">
             {visualizzazione === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
           </button>
 
           {visualizzazione === 'lista' ? (
-            <ListaLezioni idInsegnante={insegnanteSelezionato} />
+            <ListaLezioni
+              idInsegnante={insegnanteSelezionato.id}
+              nome={insegnanteSelezionato.nome}
+              cognome={insegnanteSelezionato.cognome}
+            />
           ) : (
-            <CalendarioLezioni idInsegnante={insegnanteSelezionato} />
+            <CalendarioLezioni
+              idInsegnante={insegnanteSelezionato.id}
+              nome={insegnanteSelezionato.nome}
+              cognome={insegnanteSelezionato.cognome}
+            />
           )}
         </div>
       )}

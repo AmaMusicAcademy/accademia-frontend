@@ -3,7 +3,7 @@ import CalendarioFull from './componenti/CalendarioFull';
 
 const API_URL = 'https://app-docenti.onrender.com/api/lezioni';
 
-function CalendarioLezioni({ idInsegnante }) {
+function CalendarioLezioni({ idInsegnante, nome, cognome }) {
   const [lezioni, setLezioni] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,7 @@ function CalendarioLezioni({ idInsegnante }) {
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold text-primary mb-2">
-        📚 Lezioni dell'insegnante #{idInsegnante}
+        📚 Lezioni di {nome} {cognome}
       </h2>
 
       {error && (
@@ -55,5 +55,6 @@ function CalendarioLezioni({ idInsegnante }) {
 }
 
 export default CalendarioLezioni;
+
 
 
