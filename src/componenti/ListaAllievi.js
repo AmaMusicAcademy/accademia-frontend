@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import LezioniFuture from './LezioniFuture';
 import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
+import ModificaAllievo from './ModificaAllievo';
 
 const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
+  const [editingAllievo, setEditingAllievo] = useState(null);
+  const [reload, setReload] = useState(false);
 
   useEffect(() => {
     const fetchPagamenti = async () => {
@@ -28,7 +31,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
     };
 
     fetchPagamenti();
-  }, [allievi, apiBaseUrl]);
+  }, [allievi, apiBaseUrl, reload]);
 
   const allieviFiltrati = allievi.filter(a => {
     const filtroStatoMatch = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
@@ -37,6 +40,11 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
       (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
     return filtroStatoMatch && filtroPagamentiMatch;
   });
+
+  const handleCloseModifica = () => {
+    setEditingAllievo(null);
+    setReload(prev => !prev);
+  };
 
   return (
     <div>
@@ -75,23 +83,38 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
               )}
             </div>
 
-            <div>
-              Email: {a.email || 'N/A'} – Tel: {a.telefono || 'N/A'}<br />
-              Stato: <strong>{a.attivo ? 'Attivo' : 'Non attivo'}</strong>{' '}
-              <button onClick={() => toggleAttivo(a.id, a.attivo)} style={{ marginLeft: 10 }}>
-                {a.attivo ? 'Disattiva' : 'Attiva'}
-              </button>
-              <button
-                onClick={() => {
-                  if (window.confirm(`Sei sicuro di voler eliminare ${a.nome} ${a.cognome}?`)) {
-                    eliminaAllievo(a.id);
-                  }
-                }}
-                style={{ marginLeft: 10, color: 'red' }}
-              >
-                Elimina
-              </button>
-            </div>
+            {editingAllievo === a.id ? (
+              <ModificaAllievo
+                allievo={a}
+                apiBaseUrl={apiBaseUrl}
+                onClose={handleCloseModifica}
+              />
+            ) : (
+              <div>
+                Email: {a.email || 'N/A'} – Tel: {a.telefono || 'N/A'}<br />
+                Quota mensile: <strong>{a.quota_mensile ? `${a.quota_mensile}€` : 'N/D'}</strong><br />
+                Stato: <strong>{a.attivo ? 'Attivo' : 'Non attivo'}</strong>{' '}
+                <button onClick={() => toggleAttivo(a.id, a.attivo)} style={{ marginLeft: 10 }}>
+                  {a.attivo ? 'Disattiva' : 'Attiva'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Sei sicuro di voler eliminare ${a.nome} ${a.cognome}?`)) {
+                      eliminaAllievo(a.id);
+                    }
+                  }}
+                  style={{ marginLeft: 10, color: 'red' }}
+                >
+                  Elimina
+                </button>
+                <button
+                  onClick={() => setEditingAllievo(a.id)}
+                  style={{ marginLeft: 10 }}
+                >
+                  ✏️ Modifica
+                </button>
+              </div>
+            )}
 
             <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
             <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
@@ -104,5 +127,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => 
 };
 
 export default ListaAllievi;
+
+
 
 
