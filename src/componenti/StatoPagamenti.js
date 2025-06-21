@@ -56,23 +56,22 @@ const StatoPagamenti = ({ allievoId, apiBaseUrl, onPagamentoCorrente }) => {
   }, []);
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <strong>Pagamenti {anno}:</strong>
-      <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 5 }}>
+    <div className="mt-4">
+      <h3 className="text-base font-semibold text-gray-700 mb-2">
+        Pagamenti {anno}:
+      </h3>
+      <div className="flex flex-wrap gap-2">
         {MesiNomi.map((nome, idx) => {
           const pagato = isPagato(idx + 1);
           return (
             <button
               key={idx}
               onClick={() => togglePagamento(idx + 1)}
-              style={{
-                margin: 2,
-                padding: '5px 8px',
-                borderRadius: 4,
-                border: '1px solid #ccc',
-                backgroundColor: pagato ? 'lightgreen' : '#f8d7da',
-                cursor: 'pointer'
-              }}
+              className={`px-3 py-1 text-sm rounded border shadow-sm ${
+                pagato
+                  ? 'bg-green-100 text-green-800 border-green-400'
+                  : 'bg-red-100 text-red-700 border-red-300'
+              }`}
               title={pagato ? 'Pagato' : 'Non pagato'}
             >
               {nome}
