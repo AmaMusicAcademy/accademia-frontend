@@ -4,6 +4,13 @@ import LezioniFuture from './LezioniFuture';
 import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 
+
+  // ⬆️ dentro ListaAllievi
+
+const aggiornaPagamento = (idAllievo, stato) => {
+  setPagamentiCorrenti(prev => ({ ...prev, [idAllievo]: stato }));
+};
+
 const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggiornaAllievi }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
@@ -18,6 +25,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
       || (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
     return matchStato && matchPagamento;
   });
+
 
   return (
     <div className="p-4">
