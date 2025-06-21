@@ -92,6 +92,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
               />
             ) : (
               <div>
+                Data iscrizione: <strong>{new Date(a.data_iscrizione).toLocaleDateString('it-IT')}</strong><br />
                 Email: {a.email || 'N/A'} – Tel: {a.telefono || 'N/A'}<br />
                 Quota mensile: <strong>{a.quota_mensile ? `${a.quota_mensile}€` : 'N/D'}</strong><br />
                 Stato: <strong>{a.attivo ? 'Attivo' : 'Non attivo'}</strong>{' '}
