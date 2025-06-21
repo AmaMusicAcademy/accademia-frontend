@@ -13,7 +13,6 @@ const CalendarioFull = ({ lezioni }) => {
     navigate(`/lezioni/${lezioneId}/modifica`);
   };
 
-  // 👉 Colora gli eventi in base allo stato
   const eventDidMount = (info) => {
     const stato = info.event.extendedProps.stato;
 
@@ -30,8 +29,10 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
+    <div className="bg-white rounded-lg shadow p-4">
+      <h2 className="text-lg font-semibold text-primary mb-4">
+        📅 Calendario Lezioni
+      </h2>
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
@@ -39,7 +40,7 @@ const CalendarioFull = ({ lezioni }) => {
         selectable={true}
         events={lezioni}
         eventClick={handleEventClick}
-        eventDidMount={eventDidMount} // <-- AGGIUNTO QUI
+        eventDidMount={eventDidMount}
         slotMinTime="08:00:00"
         slotMaxTime="22:00:00"
         locale="it"
@@ -52,5 +53,6 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
 
 

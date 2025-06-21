@@ -16,8 +16,6 @@ function CalendarioLezioni({ idInsegnante }) {
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
         const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
-console.log('Lezioni filtrate:', filtered);
-        
         setLezioni(filtered);
       } catch (err) {
         setError(err.message);
@@ -32,21 +30,30 @@ console.log('Lezioni filtrate:', filtered);
   }, [idInsegnante]);
 
   return (
-    <>
-      <h2>Lezioni dell'insegnante #{idInsegnante}</h2>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="p-4">
+      <h2 className="text-lg font-semibold text-primary mb-2">
+        📚 Lezioni dell'insegnante #{idInsegnante}
+      </h2>
+
+      {error && (
+        <div className="text-red-600 bg-red-100 border border-red-200 rounded p-2 mb-2 text-sm">
+          {error}
+        </div>
+      )}
+
       {loading ? (
-        <p>Caricamento in corso...</p>
+        <p className="text-sm text-gray-600">Caricamento in corso...</p>
       ) : (
         lezioni.length > 0 ? (
           <CalendarioFull lezioni={lezioni} />
         ) : (
-          <p>Nessuna lezione trovata.</p>
+          <p className="text-sm text-gray-500">Nessuna lezione trovata.</p>
         )
       )}
-    </>
+    </div>
   );
 }
 
 export default CalendarioLezioni;
+
 
