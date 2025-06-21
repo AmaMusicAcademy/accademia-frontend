@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
@@ -29,34 +28,33 @@ const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
   }, [intervallo]);
 
   return (
-    <div style={{ marginTop: 20 }}>
-      <h3>📊 Riepilogo lezioni</h3>
-      <label>
-        Da:{' '}
+    <div className="mt-4">
+      <h3 className="text-base font-semibold text-gray-700 mb-2">📊 Riepilogo lezioni</h3>
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <input
           type="date"
           value={intervallo.start}
           onChange={(e) => setIntervallo({ ...intervallo, start: e.target.value })}
+          className="p-2 border rounded"
         />
-      </label>{' '}
-      <label>
-        A:{' '}
         <input
           type="date"
           value={intervallo.end}
           onChange={(e) => setIntervallo({ ...intervallo, end: e.target.value })}
+          className="p-2 border rounded"
         />
-      </label>
+      </div>
 
-      <div style={{ marginTop: 15 }}>
-        ✅ Lezioni svolte: {conteggio.svolte} <br />
-        ❌ Lezioni annullate: {conteggio.annullate} <br />
-        🔁 Lezioni rimandate da riprogrammare: {conteggio.rimandate} <br />
-        🔄 Lezioni riprogrammate: {conteggio.riprogrammate}
+      <div className="text-sm space-y-1 text-gray-800">
+        <p>✅ Lezioni svolte: {conteggio.svolte}</p>
+        <p>❌ Lezioni annullate: {conteggio.annullate}</p>
+        <p>🔁 Rimandate: {conteggio.rimandate}</p>
+        <p>🔄 Riprogrammate: {conteggio.riprogrammate}</p>
       </div>
     </div>
   );
 };
 
 export default LezioniEffettuate;
+
 
