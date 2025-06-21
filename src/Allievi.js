@@ -14,9 +14,10 @@ const Allievi = () => {
     quota_mensile: '',
     attivo: true
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [mostraForm, setMostraForm] = useState(false);
+  const [aggiunto, setAggiunto] = useState(false);
 
   useEffect(() => {
     fetchAllievi();
@@ -91,6 +92,9 @@ const Allievi = () => {
 
       setSuccess('Allievo aggiunto con successo');
       await fetchAllievi();
+      setMostraForm(false);
+      setAggiunto(true);
+      setTimeout(() => setAggiunto(false), 2000);
     } catch (err) {
       setError(err.message);
     }
@@ -100,71 +104,94 @@ const Allievi = () => {
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-xl font-bold mb-4 text-primary">Gestione Allievi</h1>
 
+      <button
+        onClick={() => {
+          setMostraForm(prev => !prev);
+          setAggiunto(false);
+        }}
+        className={`mb-4 text-white px-4 py-2 rounded transition-all duration-300 ${
+          aggiunto ? 'bg-green-500 animate-pulse' : 'bg-primary'
+        }`}
+        style={!aggiunto ? { backgroundColor: '#ef4d48' } : {}}
+      >
+        {mostraForm
+          ? '✖️ Chiudi'
+          : aggiunto
+          ? '✅ Aggiunto'
+          : '➕ Aggiungi allievo'}
+      </button>
+
       {error && <p className="text-red-600 mb-2">{error}</p>}
       {success && <p className="text-green-600 mb-2">{success}</p>}
 
-      <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg shadow space-y-4 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input
-            name="nome"
-            placeholder="Nome"
-            value={formData.nome}
-            onChange={handleChange}
-            required
-            className="p-2 border rounded"
-          />
-          <input
-            name="cognome"
-            placeholder="Cognome"
-            value={formData.cognome}
-            onChange={handleChange}
-            required
-            className="p-2 border rounded"
-          />
-          <input
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="p-2 border rounded"
-          />
-          <input
-            name="telefono"
-            placeholder="Telefono"
-            value={formData.telefono}
-            onChange={handleChange}
-            className="p-2 border rounded"
-          />
-          <input
-            name="data_iscrizione"
-            type="date"
-            value={formData.data_iscrizione}
-            onChange={handleChange}
-            className="p-2 border rounded"
-          />
-          <input
-            name="quota_mensile"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Quota mensile (€)"
-            value={formData.quota_mensile}
-            onChange={handleChange}
-            required
-            className="p-2 border rounded"
-          />
-        </div>
+      <div
+        className={`transition-all duration-300 overflow-hidden ${
+          mostraForm ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg shadow space-y-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              name="nome"
+              placeholder="Nome"
+              value={formData.nome}
+              onChange={handleChange}
+              required
+              className="p-2 border rounded"
+            />
+            <input
+              name="cognome"
+              placeholder="Cognome"
+              value={formData.cognome}
+              onChange={handleChange}
+              required
+              className="p-2 border rounded"
+            />
+            <input
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className="p-2 border rounded"
+            />
+            <input
+              name="telefono"
+              placeholder="Telefono"
+              value={formData.telefono}
+              onChange={handleChange}
+              className="p-2 border rounded"
+            />
+            <input
+              name="data_iscrizione"
+              type="date"
+              value={formData.data_iscrizione}
+              onChange={handleChange}
+              className="p-2 border rounded"
+            />
+            <input
+              name="quota_mensile"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Quota mensile (€)"
+              value={formData.quota_mensile}
+              onChange={handleChange}
+              required
+              className="p-2 border rounded"
+            />
+          </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-primary text-white px-4 py-2 rounded"
-            style={{ backgroundColor: '#ef4d48' }}
-          >
-            ➕ Aggiungi
-          </button>
-        </div>
-      </form>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="bg-primary text-white px-4 py-2 rounded"
+              style={{ backgroundColor: '#ef4d48' }}
+            >
+              Salva
+            </button>
+          </div>
+        </form>
+      </div>
 
       <ListaAllievi
         allievi={allievi}
@@ -178,6 +205,7 @@ const Allievi = () => {
 };
 
 export default Allievi;
+
 
 
 
