@@ -5,48 +5,41 @@ import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 
 const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggiornaAllievi }) => {
-  const [filtroStato, setFiltroStato] = useState('tutti');
-  const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
+  const [filtroCombinato, setFiltroCombinato] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
   const [espandiDettagli, setEspandiDettagli] = useState(null);
 
   const aggiornaPagamento = (idAllievo, stato) => {
-  setPagamentiCorrenti(prev => ({ ...prev, [idAllievo]: stato }));
-};
+    setPagamentiCorrenti(prev => ({ ...prev, [idAllievo]: stato }));
+  };
 
   const allieviFiltrati = allievi.filter(a => {
-    const matchStato = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
-    const matchPagamento = filtroPagamenti === 'tutti'
-      || (filtroPagamenti === 'paganti' && pagamentiCorrenti[a.id])
-      || (filtroPagamenti === 'morosi' && !pagamentiCorrenti[a.id]);
-    return matchStato && matchPagamento;
+    switch (filtroCombinato) {
+      case 'attivi':
+        return a.attivo && pagamentiCorrenti[a.id] === true;
+      case 'nonattivi':
+        return !a.attivo;
+      case 'noninregola':
+        return a.attivo && pagamentiCorrenti[a.id] === false;
+      default:
+        return true;
+    }
   });
-
 
   return (
     <div className="p-4">
       <div className="mb-4">
-        <label className="block text-sm font-medium">Filtro stato:</label>
+        <label className="block text-sm font-medium">Filtro allievi:</label>
         <select
-          value={filtroStato}
-          onChange={e => setFiltroStato(e.target.value)}
+          value={filtroCombinato}
+          onChange={e => setFiltroCombinato(e.target.value)}
           className="w-full mt-1 p-2 border rounded"
         >
           <option value="tutti">Tutti</option>
-          <option value="attivi">Solo attivi</option>
+          <option value="attivi">Solo attivi (in regola)</option>
           <option value="nonattivi">Solo non attivi</option>
-        </select>
-
-        <label className="block text-sm font-medium mt-4">Filtro pagamenti:</label>
-        <select
-          value={filtroPagamenti}
-          onChange={e => setFiltroPagamenti(e.target.value)}
-          className="w-full mt-1 p-2 border rounded"
-        >
-          <option value="tutti">Tutti</option>
-          <option value="paganti">In regola</option>
-          <option value="morosi">Non in regola</option>
+          <option value="noninregola">Solo non in regola</option>
         </select>
       </div>
 
@@ -124,10 +117,10 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
                     <div className="mt-4 space-y-2">
                       <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
                       <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
-                      <StatoPagamenti 
-                      allievoId={a.id} 
-                      apiBaseUrl={apiBaseUrl}
-                      onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
+                      <StatoPagamenti
+                        allievoId={a.id}
+                        apiBaseUrl={apiBaseUrl}
+                        onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
                       />
                     </div>
                   )}
@@ -142,6 +135,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
 };
 
 export default ListaAllievi;
+
 
 
 
