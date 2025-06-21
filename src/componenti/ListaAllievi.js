@@ -15,17 +15,23 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
   };
 
   const allieviFiltrati = allievi.filter(a => {
-    switch (filtroCombinato) {
-      case 'attivi':
-        return a.attivo && pagamentiCorrenti[a.id] === true;
-      case 'nonattivi':
-        return !a.attivo;
-      case 'noninregola':
-        return a.attivo && pagamentiCorrenti[a.id] === false;
-      default:
-        return true;
-    }
-  });
+  const pagamento = pagamentiCorrenti[a.id];
+
+  if (filtroCombinato === 'attivi') {
+    return a.attivo && pagamento === true;
+  }
+
+  if (filtroCombinato === 'nonattivi') {
+    return !a.attivo;
+  }
+
+  if (filtroCombinato === 'noninregola') {
+    return a.attivo && pagamento === false;
+  }
+
+  return true;
+});
+
 
   return (
     <div className="p-4">
