@@ -4,11 +4,21 @@ import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 import ModificaAllievo from './ModificaAllievo';
 
-const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, fetchAllievi }) => {
+const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
+
+  const fetchAllievi = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/allievi`);
+      const data = await res.json();
+      // Puoi aggiornare allievi da qui se necessario tramite prop o stato condiviso
+    } catch (err) {
+      console.error("Errore nel ricaricamento allievi:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchPagamenti = async () => {
@@ -85,6 +95,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, fetch
                   setEditingAllievo(null);
                   fetchAllievi();
                 }}
+                aggiornaLista={fetchAllievi}
               />
             ) : (
               <div>
@@ -124,6 +135,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, fetch
 };
 
 export default ListaAllievi;
+
 
 
 
