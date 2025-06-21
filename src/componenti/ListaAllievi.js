@@ -4,19 +4,16 @@ import LezioniFuture from './LezioniFuture';
 import LezioniEffettuate from './LezioniEffettuate';
 import StatoPagamenti from './StatoPagamenti';
 
-
-  // ⬆️ dentro ListaAllievi
-
-const aggiornaPagamento = (idAllievo, stato) => {
-  setPagamentiCorrenti(prev => ({ ...prev, [idAllievo]: stato }));
-};
-
 const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggiornaAllievi }) => {
   const [filtroStato, setFiltroStato] = useState('tutti');
   const [filtroPagamenti, setFiltroPagamenti] = useState('tutti');
   const [pagamentiCorrenti, setPagamentiCorrenti] = useState({});
   const [editingAllievo, setEditingAllievo] = useState(null);
   const [espandiDettagli, setEspandiDettagli] = useState(null);
+
+  const aggiornaPagamento = (idAllievo, stato) => {
+  setPagamentiCorrenti(prev => ({ ...prev, [idAllievo]: stato }));
+};
 
   const allieviFiltrati = allievi.filter(a => {
     const matchStato = filtroStato === 'tutti' || (filtroStato === 'attivi' ? a.attivo : !a.attivo);
@@ -127,7 +124,11 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
                     <div className="mt-4 space-y-2">
                       <LezioniFuture allievoId={a.id} apiBaseUrl={apiBaseUrl} />
                       <LezioniEffettuate allievoId={a.id} apiBaseUrl={apiBaseUrl} />
-                      <StatoPagamenti allievoId={a.id} apiBaseUrl={apiBaseUrl} />
+                      <StatoPagamenti 
+                      allievoId={a.id} 
+                      apiBaseUrl={apiBaseUrl}
+                      onPagamentoCorrente={(pagato) => aggiornaPagamento(a.id, pagato)}
+                      />
                     </div>
                   )}
                 </>
