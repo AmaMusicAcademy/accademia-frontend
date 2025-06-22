@@ -38,34 +38,35 @@ const CalendarioFull = ({ lezioni }) => {
 
   return (
     <div className="p-2 sm:p-4 w-full overflow-hidden">
-      <h2 className="text-lg sm:text-xl font-bold mb-4">Calendario Lezioni</h2>
-      <div className="w-full">
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={isMobile ? 'listDay' : 'timeGridWeek'}
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
-          }}
-          slotMinTime="07:00:00"
-          slotMaxTime="22:00:00"
-          slotLabelFormat={{
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          }}
-          events={lezioni}
-          eventClick={handleEventClick}
-          eventDidMount={eventDidMount}
-          locale="it"
-          height="auto"
-          nowIndicator={true}
-          contentHeight="auto"
-        />
-      </div>
-    </div>
+  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">🗓️ Calendario Lezioni</h2>
+  <div className="w-full">
+    <FullCalendar
+      ref={calendarRef}
+      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+      initialView={isMobile ? 'listDay' : 'timeGridWeek'}
+      headerToolbar={{
+        left: 'prev,next today',
+        center: 'title',
+        right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
+      }}
+      slotMinTime="07:00:00"
+      slotMaxTime="22:00:00"
+      slotLabelFormat={{
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }}
+      events={lezioni}
+      eventClick={handleEventClick}
+      eventDidMount={eventDidMount}
+      locale="it"
+      height="auto"
+      nowIndicator={true}
+      contentHeight="auto"
+      aspectRatio={isMobile ? 0.8 : 1.5} // aiuta ad adattarsi allo spazio
+    />
+  </div>
+</div>
   );
 };
 
