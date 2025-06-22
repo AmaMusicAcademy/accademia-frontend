@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -9,6 +9,14 @@ import { useNavigate } from 'react-router-dom';
 const CalendarioFull = ({ lezioni }) => {
   const navigate = useNavigate();
   const calendarRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+  // Aggiorna stato se cambia larghezza finestra
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleEventClick = (info) => {
     const lezioneId = info.event.id;
@@ -29,36 +37,25 @@ const CalendarioFull = ({ lezioni }) => {
     }
   };
 
-  const handleDateChange = (e) => {
-    const calendarApi = calendarRef.current?.getApi();
-    if (calendarApi) {
-      const date = new Date(e.target.value);
-      calendarApi.gotoDate(date);
-    }
-  };
-
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
-
-      {/* Selettore Data */}
-      <div className="mb-4">
-        <label className="mr-2 font-medium text-sm">📅 Vai a settimana:</label>
-        <input
-          type="date"
-          onChange={handleDateChange}
-          className="p-1 border rounded text-sm"
-        />
-      </div>
-
+  <div className="p-4 overflow-x-auto max-w-full">
+    <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
+    <div className="min-w-[600px]">
       <FullCalendar
         ref={calendarRef}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-        initialView="listWeek"
+        initialView={isMobile ? 'listWeek' : 'timeGridWeek'}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridMonth,timeGridWeek,listWeek'
+          right: isMobile ? 'listWeek' : 'dayGridMonth,timeGridWeek,listWeek',
+        }}
+        slotMinTime="07:00:00"
+        slotMaxTime="22:00:00"
+        slotLabelFormat={{
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
         }}
         events={lezioni}
         eventClick={handleEventClick}
@@ -66,12 +63,16 @@ const CalendarioFull = ({ lezioni }) => {
         locale="it"
         height="auto"
         nowIndicator={true}
+        className="w-full text-sm"
       />
     </div>
-  );
+  </div>
+);
+
 };
 
 export default CalendarioFull;
+
 
 
 
