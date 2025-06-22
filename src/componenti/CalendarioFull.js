@@ -37,17 +37,17 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   return (
-    <div className="p-2 w-full">
-      <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
-      <div className="w-full max-w-screen-lg mx-auto">
+    <div className="p-2 sm:p-4 w-full overflow-hidden">
+      <h2 className="text-lg sm:text-xl font-bold mb-4">Calendario Lezioni</h2>
+      <div className="w-full">
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={isMobile ? 'listWeek' : 'timeGridWeek'}
+          initialView={isMobile ? 'listDay' : 'timeGridWeek'}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
-            right: isMobile ? 'listWeek' : 'dayGridMonth,timeGridWeek,listWeek',
+            right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
           }}
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
@@ -62,6 +62,7 @@ const CalendarioFull = ({ lezioni }) => {
           locale="it"
           height="auto"
           nowIndicator={true}
+          contentHeight="auto"
         />
       </div>
     </div>
@@ -69,6 +70,7 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
 
 
 
