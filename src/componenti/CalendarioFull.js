@@ -11,7 +11,6 @@ const CalendarioFull = ({ lezioni }) => {
   const calendarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
-  // Aggiorna stato se cambia larghezza finestra
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
     window.addEventListener('resize', handleResize);
@@ -38,37 +37,35 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   return (
-  <div className="p-4 overflow-x-auto max-w-full">
-    <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
-    <div className="min-w-[600px]">
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-        initialView={isMobile ? 'listWeek' : 'timeGridWeek'}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: isMobile ? 'listWeek' : 'dayGridMonth,timeGridWeek,listWeek',
-        }}
-        slotMinTime="07:00:00"
-        slotMaxTime="22:00:00"
-        slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }}
-        events={lezioni}
-        eventClick={handleEventClick}
-        eventDidMount={eventDidMount}
-        locale="it"
-        height="auto"
-        nowIndicator={true}
-        className="w-full text-sm"
-      />
+    <div className="p-2 w-full">
+      <h2 className="text-xl font-bold mb-4">Calendario Lezioni</h2>
+      <div className="w-full max-w-screen-lg mx-auto">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          initialView={isMobile ? 'listWeek' : 'timeGridWeek'}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: 'title',
+            right: isMobile ? 'listWeek' : 'dayGridMonth,timeGridWeek,listWeek',
+          }}
+          slotMinTime="07:00:00"
+          slotMaxTime="22:00:00"
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }}
+          events={lezioni}
+          eventClick={handleEventClick}
+          eventDidMount={eventDidMount}
+          locale="it"
+          height="auto"
+          nowIndicator={true}
+        />
+      </div>
     </div>
-  </div>
-);
-
+  );
 };
 
 export default CalendarioFull;

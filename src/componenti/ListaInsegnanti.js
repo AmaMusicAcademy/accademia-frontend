@@ -8,10 +8,10 @@ const ListaInsegnanti = ({ insegnanti, onElimina }) => {
 
   const toggleApertura = (id) => {
     if (insegnanteAperto === id) {
-      setInsegnanteAperto(null); // Chiude se clicchi di nuovo
+      setInsegnanteAperto(null);
     } else {
       setInsegnanteAperto(id);
-      setVisualizzazioneAperta('lista'); // Resetta alla lista
+      setVisualizzazioneAperta('lista');
     }
   };
 
@@ -21,7 +21,7 @@ const ListaInsegnanti = ({ insegnanti, onElimina }) => {
         <p className="text-gray-600 text-sm">Nessun insegnante trovato.</p>
       ) : (
         insegnanti.map((ins) => (
-          <div key={ins.id} className="bg-white rounded-xl shadow-md p-4 relative">
+          <div key={ins.id} className="bg-white rounded-xl shadow-md p-4 relative w-full">
             <h3 className="text-lg font-semibold text-gray-800">
               {ins.nome} {ins.cognome}
             </h3>
@@ -85,4 +85,5 @@ const ListaInsegnanti = ({ insegnanti, onElimina }) => {
 };
 
 export default ListaInsegnanti;
+
 
