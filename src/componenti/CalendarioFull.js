@@ -96,11 +96,11 @@ const CalendarioFull = ({ lezioni }) => {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={isMobile ? 'listDay' : 'timeGridWeek'}
+          initialView="timeGridWeek"
           headerToolbar={{
             left: 'prev,next today',
             center: '',
-            right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
           }}
           slotMinTime="07:00:00"
           slotMaxTime="22:00:00"
