@@ -16,28 +16,20 @@ code {
 @tailwind components;
 @tailwind utilities;
 
-/* Riduce padding e font dei bottoni */
-.fc-custom .fc-button {
-  padding: 2px 6px;
+/* Rimpicciolisce e personalizza i pulsanti della toolbar */
+.fc .fc-button {
+  padding: 0.25rem 0.5rem; /* più piccolo */
   font-size: 0.75rem;
-  border-radius: 4px;
   background-color: #ef4d48;
-  border: none;
   color: white;
-  transition: background-color 0.2s;
-}
-
-.fc-custom .fc-button:hover {
-  background-color: #d93c3a;
-}
-
-.fc-custom .fc-button:disabled {
-  background-color: #ccc;
-  color: #666;
-  cursor: not-allowed;
-}
-
-.fc-custom .fc-button.fc-button-primary {
-  background-color: #ef4d48;
   border: none;
+  border-radius: 4px;
+}
+
+.fc .fc-button:hover {
+  background-color: #d8433f;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #c73732;
 }

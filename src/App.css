@@ -36,3 +36,21 @@
     transform: rotate(360deg);
   }
 }
+
+/* Rimpicciolisce e personalizza i pulsanti della toolbar */
+.fc .fc-button {
+  padding: 0.25rem 0.5rem; /* più piccolo */
+  font-size: 0.75rem;
+  background-color: #ef4d48;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.fc .fc-button:hover {
+  background-color: #d8433f;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #c73732;
+}
