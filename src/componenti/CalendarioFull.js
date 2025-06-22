@@ -40,6 +40,25 @@ const CalendarioFull = ({ lezioni }) => {
     }
   };
 
+  const eventContent = ({ event }) => {
+    const { start, end, extendedProps } = event;
+
+    const formatTime = (date) =>
+      new Intl.DateTimeFormat('it-IT', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+
+    return (
+      <div className="text-sm leading-tight">
+        <div>⏰ {formatTime(start)} - {formatTime(end)}</div>
+        <div className="font-medium">
+          👤 {extendedProps.nome_allievo} {extendedProps.cognome_allievo}
+        </div>
+      </div>
+    );
+  };
+
   const handleDateChange = (e) => {
     const date = e.target.value;
     setSelectedDate(date);
@@ -59,7 +78,6 @@ const CalendarioFull = ({ lezioni }) => {
     <div className="p-2 sm:p-4 w-full overflow-hidden">
       <h2 className="text-lg sm:text-xl font-bold mb-2">🗓️ Calendario Lezioni</h2>
 
-      {/* Selettore data e data corrente */}
       <div className="flex flex-wrap items-center justify-between mb-2 gap-2 text-sm">
         <label className="flex items-center gap-2">
           📅 Vai a data:
@@ -95,6 +113,7 @@ const CalendarioFull = ({ lezioni }) => {
           events={lezioni}
           eventClick={handleEventClick}
           eventDidMount={eventDidMount}
+          eventContent={eventContent}
           datesSet={(arg) => setCurrentDate(arg.start)}
           locale="it"
           nowIndicator={true}
@@ -107,6 +126,7 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
 
 
 
