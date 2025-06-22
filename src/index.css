@@ -15,3 +15,29 @@ code {
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Riduce padding e font dei bottoni */
+.fc-custom .fc-button {
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  background-color: #ef4d48;
+  border: none;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.fc-custom .fc-button:hover {
+  background-color: #d93c3a;
+}
+
+.fc-custom .fc-button:disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.fc-custom .fc-button.fc-button-primary {
+  background-color: #ef4d48;
+  border: none;
+}
