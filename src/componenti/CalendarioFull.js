@@ -94,7 +94,6 @@ const CalendarioFull = ({ lezioni }) => {
 
       <div className="w-full">
         <FullCalendar
-          className="fc-custom"
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
           initialView="timeGridWeek"
