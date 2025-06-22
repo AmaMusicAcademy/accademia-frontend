@@ -51,7 +51,6 @@ const CalendarioFull = ({ lezioni }) => {
 
     return (
       <div className="text-sm leading-tight">
-        <div>⏰ {formatTime(start)} - {formatTime(end)}</div>
         <div className="font-medium">
           👤 {extendedProps.nome_allievo} {extendedProps.cognome_allievo}
         </div>
