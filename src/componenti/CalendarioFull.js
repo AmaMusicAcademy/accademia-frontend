@@ -10,6 +10,10 @@ const CalendarioFull = ({ lezioni }) => {
   const navigate = useNavigate();
   const calendarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -36,41 +40,74 @@ const CalendarioFull = ({ lezioni }) => {
     }
   };
 
+  const handleDateChange = (e) => {
+    const date = e.target.value;
+    setSelectedDate(date);
+    const calendarApi = calendarRef.current.getApi();
+    calendarApi.gotoDate(date);
+  };
+
+  const formatDate = (date) => {
+    return new Intl.DateTimeFormat('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    }).format(date);
+  };
+
   return (
     <div className="p-2 sm:p-4 w-full overflow-hidden">
-  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">🗓️ Calendario Lezioni</h2>
-  <div className="w-full">
-    <FullCalendar
-      ref={calendarRef}
-      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-      initialView={isMobile ? 'listDay' : 'timeGridWeek'}
-      headerToolbar={{
-        left: 'prev,next today',
-        center: 'title',
-        right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
-      }}
-      slotMinTime="07:00:00"
-      slotMaxTime="22:00:00"
-      slotLabelFormat={{
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }}
-      events={lezioni}
-      eventClick={handleEventClick}
-      eventDidMount={eventDidMount}
-      locale="it"
-      height="auto"
-      nowIndicator={true}
-      contentHeight="auto"
-      aspectRatio={isMobile ? 0.8 : 1.5} // aiuta ad adattarsi allo spazio
-    />
-  </div>
-</div>
+      <h2 className="text-lg sm:text-xl font-bold mb-2">🗓️ Calendario Lezioni</h2>
+
+      {/* Selettore data e data corrente */}
+      <div className="flex flex-wrap items-center justify-between mb-2 gap-2 text-sm">
+        <label className="flex items-center gap-2">
+          📅 Vai a data:
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={handleDateChange}
+            className="border p-1 rounded text-sm"
+          />
+        </label>
+        <span className="text-gray-600">
+          📌 Data corrente: <strong>{formatDate(currentDate)}</strong>
+        </span>
+      </div>
+
+      <div className="w-full">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          initialView={isMobile ? 'listDay' : 'timeGridWeek'}
+          headerToolbar={{
+            left: 'prev,next today',
+            center: '',
+            right: isMobile ? 'listDay' : 'dayGridMonth,timeGridWeek,listWeek',
+          }}
+          slotMinTime="07:00:00"
+          slotMaxTime="22:00:00"
+          slotLabelFormat={{
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }}
+          events={lezioni}
+          eventClick={handleEventClick}
+          eventDidMount={eventDidMount}
+          datesSet={(arg) => setCurrentDate(arg.start)}
+          locale="it"
+          nowIndicator={true}
+          height="auto"
+          aspectRatio={isMobile ? 0.8 : 1.5}
+        />
+      </div>
+    </div>
   );
 };
 
 export default CalendarioFull;
+
 
 
 
