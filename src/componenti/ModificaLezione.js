@@ -34,7 +34,7 @@ const ModificaLezione = () => {
     const { data, ora_inizio, ora_fine } = formData;
     if (data && ora_inizio && ora_fine && ora_inizio < ora_fine) {
       const queryDate = data.toISOString().split('T')[0];
-      fetch(`${process.env.REACT_APP_API_URL}/lezioni/occupazione-aule?data=${queryDate}&ora_inizio=${ora_inizio}&ora_fine=${ora_fine}`)
+      fetch(`${process.env.REACT_APP_API_URL}/lezioni/occupazione-aule?data=${queryDate}&ora_inizio=${ora_inizio}&ora_fine=${ora_fine}&escludi_id=${id}`)
         .then(res => res.json())
         .then(setAuleOccupate)
         .catch(err => console.error('Errore fetch aule occupate', err));
