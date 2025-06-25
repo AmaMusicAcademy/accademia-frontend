@@ -1,5 +1,23 @@
 import React, { useState } from 'react';
 
+import { useEffect } from 'react';
+
+const [insegnanti, setInsegnanti] = useState([]);
+
+useEffect(() => {
+  const fetchInsegnanti = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/insegnanti`);
+      const data = await res.json();
+      setInsegnanti(data);
+    } catch (err) {
+      console.error('Errore nel caricamento insegnanti:', err);
+    }
+  };
+  fetchInsegnanti();
+}, []);
+
+
 const formattaData = iso => {
   if (!iso) return '';
   const date = new Date(iso);
@@ -34,7 +52,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 
   const handleRiprogramma = (lezione) => {
     setEditingId(lezione.id);
-    setFormData({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
+    setFormData({ data: '', ora_inizio: '', ora_fine: '', aula: '', id_insegnante: lezione.id_insegnante });
   };
 
   const confermaRiprogrammazione = async (lezione) => {
@@ -129,6 +147,20 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                             <option key={idx} value={aula}>{aula}</option>
                           ))}
                         </select>
+                        <select
+  value={formData.id_insegnante}
+  onChange={e => setFormData({ ...formData, id_insegnante: e.target.value })}
+  className="w-full p-2 border rounded"
+  required
+>
+  <option value="">Seleziona insegnante</option>
+  {insegnanti.map((i) => (
+    <option key={i.id} value={i.id}>
+      {i.nome} {i.cognome}
+    </option>
+  ))}
+</select>
+
                         <div className="flex gap-2 pt-2">
                           <button
                             onClick={() => confermaRiprogrammazione(lez)}
