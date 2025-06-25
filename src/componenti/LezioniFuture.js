@@ -2,22 +2,6 @@ import React, { useState } from 'react';
 
 import { useEffect } from 'react';
 
-const [insegnanti, setInsegnanti] = useState([]);
-
-useEffect(() => {
-  const fetchInsegnanti = async () => {
-    try {
-      const res = await fetch(`${apiBaseUrl}/insegnanti`);
-      const data = await res.json();
-      setInsegnanti(data);
-    } catch (err) {
-      console.error('Errore nel caricamento insegnanti:', err);
-    }
-  };
-  fetchInsegnanti();
-}, []);
-
-
 const formattaData = iso => {
   if (!iso) return '';
   const date = new Date(iso);
@@ -34,6 +18,22 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const [formData, setFormData] = useState({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
 
   const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3'];
+
+    const [insegnanti, setInsegnanti] = useState([]);
+
+  useEffect(() => {
+    const fetchInsegnanti = async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/insegnanti`);
+        const data = await res.json();
+        setInsegnanti(data);
+      } catch (err) {
+        console.error('Errore nel caricamento insegnanti:', err);
+      }
+    };
+    fetchInsegnanti();
+  }, []);
+
 
   const caricaLezioni = async () => {
     try {
