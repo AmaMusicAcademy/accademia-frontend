@@ -147,19 +147,20 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                             <option key={idx} value={aula}>{aula}</option>
                           ))}
                         </select>
-                        <select
-  value={formData.id_insegnante}
-  onChange={e => setFormData({ ...formData, id_insegnante: e.target.value })}
-  className="w-full p-2 border rounded"
-  required
->
-  <option value="">Seleziona insegnante</option>
-  {insegnanti.map((i) => (
-    <option key={i.id} value={i.id}>
-      {i.nome} {i.cognome}
-    </option>
-  ))}
-</select>
+                       <select
+                          value={formData.id_insegnante}
+                          onChange={e => setFormData({ ...formData, id_insegnante: Number(e.target.value) })}
+                          className="w-full p-2 border rounded"
+                          required
+                        >
+                        <option value="">Seleziona insegnante</option>
+                          {insegnanti.map((i) => (
+                           <option key={i.id} value={i.id}>
+                            {i.nome} {i.cognome}
+                            </option>
+                              ))}
+                      </select>
+
 
                         <div className="flex gap-2 pt-2">
                           <button
