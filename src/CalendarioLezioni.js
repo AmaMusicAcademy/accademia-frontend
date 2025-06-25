@@ -15,7 +15,16 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
-        const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+        //const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+        
+        const filtered = data.filter(l =>
+        Number(l.id_insegnante) === Number(idInsegnante) &&
+            (
+             l.stato === 'svolta' ||
+            (l.stato === 'rimandata' && l.riprogrammata === true)
+          )
+        );
+
         setLezioni(filtered);
       } catch (err) {
         setError(err.message);
