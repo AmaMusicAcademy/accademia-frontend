@@ -106,6 +106,18 @@ console.log("Lezioni totali ricevute:", data.length);
 console.log("Lezioni filtrate per insegnante:", filtered.length);
 console.log("ID insegnante attivo:", idInsegnante);
 
+// Log lezioni escluse per dati incompleti
+filtered.forEach((l) => {
+  if (!l.data || !l.ora_inizio || !l.ora_fine) {
+    console.warn(`⚠️ Lezione ID ${l.id} scartata per campi mancanti:`, {
+      data: l.data,
+      ora_inizio: l.ora_inizio,
+      ora_fine: l.ora_fine,
+    });
+  }
+});
+
+
         const enriched = filtered
           .filter(l => l.data && l.ora_inizio && l.ora_fine)
           .map(l => {
