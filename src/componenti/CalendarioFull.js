@@ -40,8 +40,7 @@ const CalendarioFull = ({ lezioni }) => {
   } else if (stato === 'svolta') {
     info.el.style.backgroundColor = 'green';
     info.el.style.color = 'white';
-  }
-} else if (stato === 'rimandata') {
+  } else if (stato === 'rimandata') {
       info.el.style.backgroundColor = 'orange';
       info.el.style.color = 'white';
     } else if (stato === 'annullata') {
