@@ -23,7 +23,7 @@ const CalendarioFull = ({ lezioni }) => {
 
   const handleEventClick = (info) => {
     const lezioneId = info.event.id;
-    navigate(/lezioni/${lezioneId}/modifica);
+    navigate(`/lezioni/${lezioneId}/modifica`);
   };
 
   const eventDidMount = (info) => {
@@ -86,8 +86,8 @@ const CalendarioFull = ({ lezioni }) => {
     return {
       ...lez,
       title: isRecupero
-        ? 🔄 Recupero con ${lez.nome_allievo || 'allievo'}
-        : Lezione con ${lez.nome_allievo || 'allievo'},
+        ? `🔄 Recupero con ${lez.nome_allievo || 'allievo'}`
+        : `Lezione con ${lez.nome_allievo || 'allievo'}`,
       backgroundColor: isRecupero ? '#a855f7' : undefined,
       borderColor: isRecupero ? '#9333ea' : undefined,
       textColor: isRecupero ? 'white' : undefined
@@ -146,8 +146,6 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
-
-
 
 
 
