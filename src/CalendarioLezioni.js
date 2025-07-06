@@ -15,33 +15,23 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
-        //const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
+        //const filtered = data;
+console.log('TUTTE le lezioni ricevute:', data);
         
-        const filtered = data.filter(l =>
-        Number(l.id_insegnante) === Number(idInsegnante) &&
-            (
-             l.stato === 'svolta' ||
-            (l.stato === 'rimandata' && l.riprogrammata === true)
-          )
-        );
+        const filtered = data;
+console.log('TUTTE le lezioni ricevute:', data);
 
         const enriched = filtered
-  .filter(lez => lez.data && lez.ora_inizio && lez.ora_fine)
-  .map(lez => {
-    const dateStr = typeof lez.data === 'string'
-      ? lez.data
-      : new Date(lez.data).toISOString().split('T')[0];
-
+  .filter(l => l.data && l.ora_inizio && l.ora_fine)
+  .map(l => {
+    const dateStr = typeof l.data === 'string' ? l.data : new Date(l.data).toISOString().split('T')[0];
     return {
-      ...lez,
-      start: `${dateStr}T${lez.ora_inizio}`,
-      end: `${dateStr}T${lez.ora_fine}`,
+      ...l,
+      start: `${dateStr}T${l.ora_inizio}`,
+      end: `${dateStr}T${l.ora_fine}`,
     };
   });
-
 console.log("Eventi passati al calendario:", enriched);
-setLezioni(enriched);
-
 setLezioni(enriched);
       } catch (err) {
         setError(err.message);
