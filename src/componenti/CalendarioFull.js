@@ -131,6 +131,8 @@ const CalendarioFull = ({ lezioni }) => {
             hour12: false,
           }}
           events={eventi}
+          console.log("📅 Eventi passati a FullCalendar:", eventi);
+
           eventClick={handleEventClick}
           eventDidMount={eventDidMount}
           eventContent={eventContent}
