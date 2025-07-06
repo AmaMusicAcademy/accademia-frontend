@@ -93,7 +93,7 @@ const CalendarioFull = ({ lezioni }) => {
       textColor: isRecupero ? 'white' : undefined
     };
   });
-
+console.log("📅 Eventi passati a FullCalendar:", eventi);
   return (
     <div className="p-2 sm:p-4 w-full overflow-hidden">
       <h2 className="text-lg sm:text-xl font-bold mb-2">🗓️ Calendario Lezioni</h2>
@@ -131,8 +131,6 @@ const CalendarioFull = ({ lezioni }) => {
             hour12: false,
           }}
           events={eventi}
-          console.log("📅 Eventi passati a FullCalendar:", eventi);
-
           eventClick={handleEventClick}
           eventDidMount={eventDidMount}
           eventContent={eventContent}
