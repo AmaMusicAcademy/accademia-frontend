@@ -9,43 +9,41 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-  const fetchLezioni = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error('Errore nel recupero lezioni');
-      const data = await res.json();
+    const fetchLezioni = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('Errore nel recupero lezioni');
+        const data = await res.json();
 
-      const filtered = data.filter(l =>
-        Number(l.id_insegnante) === Number(idInsegnante) &&
-        (
-          l.stato === 'svolta' ||
-          (l.stato === 'rimandata' && l.riprogrammata === true)
-        )
-      );
+        const filtered = data.filter(l =>
+          Number(l.id_insegnante) === Number(idInsegnante) &&
+          (
+            l.stato === 'svolta' ||
+            (l.stato === 'rimandata' && l.riprogrammata === true)
+          )
+        );
 
-      const arricchite = filtered.map(lez => {
-        const dataSolo = lez.data;
-        return {
-          ...lez,
-          start: `${dataSolo}T${lez.ora_inizio}`,
-          end: `${dataSolo}T${lez.ora_fine}`
-        };
-      });
+        const arricchite = filtered
+          .filter(lez => lez.data && lez.ora_inizio && lez.ora_fine)
+          .map(lez => ({
+            ...lez,
+            start: `${lez.data}T${lez.ora_inizio}`,
+            end: `${lez.data}T${lez.ora_fine}`
+          }));
 
-      setLezioni(arricchite);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+        setLezioni(arricchite);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (idInsegnante) {
+      fetchLezioni();
     }
-  };
-
-  if (idInsegnante) {
-    fetchLezioni();
-  }
-}, [idInsegnante]);
-
+  }, [idInsegnante]);
 
   return (
     <div className="p-4">
@@ -73,6 +71,7 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
 }
 
 export default CalendarioLezioni;
+
 
 
 
