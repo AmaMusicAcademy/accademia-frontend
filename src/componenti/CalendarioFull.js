@@ -10,11 +10,11 @@ const CalendarioFull = ({ lezioni }) => {
   const navigate = useNavigate();
   const calendarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
   );
+  const [isFullScreen, setIsFullScreen] = useState(false); // ✅ Nuovo stato
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -70,10 +70,6 @@ const CalendarioFull = ({ lezioni }) => {
     }).format(date);
   };
 
-  const toggleFullScreen = () => {
-    setIsFullScreen(prev => !prev);
-  };
-
   const eventi = lezioni.map(lez => {
     const isRecupero = lez.stato === 'rimandata' && lez.riprogrammata;
     return {
@@ -90,11 +86,9 @@ const CalendarioFull = ({ lezioni }) => {
   return (
     <div className={`p-2 sm:p-4 w-full overflow-hidden ${isFullScreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg sm:text-xl font-bold">
-          🗓️ Calendario Lezioni
-        </h2>
+        <h2 className="text-lg sm:text-xl font-bold">🗓️ Calendario Lezioni</h2>
         <button
-          onClick={toggleFullScreen}
+          onClick={() => setIsFullScreen(prev => !prev)}
           className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
         >
           {isFullScreen ? '↩️ Riduci' : '⛶ Schermo intero'}
