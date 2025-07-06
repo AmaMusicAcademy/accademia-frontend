@@ -236,7 +236,8 @@ const CalendarioFull = ({ lezioni }) => {
   });
 
   return (
-    <div className={`p-2 sm:p-4 w-full overflow-hidden ${isFullscreen ? 'fixed top-0 left-0 w-screen h-screen bg-white z-50 p-4' : ''}`}>
+    <div className={`p-2 sm:p-4 w-full ${isFullscreen ? 'fixed top-0 left-0 w-screen h-screen bg-white z-50 p-4 overflow-y-auto' : 'overflow-hidden'}`}>
+
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-lg sm:text-xl font-bold">
           🗓️ Calendario Lezioni
