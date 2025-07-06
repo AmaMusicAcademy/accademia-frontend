@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const formattaData = iso => {
   if (!iso) return '';
@@ -15,11 +13,10 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
   const [lezioni, setLezioni] = useState([]);
   const [aperto, setAperto] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({ data: '', ora_inizio: '', ora_fine: '', aula: '' });
+  const [formData, setFormData] = useState({ data: '', ora_inizio: '', ora_fine: '', aula: '', id_insegnante: '' });
+  const [insegnanti, setInsegnanti] = useState([]);
 
   const auleDisponibili = ['Aula 1', 'Aula 2', 'Aula 3'];
-
-    const [insegnanti, setInsegnanti] = useState([]);
 
   useEffect(() => {
     const fetchInsegnanti = async () => {
@@ -33,7 +30,6 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
     };
     fetchInsegnanti();
   }, []);
-
 
   const caricaLezioni = async () => {
     try {
@@ -52,25 +48,35 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 
   const handleRiprogramma = (lezione) => {
     setEditingId(lezione.id);
-    setFormData({ data: '', ora_inizio: '', ora_fine: '', aula: '', id_insegnante: lezione.id_insegnante });
+    setFormData({
+      data: '',
+      ora_inizio: '',
+      ora_fine: '',
+      aula: '',
+      id_insegnante: lezione.id_insegnante || ''
+    });
   };
 
   const confermaRiprogrammazione = async (lezione) => {
+    const payload = {
+      id_insegnante: Number(formData.id_insegnante),
+      id_allievo: allievoId,
+      data: formData.data,
+      ora_inizio: formData.ora_inizio,
+      ora_fine: formData.ora_fine,
+      aula: formData.aula,
+      stato: 'rimandata',
+      motivazione: lezione.motivazione || '',
+      riprogrammata: true
+    };
+
+    console.log("Payload inviato:", payload);
+
     try {
       const res = await fetch(`${apiBaseUrl}/lezioni/${lezione.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_insegnante: lezione.id_insegnante,
-          id_allievo: allievoId,
-          data: formData.data,
-          ora_inizio: formData.ora_inizio,
-          ora_fine: formData.ora_fine,
-          aula: formData.aula,
-          stato: 'rimandata',
-          motivazione: lezione.motivazione || '',
-          riprogrammata: true
-        })
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -88,10 +94,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 
   return (
     <div className="mt-4">
-      <button
-        onClick={toggleLista}
-        className="text-sm text-primary underline"
-      >
+      <button onClick={toggleLista} className="text-sm text-primary underline">
         {aperto ? 'Nascondi lezioni future' : 'Mostra lezioni future'}
       </button>
 
@@ -147,20 +150,19 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
                             <option key={idx} value={aula}>{aula}</option>
                           ))}
                         </select>
-                       <select
+                        <select
                           value={formData.id_insegnante}
                           onChange={e => setFormData({ ...formData, id_insegnante: Number(e.target.value) })}
                           className="w-full p-2 border rounded"
                           required
                         >
-                        <option value="">Seleziona insegnante</option>
-                          {insegnanti.map((i) => (
-                           <option key={i.id} value={i.id}>
-                            {i.nome} {i.cognome}
+                          <option value="">Seleziona insegnante</option>
+                          {insegnanti.map(i => (
+                            <option key={i.id} value={i.id}>
+                              {i.nome} {i.cognome}
                             </option>
-                              ))}
-                      </select>
-
+                          ))}
+                        </select>
 
                         <div className="flex gap-2 pt-2">
                           <button
@@ -197,6 +199,7 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
 };
 
 export default LezioniFuture;
+
 
 
 
