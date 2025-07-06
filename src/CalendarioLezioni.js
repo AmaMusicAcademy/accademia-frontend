@@ -117,6 +117,8 @@ console.log("ID insegnante attivo:", idInsegnante);
             };
           });
 
+  console.log("Lezioni finali passate al calendario:", enriched);
+  
         setLezioni(enriched);
       } catch (err) {
         setError(err.message);
