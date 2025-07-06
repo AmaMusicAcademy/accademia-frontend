@@ -9,34 +9,43 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchLezioni = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Errore nel recupero lezioni');
-        const data = await res.json();
-        //const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
-        
-        const filtered = data.filter(l =>
+  const fetchLezioni = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Errore nel recupero lezioni');
+      const data = await res.json();
+
+      const filtered = data.filter(l =>
         Number(l.id_insegnante) === Number(idInsegnante) &&
-            (
-             l.stato === 'svolta' ||
-            (l.stato === 'rimandata' && l.riprogrammata === true)
-          )
-        );
+        (
+          l.stato === 'svolta' ||
+          (l.stato === 'rimandata' && l.riprogrammata === true)
+        )
+      );
 
-        setLezioni(filtered);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const arricchite = filtered.map(lez => {
+        const dataSolo = lez.data;
+        return {
+          ...lez,
+          start: `${dataSolo}T${lez.ora_inizio}`,
+          end: `${dataSolo}T${lez.ora_fine}`
+        };
+      });
 
-    if (idInsegnante) {
-      fetchLezioni();
+      setLezioni(arricchite);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [idInsegnante]);
+  };
+
+  if (idInsegnante) {
+    fetchLezioni();
+  }
+}, [idInsegnante]);
+
 
   return (
     <div className="p-4">
