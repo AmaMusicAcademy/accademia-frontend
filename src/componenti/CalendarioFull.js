@@ -27,8 +27,13 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   const eventDidMount = (info) => {
-    const stato = info.event.extendedProps.stato;
-    if (stato === 'rimandata') {
+    const { stato, riprogrammata } = info.event.extendedProps;
+
+    if (stato === 'rimandata' && riprogrammata) {
+      info.el.style.backgroundColor = '#a855f7'; // viola
+      info.el.style.borderColor = '#9333ea';
+      info.el.style.color = 'white';
+    } else if (stato === 'rimandata') {
       info.el.style.backgroundColor = 'orange';
       info.el.style.color = 'white';
     } else if (stato === 'annullata') {
@@ -41,13 +46,7 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   const eventContent = ({ event }) => {
-    const { start, end, extendedProps } = event;
-
-    const formatTime = (date) =>
-      new Intl.DateTimeFormat('it-IT', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(date);
+    const { extendedProps } = event;
 
     return (
       <div className="text-sm leading-tight">
@@ -72,6 +71,21 @@ const CalendarioFull = ({ lezioni }) => {
       year: '2-digit',
     }).format(date);
   };
+
+  // 🔁 Applichiamo trasformazioni agli eventi prima di passarli al calendario
+  const eventi = lezioni.map(lez => {
+    const isRecupero = lez.stato === 'rimandata' && lez.riprogrammata;
+
+    return {
+      ...lez,
+      title: isRecupero
+        ? `🔄 Recupero con ${lez.nome_allievo || 'allievo'}`
+        : `Lezione con ${lez.nome_allievo || 'allievo'}`,
+      backgroundColor: isRecupero ? '#a855f7' : undefined,
+      borderColor: isRecupero ? '#9333ea' : undefined,
+      textColor: isRecupero ? 'white' : undefined
+    };
+  });
 
   return (
     <div className="p-2 sm:p-4 w-full overflow-hidden">
@@ -109,7 +123,7 @@ const CalendarioFull = ({ lezioni }) => {
             minute: '2-digit',
             hour12: false,
           }}
-          events={lezioni}
+          events={eventi}
           eventClick={handleEventClick}
           eventDidMount={eventDidMount}
           eventContent={eventContent}
@@ -125,6 +139,7 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
 
 
 

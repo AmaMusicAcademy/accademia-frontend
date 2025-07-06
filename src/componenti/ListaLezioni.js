@@ -128,8 +128,10 @@ function ListaLezioni({ idInsegnante, nome, cognome }) {
                 <td className="p-2">{formatTime(lez.end)}</td>
                 <td className="p-2">{lez.aula || '-'}</td>
                 <td className="p-2">{lez.nome_allievo ? `${lez.nome_allievo} ${lez.cognome_allievo}` : '-'}</td>
-                <td className="p-2 font-bold" style={{ color: getStatoColor(lez.stato) }}>
-                  {lez.stato}
+                <td className="p-2 font-bold" style={{ color: lez.stato === 'rimandata' && lez.riprogrammata ? 'purple' : getStatoColor(lez.stato) }}>
+                  {lez.stato === 'rimandata' && lez.riprogrammata
+                       ? 'recuperata'
+                           : lez.stato}
                 </td>
                 <td className="p-2">
                   <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
