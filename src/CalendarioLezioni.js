@@ -15,24 +15,17 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
-        //const filtered = data;
-console.log('TUTTE le lezioni ricevute:', data);
+        //const filtered = data.filter(l => Number(l.id_insegnante) === Number(idInsegnante));
         
-        const filtered = data;
-console.log('TUTTE le lezioni ricevute:', data);
+        const filtered = data.filter(l =>
+        Number(l.id_insegnante) === Number(idInsegnante) &&
+            (
+             l.stato === 'svolta' ||
+            (l.stato === 'rimandata' && l.riprogrammata === true)
+          )
+        );
 
-        const enriched = filtered
-  .filter(l => l.data && l.ora_inizio && l.ora_fine)
-  .map(l => {
-    const dateStr = typeof l.data === 'string' ? l.data : new Date(l.data).toISOString().split('T')[0];
-    return {
-      ...l,
-      start: `${dateStr}T${l.ora_inizio}`,
-      end: `${dateStr}T${l.ora_fine}`,
-    };
-  });
-console.log("Eventi passati al calendario:", enriched);
-setLezioni(enriched);
+        setLezioni(filtered);
       } catch (err) {
         setError(err.message);
       } finally {
