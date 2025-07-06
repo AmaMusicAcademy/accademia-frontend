@@ -83,14 +83,28 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
         if (!res.ok) throw new Error('Errore nel recupero lezioni');
         const data = await res.json();
 
-        const filtered = data.filter(l =>
+       /* const filtered = data.filter(l =>
           Number(l.id_insegnante) === Number(idInsegnante) &&
           (
             l.stato === 'svolta' ||
             l.stato === 'programmata' ||
             (l.stato === 'rimandata' && l.riprogrammata === true)
           )
-        );
+        );*/
+
+        const filtered = data.filter(l => {
+  const lezioneInsegnante = String(l.id_insegnante) === String(idInsegnante);
+  const statoValido =
+    l.stato === 'svolta' ||
+    l.stato === 'programmata' ||
+    (l.stato === 'rimandata' && l.riprogrammata === true);
+
+  return lezioneInsegnante && statoValido;
+});
+
+console.log("Lezioni totali ricevute:", data.length);
+console.log("Lezioni filtrate per insegnante:", filtered.length);
+console.log("ID insegnante attivo:", idInsegnante);
 
         const enriched = filtered
           .filter(l => l.data && l.ora_inizio && l.ora_fine)
