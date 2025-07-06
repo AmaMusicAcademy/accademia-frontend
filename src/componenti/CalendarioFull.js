@@ -10,6 +10,7 @@ const CalendarioFull = ({ lezioni }) => {
   const navigate = useNavigate();
   const calendarRef = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split('T')[0]
@@ -27,20 +28,11 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   const eventDidMount = (info) => {
-  const { stato, riprogrammata } = info.event.extendedProps;
-  if (stato === 'rimandata' && riprogrammata) {
-    info.el.style.backgroundColor = '#9333ea';
-    info.el.style.color = 'white';
-  } else if (stato === 'rimandata') {
-    info.el.style.backgroundColor = 'orange';
-    info.el.style.color = 'white';
-  } else if (stato === 'annullata') {
-    info.el.style.backgroundColor = 'red';
-    info.el.style.color = 'white';
-  } else if (stato === 'svolta') {
-    info.el.style.backgroundColor = 'green';
-    info.el.style.color = 'white';
-  } else if (stato === 'rimandata') {
+    const { stato, riprogrammata } = info.event.extendedProps;
+    if (stato === 'rimandata' && riprogrammata) {
+      info.el.style.backgroundColor = '#9333ea';
+      info.el.style.color = 'white';
+    } else if (stato === 'rimandata') {
       info.el.style.backgroundColor = 'orange';
       info.el.style.color = 'white';
     } else if (stato === 'annullata') {
@@ -54,7 +46,6 @@ const CalendarioFull = ({ lezioni }) => {
 
   const eventContent = ({ event }) => {
     const { extendedProps } = event;
-
     return (
       <div className="text-sm leading-tight">
         <div className="font-medium">
@@ -79,10 +70,12 @@ const CalendarioFull = ({ lezioni }) => {
     }).format(date);
   };
 
-  // 🔁 Applichiamo trasformazioni agli eventi prima di passarli al calendario
+  const toggleFullScreen = () => {
+    setIsFullScreen(prev => !prev);
+  };
+
   const eventi = lezioni.map(lez => {
     const isRecupero = lez.stato === 'rimandata' && lez.riprogrammata;
-
     return {
       ...lez,
       title: isRecupero
@@ -95,8 +88,18 @@ const CalendarioFull = ({ lezioni }) => {
   });
 
   return (
-    <div className="p-2 sm:p-4 w-full overflow-hidden">
-      <h2 className="text-lg sm:text-xl font-bold mb-2">🗓️ Calendario Lezioni</h2>
+    <div className={`p-2 sm:p-4 w-full overflow-hidden ${isFullScreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg sm:text-xl font-bold">
+          🗓️ Calendario Lezioni
+        </h2>
+        <button
+          onClick={toggleFullScreen}
+          className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+        >
+          {isFullScreen ? '↩️ Riduci' : '⛶ Schermo intero'}
+        </button>
+      </div>
 
       <div className="flex flex-wrap items-center justify-between mb-2 gap-2 text-sm">
         <label className="flex items-center gap-2">
@@ -146,6 +149,7 @@ const CalendarioFull = ({ lezioni }) => {
 };
 
 export default CalendarioFull;
+
 
 
 
