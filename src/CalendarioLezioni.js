@@ -25,14 +25,23 @@ function CalendarioLezioni({ idInsegnante, nome, cognome }) {
           )
         );
 
-        const enriched = filtered.map(lez => {
-  const dateStr = new Date(lez.data).toISOString().split('T')[0];
-  return {
-    ...lez,
-    start: `${dateStr}T${lez.ora_inizio}`,
-    end: `${dateStr}T${lez.ora_fine}`,
-  };
-});
+        const enriched = filtered
+  .filter(lez => lez.data && lez.ora_inizio && lez.ora_fine)
+  .map(lez => {
+    const dateStr = typeof lez.data === 'string'
+      ? lez.data
+      : new Date(lez.data).toISOString().split('T')[0];
+
+    return {
+      ...lez,
+      start: `${dateStr}T${lez.ora_inizio}`,
+      end: `${dateStr}T${lez.ora_fine}`,
+    };
+  });
+
+console.log("Eventi passati al calendario:", enriched);
+setLezioni(enriched);
+
 setLezioni(enriched);
       } catch (err) {
         setError(err.message);
