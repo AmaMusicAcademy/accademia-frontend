@@ -27,21 +27,13 @@ const CalendarioFull = ({ lezioni }) => {
   };
 
   const eventDidMount = (info) => {
-  const { stato, riprogrammata } = info.event.extendedProps;
-  if (stato === 'rimandata' && riprogrammata) {
-    info.el.style.backgroundColor = '#9333ea';
-    info.el.style.color = 'white';
-  } else if (stato === 'rimandata') {
-    info.el.style.backgroundColor = 'orange';
-    info.el.style.color = 'white';
-  } else if (stato === 'annullata') {
-    info.el.style.backgroundColor = 'red';
-    info.el.style.color = 'white';
-  } else if (stato === 'svolta') {
-    info.el.style.backgroundColor = 'green';
-    info.el.style.color = 'white';
-  }
-} else if (stato === 'rimandata') {
+    const { stato, riprogrammata } = info.event.extendedProps;
+
+    if (stato === 'rimandata' && riprogrammata) {
+      info.el.style.backgroundColor = '#a855f7'; // viola
+      info.el.style.borderColor = '#9333ea';
+      info.el.style.color = 'white';
+    } else if (stato === 'rimandata') {
       info.el.style.backgroundColor = 'orange';
       info.el.style.color = 'white';
     } else if (stato === 'annullata') {
