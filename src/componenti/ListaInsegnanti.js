@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ListaLezioni from './ListaLezioni';
 import CalendarioLezioni from '../CalendarioLezioni';
+import CompensoInsegnante from './CompensoInsegnante';
 
 const ListaInsegnanti = ({ insegnanti, onElimina }) => {
   const [insegnanteAperto, setInsegnanteAperto] = useState(null);
@@ -48,35 +49,33 @@ const ListaInsegnanti = ({ insegnanti, onElimina }) => {
             </div>
 
             {insegnanteAperto === ins.id && (
-              <div className="mt-4">
-                <button
-                  onClick={() =>
-                    setVisualizzazioneAperta(prev =>
-                      prev === 'lista' ? 'calendario' : 'lista'
-                    )
-                  }
-                  className="mb-3 text-sm underline text-primary"
-                >
-                  {visualizzazioneAperta === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
-                </button>
+  <div className="mt-4">
+    {/* 🔢 Calcolo compenso */}
+    <CompensoInsegnante insegnanteId={ins.id} />
 
-                <div className="border-t pt-4">
-                  {visualizzazioneAperta === 'lista' ? (
-                    <ListaLezioni
-                      idInsegnante={ins.id}
-                      nome={ins.nome}
-                      cognome={ins.cognome}
-                    />
-                  ) : (
-                    <CalendarioLezioni
-                      idInsegnante={ins.id}
-                      nome={ins.nome}
-                      cognome={ins.cognome}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
+    {/* 🎛️ Toggle visualizzazione */}
+    <button
+      onClick={() =>
+        setVisualizzazioneAperta(prev =>
+          prev === 'lista' ? 'calendario' : 'lista'
+        )
+      }
+      className="mb-3 text-sm underline text-primary mt-4 block"
+    >
+      {visualizzazioneAperta === 'lista' ? '📅 Visualizza Calendario' : '📋 Visualizza Lista'}
+    </button>
+
+    {/* 📋 Lezioni */}
+    <div className="border-t pt-4">
+      {visualizzazioneAperta === 'lista' ? (
+        <ListaLezioni idInsegnante={ins.id} nome={ins.nome} cognome={ins.cognome} />
+      ) : (
+        <CalendarioLezioni idInsegnante={ins.id} nome={ins.nome} cognome={ins.cognome} />
+      )}
+    </div>
+  </div>
+)}
+
           </div>
         ))
       )}
