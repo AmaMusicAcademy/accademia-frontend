@@ -61,19 +61,16 @@ function Layout({ children }) {
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/insegnante" element={<DashboardInsegnante />} />
-          <Route path="/" element={<Home />} />
-          <Route path="/nuova-lezione" element={<NuovaLezione />} />
-          <Route path="/lezioni/:id/modifica" element={<ModificaLezione />} />
-          <Route path="/lezioni/:idInsegnante" element={<CalendarioLezioniWrapper />} />
-          <Route path="/allievi" element={<Allievi />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <Routes>
+  <Route path="/" element={<LoginPage />} /> {/* 👈 LOGIN come home */}
+  <Route path="/login" element={<LoginPage />} />
+  <Route path="/insegnante" element={<DashboardInsegnante />} />
+  <Route path="/nuova-lezione" element={<NuovaLezione />} />
+  <Route path="/lezioni/:id/modifica" element={<ModificaLezione />} />
+  <Route path="/lezioni/:idInsegnante" element={<CalendarioLezioniWrapper />} />
+  <Route path="/allievi" element={<Allievi />} />
+</Routes>
+
   );
 }
 
