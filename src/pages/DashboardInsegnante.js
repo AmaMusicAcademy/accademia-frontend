@@ -1,5 +1,5 @@
 import React from 'react';
-import BottomNav from './componenti/BottomNav';
+import BottomNav from '../componenti/BottomNav';
 
 function DashboardInsegnante() {
   return (
