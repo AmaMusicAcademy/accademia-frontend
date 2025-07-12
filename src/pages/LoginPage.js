@@ -26,7 +26,7 @@ function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem('token', data.token);
-      localStorage.setItem('utente', JSON.stringify(data.user));
+      localStorage.setItem('utente', JSON.stringify(data.utente));
       navigate('/insegnante');
     } catch (err) {
       setErrore('Errore di connessione al server');
