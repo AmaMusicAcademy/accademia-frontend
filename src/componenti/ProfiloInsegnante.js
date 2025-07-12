@@ -1,71 +1,87 @@
-import React, { useEffect, useState } from 'react';
-import InsegnanteLayout from './InsegnanteLayout';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import BottomNav from '../componenti/BottomNav';
 
 const ProfiloInsegnante = () => {
-  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const utente = JSON.parse(localStorage.getItem('utente'));
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('utente');
-      if (!stored) {
-        window.location.href = '/login';
-      } else {
-        const parsed = JSON.parse(stored);
-        if (!parsed || typeof parsed !== 'object') {
-          throw new Error('Formato non valido');
-        }
-        setUser(parsed);
-      }
-    } catch (error) {
-      console.error('Errore nel parsing utente:', error);
-      localStorage.removeItem('utente');
-      window.location.href = '/login';
-    }
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('utente');
+    navigate('/');
+  };
 
-  if (!user) return null;
+  if (!utente) return null;
 
   return (
-    <InsegnanteLayout>
-      <div className="flex flex-col items-center text-center mb-6">
+    <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
+      {/* Intestazione */}
+      <div className="p-6 bg-white shadow-md text-center">
         <div className="text-5xl mb-2">👤</div>
-        <h2 className="text-2xl font-bold">{user.nome} {user.cognome}</h2>
-        <p className="text-sm text-gray-500">@{user.username}</p>
+        <h2 className="text-xl font-bold">{utente.nome} {utente.cognome}</h2>
+        <p className="text-gray-500">@{utente.username}</p>
       </div>
 
-      <div className="bg-gray-100 p-4 rounded-xl shadow mb-6 w-full">
-        <h3 className="text-lg font-semibold mb-2">Informazioni account</h3>
-        <div className="text-sm text-gray-700">
-          <p><strong>Nome:</strong> {user.nome}</p>
-          <p><strong>Cognome:</strong> {user.cognome}</p>
-          <p><strong>Username:</strong> {user.username}</p>
+      <div className="p-4 flex-1">
+        {/* Sezione Account */}
+        <div className="mb-6">
+          <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Account</h3>
+          <div className="bg-white rounded-xl shadow-sm divide-y">
+            <button
+              onClick={() => alert('Da implementare')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>👤 Informazioni Account</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            <button
+              onClick={() => alert('Da implementare')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>🔑 Cambia password</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            <button
+              onClick={() => alert('Da implementare')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>🖼️ Cambia immagine</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-full text-left p-4 flex items-center justify-between text-red-600 font-semibold"
+            >
+              <span>🚪 Esci</span>
+              <span className="text-gray-400">›</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Sezione Insegnamento */}
+        <div>
+          <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Insegnamento</h3>
+          <div className="bg-white rounded-xl shadow-sm divide-y">
+            <button
+              onClick={() => navigate('/rimborso')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>💶 Calcolo Rimborso</span>
+              <span className="text-gray-400">›</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 w-full">
-        <button
-          className="bg-blue-500 text-white rounded-lg py-2 font-semibold"
-          onClick={() => alert('Funzione cambio password in arrivo')}
-        >
-          🔑 Cambia password
-        </button>
-
-        <button
-          className="bg-red-500 text-white rounded-lg py-2 font-semibold"
-          onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('utente');
-            window.location.href = '/login';
-          }}
-        >
-          📕 Esci
-        </button>
-      </div>
-    </InsegnanteLayout>
+      {/* Bottom nav */}
+      <BottomNav />
+    </div>
   );
 };
 
 export default ProfiloInsegnante;
+
 
 
 
