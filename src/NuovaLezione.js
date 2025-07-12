@@ -19,6 +19,8 @@ const NuovaLezione = () => {
     note: ''
   });
   const [message, setMessage] = useState('');
+  const [isPeriodico, setIsPeriodico] = useState(false);
+  const [dataFine, setDataFine] = useState(null);
 
   useEffect(() => {
     fetch(`${process.env.REACT_APP_API_URL}/insegnanti`)
@@ -52,49 +54,88 @@ const NuovaLezione = () => {
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (formData.ora_inizio >= formData.ora_fine) {
-      setMessage('Errore: l\'ora di fine deve essere successiva a quella di inizio.');
-      return;
-    }
+if (isPeriodico && dataFine && dataFine < formData.data) {
+  setMessage("Errore: la data di fine ripetizione deve essere successiva o uguale alla data iniziale.");
+  return;
+}
 
-    if (auleOccupate.includes(formData.aula)) {
-      setMessage(`Errore: ${formData.aula} è già occupata in questa fascia oraria.`);
-      return;
-    }
 
-    const payload = {
+  if (formData.ora_inizio >= formData.ora_fine) {
+    setMessage("Errore: l'ora di fine deve essere successiva a quella di inizio.");
+    return;
+  }
+
+  if (auleOccupate.includes(formData.aula)) {
+    setMessage(`Errore: ${formData.aula} è già occupata in questa fascia oraria.`);
+    return;
+  }
+
+  const lezioniDaCreare = [];
+
+  if (isPeriodico && dataFine) {
+    const dateSequence = getDateSequence(formData.data, dataFine);
+    dateSequence.forEach(date => {
+      lezioniDaCreare.push({
+        ...formData,
+        data: date.toISOString().split('T')[0]
+      });
+    });
+  } else {
+    lezioniDaCreare.push({
       ...formData,
       data: formData.data.toISOString().split('T')[0]
-    };
-
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/lezioni`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
     });
+  }
 
-    if (res.ok) {
-      setMessage('✅ Lezione creata con successo!');
-      setFormData({
-        data: new Date(),
-        ora_inizio: '',
-        ora_fine: '',
-        aula: '',
-        stato: '',
-        id_insegnante: '',
-        id_allievo: '',
-        note: ''
+  try {
+    for (const lezione of lezioniDaCreare) {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/lezioni`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lezione)
       });
-    } else {
-      setMessage('❌ Errore nella creazione della lezione');
+
+      if (!res.ok) {
+        throw new Error('Errore nella creazione di una delle lezioni');
+      }
     }
 
-    setTimeout(() => setMessage(''), 4000);
-  };
+    setMessage('✅ Lezione/e creata/e con successo!');
+    setFormData({
+      data: new Date(),
+      ora_inizio: '',
+      ora_fine: '',
+      aula: '',
+      stato: '',
+      id_insegnante: '',
+      id_allievo: '',
+      note: ''
+    });
+    setAuleOccupate([]);
+    setIsPeriodico(false);
+    setDataFine(null);
+  } catch (error) {
+    setMessage('❌ Errore nella creazione delle lezioni');
+  }
+
+  setTimeout(() => setMessage(''), 4000);
+};
+
 
   const auleDisponibili = AULE_PREDEFINITE.filter(aula => !auleOccupate.includes(aula));
+
+const getDateSequence = (start, end) => {
+  const dates = [];
+  let current = new Date(start);
+  while (current <= end) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 7); // aggiunge 7 giorni
+  }
+  return dates;
+};
+
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -111,6 +152,23 @@ const NuovaLezione = () => {
 
         <input type="time" name="ora_inizio" value={formData.ora_inizio} onChange={handleChange} required className="w-full p-2 border" />
         <input type="time" name="ora_fine" value={formData.ora_fine} onChange={handleChange} required className="w-full p-2 border" />
+
+      <label className="flex items-center space-x-2">
+        <input type="checkbox" checked={isPeriodico} onChange={() => setIsPeriodico(!isPeriodico)}/>
+        <span>Ripeti fino al:</span>
+      </label>
+
+        {isPeriodico && (
+          <DatePicker
+          selected={dataFine}
+          onChange={(date) => setDataFine(date)}
+          className="w-full p-2 border"
+          dateFormat="yyyy-MM-dd"
+          placeholderText="Seleziona data fine"
+          minDate={formData.data}
+          />
+       )}
+
 
         <select name="aula" value={formData.aula} onChange={handleChange} required className="w-full p-2 border">
           <option value="">Seleziona aula disponibile</option>
