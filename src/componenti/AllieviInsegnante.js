@@ -1,12 +1,15 @@
 import React from 'react';
+import InsegnanteLayout from './InsegnanteLayout';
 
 const AllieviInsegnante = () => {
   return (
-    <div className="p-4 pb-20">
+    <InsegnanteLayout>
       <h2 className="text-xl font-bold mb-2">🎓 I tuoi allievi</h2>
       <p className="text-gray-700">Qui vedrai la lista degli allievi con cui hai lezione.</p>
-    </div>
+    </InsegnanteLayout>
   );
 };
 
 export default AllieviInsegnante;
+
+

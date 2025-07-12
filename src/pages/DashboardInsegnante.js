@@ -1,16 +1,14 @@
 import React from 'react';
-import BottomNav from '../componenti/BottomNav';
+import InsegnanteLayout from '../componenti/InsegnanteLayout';
 
-function DashboardInsegnante() {
+const DashboardInsegnante = () => {
   return (
-    <div className="pb-20">
+    <InsegnanteLayout>
       <h2 className="text-xl font-bold mb-2">Dashboard Insegnante</h2>
-      <p className="mb-4">Benvenuto! Qui troverai il tuo calendario, i tuoi allievi e i tuoi pagamenti.</p>
-
-      {/* Inserisci il menu in basso */}
-      <BottomNav />
-    </div>
+      <p className="text-gray-700">Benvenuto! Qui troverai il tuo calendario, i tuoi allievi e i tuoi pagamenti.</p>
+    </InsegnanteLayout>
   );
-}
+};
 
 export default DashboardInsegnante;
+
