@@ -12,7 +12,7 @@ function LoginPage() {
     e.preventDefault();
     setErrore('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/login`, {
+      const res = await fetch(`https://app-docenti.onrender.com/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
