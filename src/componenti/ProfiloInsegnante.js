@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import InsegnanteLayout from './InsegnanteLayout';
 
 const ProfiloInsegnante = () => {
-  const user = JSON.parse(localStorage.getItem('utente'));
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('utente');
+      if (!stored) {
+        window.location.href = '/login';
+      } else {
+        const parsed = JSON.parse(stored);
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Formato non valido');
+        }
+        setUser(parsed);
+      }
+    } catch (error) {
+      console.error('Errore nel parsing utente:', error);
+      localStorage.removeItem('utente');
+      window.location.href = '/login';
+    }
+  }, []);
+
+  if (!user) return null;
 
   return (
     <InsegnanteLayout>
@@ -45,6 +66,7 @@ const ProfiloInsegnante = () => {
 };
 
 export default ProfiloInsegnante;
+
 
 
 
