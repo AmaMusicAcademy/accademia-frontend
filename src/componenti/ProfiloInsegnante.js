@@ -2,7 +2,7 @@ import React from 'react';
 import InsegnanteLayout from './InsegnanteLayout';
 
 const ProfiloInsegnante = () => {
-  const user = JSON.parse(localStorage.getItem('utente')); // { nome, cognome, username }
+  const user = JSON.parse(localStorage.getItem('utente'));
 
   return (
     <InsegnanteLayout>
@@ -12,20 +12,19 @@ const ProfiloInsegnante = () => {
         <p className="text-sm text-gray-500">@{user.username}</p>
       </div>
 
-      <div className="bg-gray-100 p-4 rounded-xl shadow mb-6">
+      <div className="bg-gray-100 p-4 rounded-xl shadow mb-6 w-full">
         <h3 className="text-lg font-semibold mb-2">Informazioni account</h3>
         <div className="text-sm text-gray-700">
           <p><strong>Nome:</strong> {user.nome}</p>
           <p><strong>Cognome:</strong> {user.cognome}</p>
           <p><strong>Username:</strong> {user.username}</p>
-          {/* <p><strong>Email:</strong> ... </p> */}
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 w-full">
         <button
           className="bg-blue-500 text-white rounded-lg py-2 font-semibold"
-          onClick={() => alert('Funzione in arrivo')}
+          onClick={() => alert('Funzione cambio password in arrivo')}
         >
           🔑 Cambia password
         </button>
@@ -38,7 +37,7 @@ const ProfiloInsegnante = () => {
             window.location.href = '/login';
           }}
         >
-          🚪 Esci
+          📕 Esci
         </button>
       </div>
     </InsegnanteLayout>
@@ -46,6 +45,7 @@ const ProfiloInsegnante = () => {
 };
 
 export default ProfiloInsegnante;
+
 
 
 
