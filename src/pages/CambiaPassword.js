@@ -55,7 +55,7 @@ function CambiaPassword() {
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* HEADER */}
       <div className="bg-white shadow p-4 flex items-center">
-        <button onClick={() => navigate('/profilo')} className="text-blue-500 font-semibold">
+        <button onClick={() => navigate('insegnante/profilo')} className="text-blue-500 font-semibold">
           ← Indietro
         </button>
         <h2 className="text-lg font-bold mx-auto">Cambia Password</h2>

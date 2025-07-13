@@ -45,6 +45,8 @@ import AllieviInsegnante from './componenti/AllieviInsegnante';
 import InformazioniAccount from './pages/InformazioniAccount';
 import CambiaPassword from './pages/CambiaPassword';
 import CambiaAvatar from './pages/CambiaAvatar';
+import CalcoloRimborso from './pages/CalcoloRimborso';
+
 
 function Layout({ children }) {
   const location = useLocation();
@@ -80,6 +82,7 @@ function App() {
   <Route path="/profilo/account" element={<InformazioniAccount />} />
   <Route path="/profilo/password" element={<CambiaPassword />} />
   <Route path="/cambia-avatar" element={<CambiaAvatar />} />
+  <Route path="/rimborso" element={<CalcoloRimborso />} />
 </Routes>
 
   );
