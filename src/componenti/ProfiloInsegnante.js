@@ -29,21 +29,21 @@ const ProfiloInsegnante = () => {
           <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Account</h3>
           <div className="bg-white rounded-xl shadow-sm divide-y">
             <button
-              onClick={() => alert('Da implementare')}
+              onClick={() => navigate('/informazioni-account')}
               className="w-full text-left p-4 flex items-center justify-between"
             >
               <span>👤 Informazioni Account</span>
               <span className="text-gray-400">›</span>
             </button>
             <button
-              onClick={() => alert('Da implementare')}
+              onClick={() => navigate('/cambia-password')}
               className="w-full text-left p-4 flex items-center justify-between"
             >
               <span>🔑 Cambia password</span>
               <span className="text-gray-400">›</span>
             </button>
             <button
-              onClick={() => alert('Da implementare')}
+              onClick={() => navigate('/cambia-immagine')}
               className="w-full text-left p-4 flex items-center justify-between"
             >
               <span>🖼️ Cambia immagine</span>
@@ -81,6 +81,7 @@ const ProfiloInsegnante = () => {
 };
 
 export default ProfiloInsegnante;
+
 
 
 
