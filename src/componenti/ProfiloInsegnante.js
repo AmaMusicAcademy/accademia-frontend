@@ -52,7 +52,7 @@ const ProfiloInsegnante = () => {
               <span className="text-gray-400">›</span>
             </button>
             <button
-              onClick={() => navigate('/cambia-immagine')}
+              onClick={() => navigate('/cambia-avatar')}
               className="w-full text-left p-4 flex items-center justify-between"
             >
               <span>🖼️ Cambia immagine</span>
