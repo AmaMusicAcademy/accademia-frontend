@@ -6,40 +6,32 @@ function InformazioniAccount() {
   const navigate = useNavigate();
   const utente = JSON.parse(localStorage.getItem('utente'));
 
-  if (!utente) return <div>Caricamento...</div>;
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* HEADER */}
-      <div className="bg-white shadow p-4 flex items-center">
-        <button onClick={() => navigate('/profilo')} className="text-blue-500 font-semibold">
+      {/* Header stile iOS */}
+      <div className="flex items-center p-4 bg-white shadow">
+        <button onClick={() => navigate(-1)} className="text-blue-500 font-bold text-lg">
           ← Indietro
         </button>
-        <h2 className="text-lg font-bold mx-auto">Informazioni Account</h2>
-        <div className="w-16"></div>
+        <h2 className="flex-grow text-center text-lg font-semibold">Informazioni Account</h2>
+        <div style={{ width: '70px' }}></div>
       </div>
 
-      {/* CONTENUTO */}
+      {/* Contenuto */}
       <div className="flex-grow p-4">
-        <div className="bg-white rounded-xl p-4 shadow space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600 font-semibold">Nome:</span>
-            <span>{utente.nome}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 font-semibold">Cognome:</span>
-            <span>{utente.cognome}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600 font-semibold">Username:</span>
-            <span>@{utente.username}</span>
-          </div>
+        <div className="bg-white rounded-lg shadow p-4">
+          <p><strong>Nome:</strong> {utente?.nome}</p>
+          <p><strong>Cognome:</strong> {utente?.cognome}</p>
+          <p><strong>Username:</strong> @{utente?.username}</p>
+          <p><strong>ID:</strong> {utente?.id}</p>
         </div>
       </div>
 
+      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   );
 }
 
 export default InformazioniAccount;
+
