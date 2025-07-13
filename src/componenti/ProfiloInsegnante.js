@@ -18,7 +18,16 @@ const ProfiloInsegnante = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
       {/* Intestazione */}
       <div className="p-6 bg-white shadow-md text-center">
-        <div className="text-5xl mb-2">👤</div>
+        {utente.avatar_url ? (
+  <img
+    src={`https://app-docenti.onrender.com${utente.avatar_url}`}
+    alt="Avatar"
+    className="w-24 h-24 rounded-full mx-auto mb-2 object-cover"
+  />
+) : (
+  <div className="text-5xl mb-2">👤</div>
+)}
+
         <h2 className="text-xl font-bold">{utente.nome} {utente.cognome}</h2>
         <p className="text-gray-500">@{utente.username}</p>
       </div>

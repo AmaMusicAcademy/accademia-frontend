@@ -44,6 +44,7 @@ import ProfiloInsegnante from './componenti/ProfiloInsegnante';
 import AllieviInsegnante from './componenti/AllieviInsegnante';
 import InformazioniAccount from './pages/InformazioniAccount';
 import CambiaPassword from './pages/CambiaPassword';
+import CambiaAvatar from './pages/CambiaAvatar';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -78,6 +79,7 @@ function App() {
   <Route path="/insegnante/calendario" element={<CalendarioLezioniWrapper />} />
   <Route path="/profilo/account" element={<InformazioniAccount />} />
   <Route path="/profilo/password" element={<CambiaPassword />} />
+  <Route path="/cambia-avatar" element={<CambiaAvatar />} />
 </Routes>
 
   );
