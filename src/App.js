@@ -42,7 +42,8 @@ import LoginPage from './pages/LoginPage';
 import DashboardInsegnante from './pages/DashboardInsegnante'; // 👈 placeholder da creare
 import ProfiloInsegnante from './componenti/ProfiloInsegnante';
 import AllieviInsegnante from './componenti/AllieviInsegnante';
-
+import InformazioniAccount from './pages/InformazioniAccount';
+import CambiaPassword from './pages/CambiaPassword';
 
 function Layout({ children }) {
   const location = useLocation();
@@ -75,6 +76,8 @@ function App() {
   <Route path="/insegnante/profilo" element={<ProfiloInsegnante />} />
   <Route path="/insegnante/allievi" element={<AllieviInsegnante />} />
   <Route path="/insegnante/calendario" element={<CalendarioLezioniWrapper />} />
+  <Route path="/profilo/account" element={<InformazioniAccount />} />
+  <Route path="/profilo/password" element={<CambiaPassword />} />
 </Routes>
 
   );
