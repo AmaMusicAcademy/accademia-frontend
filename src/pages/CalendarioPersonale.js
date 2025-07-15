@@ -1,6 +1,6 @@
 // src/pages/CalendarioPersonale.js
 import React, { useEffect, useState } from "react";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from 'jwt-decode'; // ✅ CORRETTO con v4.x
 import CalendarioLezioni from "../CalendarioLezioni";
 
 export default function CalendarioPersonale() {
