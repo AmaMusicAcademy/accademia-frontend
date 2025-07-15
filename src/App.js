@@ -46,6 +46,7 @@ import InformazioniAccount from './pages/InformazioniAccount';
 import CambiaPassword from './pages/CambiaPassword';
 import CambiaAvatar from './pages/CambiaAvatar';
 import CalcoloRimborso from './pages/CalcoloRimborso';
+import CalendarioPersonale from './pages/CalendarioPersonale';
 
 
 function Layout({ children }) {
@@ -78,7 +79,7 @@ function App() {
   <Route path="/allievi" element={<Allievi />} />
   <Route path="/insegnante/profilo" element={<ProfiloInsegnante />} />
   <Route path="/insegnante/allievi" element={<AllieviInsegnante />} />
-  <Route path="/insegnante/calendario" element={<CalendarioLezioniWrapper />} />
+  <Route path="/insegnante/calendario" element={<CalendarioPersonale/>} />
   <Route path="/profilo/account" element={<InformazioniAccount />} />
   <Route path="/profilo/password" element={<CambiaPassword />} />
   <Route path="/cambia-avatar" element={<CambiaAvatar />} />
