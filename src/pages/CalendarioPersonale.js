@@ -1,37 +1,56 @@
+// src/pages/CalendarioPersonale.js
 import React, { useEffect, useState } from "react";
 import jwtDecode from "jwt-decode";
 import CalendarioLezioni from "../componenti/CalendarioLezioni";
 
 export default function CalendarioPersonale() {
   const [lezioni, setLezioni] = useState([]);
+  const [nome, setNome] = useState("");
+  const [cognome, setCognome] = useState("");
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
 
   useEffect(() => {
-    const fetchLezioniInsegnante = async () => {
+    const fetchDati = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          setErrore("Utente non autenticato");
-          setLoading(false);
-          return;
-        }
+        if (!token) throw new Error("Token non trovato");
 
         const decoded = jwtDecode(token);
-        const idInsegnante = decoded.id || decoded.userId;
+        const id = decoded.id || decoded.userId;
 
-        const res = await fetch(`/api/insegnanti/${idInsegnante}/lezioni`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const [info, lez] = await Promise.all([
+          fetch(`/api/insegnanti/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(res => res.json()),
+          fetch(`/api/insegnanti/${id}/lezioni`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then(res => res.json()),
+        ]);
 
-        if (!res.ok) {
-          throw new Error("Errore nel recupero delle lezioni");
-        }
+        setNome(info.nome);
+        setCognome(info.cognome);
 
-        const lezioni = await res.json();
-        setLezioni(lezioni);
+        const enriched = lez
+          .filter(l => {
+            const statoValido =
+              l.stato === "svolta" ||
+              l.stato === "programmata" ||
+              (l.stato === "rimandata" && l.riprogrammata === true);
+
+            return statoValido && l.data && l.ora_inizio && l.ora_fine;
+          })
+          .map(l => {
+            const dataObj = new Date(l.data);
+            const dateStr = `${dataObj.getFullYear()}-${String(dataObj.getMonth() + 1).padStart(2, '0')}-${String(dataObj.getDate()).padStart(2, '0')}`;
+            return {
+              ...l,
+              start: `${dateStr}T${l.ora_inizio}`,
+              end: `${dateStr}T${l.ora_fine}`,
+            };
+          });
+
+        setLezioni(enriched);
       } catch (err) {
         setErrore(err.message);
       } finally {
@@ -39,16 +58,17 @@ export default function CalendarioPersonale() {
       }
     };
 
-    fetchLezioniInsegnante();
+    fetchDati();
   }, []);
 
-  if (loading) return <p className="text-center mt-4">Caricamento...</p>;
-  if (errore) return <p className="text-red-500 text-center mt-4">{errore}</p>;
-
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4 text-center">Il tuo Calendario</h2>
-      <CalendarioLezioni lezioni={lezioni} />
-    </div>
+    <CalendarioLezioni
+      lezioni={lezioni}
+      nome={nome}
+      cognome={cognome}
+      loading={loading}
+      error={errore}
+    />
   );
 }
+
