@@ -1,7 +1,7 @@
 // src/pages/CalendarioPersonale.js
 import React, { useEffect, useState } from "react";
 import jwtDecode from "jwt-decode";
-import CalendarioLezioni from "./CalendarioLezioni";
+import CalendarioLezioni from "../CalendarioLezioni";
 
 export default function CalendarioPersonale() {
   const [lezioni, setLezioni] = useState([]);
