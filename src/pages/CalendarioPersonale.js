@@ -1,7 +1,10 @@
 // src/pages/CalendarioPersonale.js
 import React, { useEffect, useState } from "react";
-import { jwtDecode } from 'jwt-decode'; // ✅ CORRETTO con v4.x
+import { jwtDecode } from 'jwt-decode';
 import CalendarioLezioni from "../CalendarioLezioni";
+
+// ✅ Recupera URL del backend dalla variabile ambiente
+const BASE_URL = process.env.REACT_APP_API_URL;
 
 export default function CalendarioPersonale() {
   const [lezioni, setLezioni] = useState([]);
@@ -19,14 +22,21 @@ export default function CalendarioPersonale() {
         const decoded = jwtDecode(token);
         const id = decoded.id || decoded.userId;
 
-        const [info, lez] = await Promise.all([
-          fetch(`/api/insegnanti/${id}`, {
+        const [infoRes, lezRes] = await Promise.all([
+          fetch(`${BASE_URL}/api/insegnanti/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
-          }).then(res => res.json()),
-          fetch(`/api/insegnanti/${id}/lezioni`, {
+          }),
+          fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni`, {
             headers: { Authorization: `Bearer ${token}` },
-          }).then(res => res.json()),
+          }),
         ]);
+
+        if (!infoRes.ok || !lezRes.ok) {
+          throw new Error("Errore nel recupero dati dal server");
+        }
+
+        const info = await infoRes.json();
+        const lez = await lezRes.json();
 
         setNome(info.nome);
         setCognome(info.cognome);
@@ -71,4 +81,5 @@ export default function CalendarioPersonale() {
     />
   );
 }
+
 
