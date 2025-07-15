@@ -1,6 +1,6 @@
 // src/componenti/CalendarioLezioni.js
 import React from 'react';
-import CalendarioFull from './CalendarioFull';
+import CalendarioFull from './componenti/CalendarioFull';
 
 function CalendarioLezioni({ lezioni, nome, cognome, loading, error }) {
   return (
