@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import "../calendario.css";
+import "./calendario.css";
 
 export default function CalendarioFull({ lezioni = [] }) {
   const [dataSelezionata, setDataSelezionata] = useState(null);
