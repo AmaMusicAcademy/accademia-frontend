@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import CalendarioFull from "./CalendarioFull";
+import CalendarioFull from "./componenti/CalendarioFull";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
