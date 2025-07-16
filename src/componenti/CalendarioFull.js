@@ -1,95 +1,86 @@
-// CalendarioFull.js
-import React, { useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import "./calendario.css";
+import React, { useState, useEffect } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import './calendario.css';
 
-export default function CalendarioFull({ lezioni = [] }) {
+export default function CalendarioFull({ lezioni }) {
   const [dataSelezionata, setDataSelezionata] = useState(null);
+  const [lezioniGiornaliere, setLezioniGiornaliere] = useState([]);
 
-  const eventi = lezioni.map((lezione) => {
-    const colore =
-      lezione.stato === "annullata"
-        ? "stato-annullata"
-        : lezione.stato === "rimandata" && !lezione.riprogrammata
-        ? "stato-rimandata non-riprogrammata"
-        : "stato-generale";
+  // Colori diversi per ogni evento
+  const coloriDisponibili = [
+    '#007bff', '#28a745', '#ffc107', '#17a2b8',
+    '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
+  ];
 
-    return {
-      title: " ",
-      start: lezione.start,
-      end: lezione.end,
-      extendedProps: {
-        stato: lezione.stato,
-        riprogrammata: lezione.riprogrammata,
-        allievo: lezione.allievo || "",
-        ora_inizio: lezione.ora_inizio,
-        ora_fine: lezione.ora_fine,
-      },
-      classNames: ["fc-event-dot", colore],
-    };
-  });
+  const eventi = lezioni.map((lezione, index) => ({
+    id: lezione.id,
+    title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
+    start: `${lezione.data}T${lezione.oraInizio}`,
+    end: `${lezione.data}T${lezione.oraFine}`,
+    extendedProps: {
+      stato: lezione.stato,
+      allievo: lezione.allievo,
+      data: lezione.data,
+      oraInizio: lezione.oraInizio,
+      oraFine: lezione.oraFine,
+    },
+    color: coloriDisponibili[index % coloriDisponibili.length]
+  }));
 
-  const appuntamentiDelGiorno = eventi
-    .filter((e) => {
-      if (!dataSelezionata) return false;
-      const dataEvento = new Date(e.start);
-      return (
-        dataEvento.toDateString() === new Date(dataSelezionata).toDateString()
-      );
-    })
-    .sort((a, b) => a.extendedProps.ora_inizio.localeCompare(b.extendedProps.ora_inizio));
+  const handleDateClick = (arg) => {
+    const data = arg.dateStr;
+    const lezioniDelGiorno = eventi.filter(e => e.start.startsWith(data));
+    setDataSelezionata(data);
+    setLezioniGiornaliere(lezioniDelGiorno);
+  };
 
   return (
-    <div className="calendario-container">
+    <div className="p-4">
       <FullCalendar
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
-        locale="it"
         events={eventi}
-        dayMaxEventRows={false}
-        fixedWeekCount={false}
-        selectable={true}
-        headerToolbar={{
-          start: "prev",
-          center: "title",
-          end: "next",
-        }}
-        contentHeight="auto"
-        dateClick={(info) => setDataSelezionata(info.dateStr)}
+        dateClick={handleDateClick}
+        displayEventTime={false}
+        eventDisplay="background"
+        eventContent={renderEventDot}
+        height="auto"
       />
 
       {dataSelezionata && (
-        <div className="lista-appuntamenti animate-fade-in">
-          <h3 className="titolo-giorno">
-            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString("it-IT", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </h3>
-          {appuntamentiDelGiorno.length === 0 ? (
-            <p className="nessun-evento">Nessun appuntamento</p>
-          ) : (
-            <ul className="lista">
-              {appuntamentiDelGiorno.map((e, idx) => (
-                <li key={idx} className="voce">
-                  <span className="ora">
-                    {e.extendedProps.ora_inizio} - {e.extendedProps.ora_fine}
-                  </span>
-                  <span className="allievo">{e.extendedProps.allievo}</span>
-                  <span className="stato">({e.extendedProps.stato})</span>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="bg-white mt-4 p-4 rounded-xl shadow">
+          <h2 className="text-lg font-semibold mb-2">
+            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </h2>
+          {lezioniGiornaliere
+            .sort((a, b) => a.extendedProps.oraInizio.localeCompare(b.extendedProps.oraInizio))
+            .map((lezione, i) => (
+              <div key={i} className="border-b py-2 px-3">
+                <div className="font-semibold">{lezione.extendedProps.allievo?.nome} {lezione.extendedProps.allievo?.cognome}</div>
+                <div className="text-sm text-gray-700">
+                  {lezione.extendedProps.oraInizio} - {lezione.extendedProps.oraFine}
+                </div>
+                <div className="text-xs italic text-gray-500">
+                  ({lezione.extendedProps.stato})
+                </div>
+              </div>
+            ))
+          }
         </div>
       )}
     </div>
   );
 }
+
+// Visualizza il pallino colorato per ogni evento
+function renderEventDot(arg) {
+  return (
+    <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
+  );
+}
+
 
 
 
