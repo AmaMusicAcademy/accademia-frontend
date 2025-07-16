@@ -10,6 +10,12 @@ const BASE_URL = process.env.REACT_APP_API_URL;
 export default function CalendarioFull({ lezioni }) {
   const [dataSelezionata, setDataSelezionata] = useState('');
   const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
+
+const colori = [
+    '#007bff', '#28a745', '#ffc107', '#17a2b8',
+    '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
+  ];
+
   const [eventi, setEventi] = useState(
     lezioni.map((lezione, index) => ({
       id: lezione.id,
@@ -34,11 +40,6 @@ export default function CalendarioFull({ lezioni }) {
   const [oraFine, setOraFine] = useState('');
   const [allievo, setAllievo] = useState('');
   const [aula, setAula] = useState('');
-
-  const colori = [
-    '#007bff', '#28a745', '#ffc107', '#17a2b8',
-    '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
-  ];
 
   const handleDateClick = (info) => {
     const data = info.dateStr;
