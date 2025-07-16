@@ -8,30 +8,32 @@ export default function CalendarioFull({ lezioni }) {
   const [dataSelezionata, setDataSelezionata] = useState(null);
   const [lezioniGiornaliere, setLezioniGiornaliere] = useState([]);
 
-  // Colori diversi per ogni evento
   const coloriDisponibili = [
     '#007bff', '#28a745', '#ffc107', '#17a2b8',
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
-  const eventi = lezioni.map((lezione, index) => ({
-    id: lezione.id,
-    title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
-    start: `${lezione.data}T${lezione.oraInizio}`,
-    end: `${lezione.data}T${lezione.oraFine}`,
-    extendedProps: {
-      stato: lezione.stato,
-      allievo: lezione.allievo,
-      data: lezione.data,
-      oraInizio: lezione.oraInizio,
-      oraFine: lezione.oraFine,
-    },
-    color: coloriDisponibili[index % coloriDisponibili.length]
-  }));
+  const eventi = lezioni.map((lezione, index) => {
+    const dataISO = new Date(lezione.data).toISOString().slice(0, 10); // Assicura formato YYYY-MM-DD
+    return {
+      id: lezione.id,
+      title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
+      start: `${dataISO}T${lezione.oraInizio}`,
+      end: `${dataISO}T${lezione.oraFine}`,
+      extendedProps: {
+        stato: lezione.stato,
+        allievo: lezione.allievo,
+        data: dataISO,
+        oraInizio: lezione.oraInizio,
+        oraFine: lezione.oraFine,
+      },
+      color: coloriDisponibili[index % coloriDisponibili.length]
+    };
+  });
 
   const handleDateClick = (arg) => {
-    const data = arg.dateStr;
-    const lezioniDelGiorno = eventi.filter(e => e.start.startsWith(data));
+    const data = arg.dateStr; // es. "2025-06-17"
+    const lezioniDelGiorno = eventi.filter(e => e.start.slice(0, 10) === data);
     setDataSelezionata(data);
     setLezioniGiornaliere(lezioniDelGiorno);
   };
@@ -54,11 +56,16 @@ export default function CalendarioFull({ lezioni }) {
           <h2 className="text-lg font-semibold mb-2">
             Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </h2>
+          {lezioniGiornaliere.length === 0 && (
+            <p className="text-gray-500 italic">Nessun appuntamento</p>
+          )}
           {lezioniGiornaliere
             .sort((a, b) => a.extendedProps.oraInizio.localeCompare(b.extendedProps.oraInizio))
             .map((lezione, i) => (
               <div key={i} className="border-b py-2 px-3">
-                <div className="font-semibold">{lezione.extendedProps.allievo?.nome} {lezione.extendedProps.allievo?.cognome}</div>
+                <div className="font-semibold">
+                  {lezione.extendedProps.allievo?.nome} {lezione.extendedProps.allievo?.cognome}
+                </div>
                 <div className="text-sm text-gray-700">
                   {lezione.extendedProps.oraInizio} - {lezione.extendedProps.oraFine}
                 </div>
@@ -74,7 +81,6 @@ export default function CalendarioFull({ lezioni }) {
   );
 }
 
-// Visualizza il pallino colorato per ogni evento
 function renderEventDot(arg) {
   return (
     <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
