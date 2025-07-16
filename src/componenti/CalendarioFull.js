@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import BottomNav from './componenti/BottomNav';
+import BottomNav from './BottomNav';
 import './calendario.css';
 
 const BASE_URL = process.env.REACT_APP_API_URL;
