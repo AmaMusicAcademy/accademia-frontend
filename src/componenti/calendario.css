@@ -1,0 +1,64 @@
+/* Stile calendario iOS-like - chiaro */
+
+.fc {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #222;
+}
+
+/* Righe e celle del calendario */
+.fc-scrollgrid,
+.fc-daygrid-day-frame {
+  border: none !important;
+}
+
+.fc-col-header-cell-cushion {
+  font-weight: 600;
+  color: #333;
+}
+
+.fc-daygrid-day-number {
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Evento nel calendario */
+.fc-event {
+  background-color: #e8f0fe;
+  border: none;
+  color: #1a73e8;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background-color 0.2s ease;
+}
+
+.fc-event:hover {
+  background-color: #d2e3fc;
+}
+
+/* Oggi */
+.fc-day-today {
+  background-color: #f0f8ff;
+}
+
+.fc-toolbar-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #222;
+}
+
+/* Visualizzazione lista (eventuale) */
+.fc-list-event-title a {
+  color: #1a73e8;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.fc-list-event-time {
+  color: #555;
+}
