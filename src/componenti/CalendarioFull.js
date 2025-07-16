@@ -48,18 +48,6 @@ const colori = [
     setLezioniDelGiorno(filtrate);
   };
 
-  const handleMouseDown = (e, info) => {
-    const timer = setTimeout(() => {
-      setDataSelezionata(info.dateStr);
-      setShowModal(true);
-    }, 600);
-    setPressTimer(timer);
-  };
-
-  const handleMouseUp = () => {
-    clearTimeout(pressTimer);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nuovaLezione = {
@@ -124,14 +112,6 @@ const colori = [
           eventContent={renderCompactDot}
           dayMaxEvents={5}
           moreLinkContent={null}
-          dayCellDidMount={(arg) => {
-  const dateStr = arg.date.toISOString().split('T')[0];
-  arg.el.addEventListener('mousedown', () => handleLongPressStart(dateStr));
-  arg.el.addEventListener('mouseup', handleLongPressEnd);
-  arg.el.addEventListener('mouseleave', handleLongPressEnd);
-  arg.el.addEventListener('touchstart', () => handleLongPressStart(dateStr));
-  arg.el.addEventListener('touchend', handleLongPressEnd);
-}}
         />
         
       </div>
