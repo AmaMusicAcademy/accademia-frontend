@@ -35,11 +35,25 @@ const colori = [
   );
 
   const [showModal, setShowModal] = useState(false);
-  const [pressTimer, setPressTimer] = useState(null);
   const [oraInizio, setOraInizio] = useState('');
   const [oraFine, setOraFine] = useState('');
   const [allievo, setAllievo] = useState('');
   const [aula, setAula] = useState('');
+
+  const [pressTimer, setPressTimer] = useState(null);
+
+const handleLongPressStart = (dateStr) => {
+  const timer = setTimeout(() => {
+    setDataSelezionata(dateStr);
+    setShowModal(true);
+  }, 600);
+  setPressTimer(timer);
+};
+
+const handleLongPressEnd = () => {
+  clearTimeout(pressTimer);
+};
+
 
   const handleDateClick = (info) => {
     const data = info.dateStr;
@@ -124,7 +138,16 @@ const colori = [
           eventContent={renderCompactDot}
           dayMaxEvents={5}
           moreLinkContent={null}
+          dayCellDidMount={(arg) => {
+  const dateStr = arg.date.toISOString().split('T')[0];
+  arg.el.addEventListener('mousedown', () => handleLongPressStart(dateStr));
+  arg.el.addEventListener('mouseup', handleLongPressEnd);
+  arg.el.addEventListener('mouseleave', handleLongPressEnd);
+  arg.el.addEventListener('touchstart', () => handleLongPressStart(dateStr));
+  arg.el.addEventListener('touchend', handleLongPressEnd);
+}}
         />
+        
       </div>
 
       {dataSelezionata && (
