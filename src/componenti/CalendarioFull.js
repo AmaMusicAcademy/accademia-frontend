@@ -184,7 +184,14 @@ const handleLongPressEnd = () => {
         </div>
       )}
 
-      <BottomNav />
+      <BottomNav
+  mostraAggiungi={true}
+  onAggiungiClick={() => {
+    setDataSelezionata(new Date().toISOString().split('T')[0]);
+    setShowModal(true);
+  }}
+/>
+
     </div>
   );
 }
