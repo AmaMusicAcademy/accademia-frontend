@@ -3,6 +3,7 @@
   --fc-daygrid-event-dot-height: 6px;
 }
 
+
 .fc-daygrid-event-harness {
   display: inline-block;
   margin: 0 1px;
@@ -19,22 +20,20 @@
 }
 
 .calendario-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
   overflow: hidden;
 }
 
 .calendario-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: white;
+  flex-shrink: 0;
 }
 
 .elenco-lezioni {
   flex: 1;
   overflow-y: auto;
+  padding-bottom: 80px; /* spazio per la BottomNav */
 }
 
 .bottom-nav {
