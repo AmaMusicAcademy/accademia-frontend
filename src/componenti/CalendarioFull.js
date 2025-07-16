@@ -1,208 +1,146 @@
-import React, { useRef, useEffect, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import listPlugin from '@fullcalendar/list';
+// src/componenti/CalendarioFull.js
+import React, { useState, useEffect, useRef } from "react";
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import Modal from "react-modal";
+import { BadgeInfo, X } from "lucide-react";
+import "./calendario.css"; // opzionale per override stile
 
-import { Dialog } from '@headlessui/react';
-import { X } from 'lucide-react';
+Modal.setAppElement("#root");
 
-const CalendarioFull = ({ lezioni }) => {
+const CalendarioFull = ({ lezioni = [] }) => {
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
+  const [lezioneAttiva, setLezioneAttiva] = useState(null);
   const calendarRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentView, setCurrentView] = useState('timeGridWeek');
-  const [filtroAllievo, setFiltroAllievo] = useState('');
-  const [lezioneSelezionata, setLezioneSelezionata] = useState(null);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const handleDateClick = (arg) => {
+    const giorno = arg.dateStr;
+    setSelectedDate(giorno);
 
-  const calendarApi = () => calendarRef.current?.getApi();
+    const lezioniGiorno = lezioni.filter((l) => l.start.startsWith(giorno));
+    setLezioniDelGiorno(lezioniGiorno);
+  };
 
   const handleEventClick = (info) => {
-    setLezioneSelezionata(info.event.extendedProps);
+    setLezioneAttiva(info.event.extendedProps);
   };
 
-  const eventDidMount = (info) => {
-    const { stato, riprogrammata } = info.event.extendedProps;
-    const el = info.el;
+  const renderEventContent = (eventInfo) => (
+    <div className="flex items-center justify-center h-3 w-3 rounded-full bg-blue-500 mx-auto mt-1"></div>
+  );
 
-    if (stato === 'rimandata' && riprogrammata) {
-      el.style.backgroundColor = '#9333ea';
-      el.style.color = 'white';
-    } else if (stato === 'rimandata') {
-      el.style.backgroundColor = 'orange';
-      el.style.color = 'white';
-    } else if (stato === 'annullata') {
-      el.style.backgroundColor = 'red';
-      el.style.color = 'white';
-    } else if (stato === 'svolta') {
-      el.style.backgroundColor = 'green';
-      el.style.color = 'white';
-    }
-  };
-
-  const eventContent = ({ event }) => {
-    const { extendedProps } = event;
-    return (
-      <div className="text-sm leading-tight">
-        <div className="flex items-center gap-2">
-          <span className="font-medium truncate">
-            👤 {extendedProps.nome_allievo} {extendedProps.cognome_allievo}
-          </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            extendedProps.stato === 'svolta' ? 'bg-green-200 text-green-700' :
-            extendedProps.stato === 'annullata' ? 'bg-red-200 text-red-700' :
-            extendedProps.stato === 'rimandata' && extendedProps.riprogrammata ? 'bg-purple-200 text-purple-700' :
-            extendedProps.stato === 'rimandata' ? 'bg-orange-200 text-orange-700' :
-            'bg-gray-200 text-gray-600'
-          }`}>
-            {extendedProps.stato}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  const handleDateChange = (e) => {
-    const date = e.target.value;
-    setSelectedDate(date);
-    calendarApi()?.gotoDate(date);
-  };
-
-  const formatDate = (date) => {
-    return new Intl.DateTimeFormat('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-    }).format(date);
-  };
-
-  // Filtro lezioni per nome allievo
-  const lezioniFiltrate = lezioni.filter(lez => {
-    const nomeCompleto = `${lez.nome_allievo} ${lez.cognome_allievo}`.toLowerCase();
-    return nomeCompleto.includes(filtroAllievo.toLowerCase());
-  });
-
-  const eventi = lezioniFiltrate.map(lez => {
-    const isRecupero = lez.stato === 'rimandata' && lez.riprogrammata;
-    return {
-      ...lez,
-      title: isRecupero
-        ? `🔄 Recupero con ${lez.nome_allievo || 'allievo'}`
-        : `Lezione con ${lez.nome_allievo || 'allievo'}`,
-    };
-  });
+  const closeModal = () => setLezioneAttiva(null);
 
   return (
-    <div className={`p-2 sm:p-4 w-full ${isFullscreen ? 'fixed top-0 left-0 w-screen h-screen bg-white dark:bg-black z-50 p-4 overflow-y-auto' : 'overflow-hidden'}`}>
-
-      {/* Sticky Toolbar */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 dark:text-gray-100">🗓️ Calendario Lezioni</h2>
-          <button
-            onClick={() => setIsFullscreen(prev => !prev)}
-            className="px-3 py-1 rounded-xl bg-white dark:bg-gray-800 border text-primary text-sm shadow-sm active:scale-95 transition"
-          >
-            {isFullscreen ? '🔽 Riduci' : '⛶ Schermo Intero'}
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 mt-2 text-sm">
-          <label className="flex items-center gap-2">
-            📅 Vai a data:
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={handleDateChange}
-              className="appearance-none border rounded-xl px-3 py-1 text-sm text-gray-800 bg-white dark:bg-gray-900 shadow-sm"
-            />
-          </label>
-
-          <input
-            type="text"
-            placeholder="🔍 Filtra per allievo"
-            value={filtroAllievo}
-            onChange={(e) => setFiltroAllievo(e.target.value)}
-            className="px-3 py-1 border rounded-xl text-sm shadow-sm bg-white dark:bg-gray-900"
-          />
-
-          <div className="flex gap-1">
-            <button onClick={() => calendarApi()?.today()} className="px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
-              Oggi
-            </button>
-            <button onClick={() => setCurrentView('dayGridMonth') || calendarApi()?.changeView('dayGridMonth')} className="px-3 py-1 rounded-full bg-gray-200 text-xs">
-              Mese
-            </button>
-            <button onClick={() => setCurrentView('timeGridWeek') || calendarApi()?.changeView('timeGridWeek')} className="px-3 py-1 rounded-full bg-gray-200 text-xs">
-              Settimana
-            </button>
-            <button onClick={() => setCurrentView('listWeek') || calendarApi()?.changeView('listWeek')} className="px-3 py-1 rounded-full bg-gray-200 text-xs">
-              Lista
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Calendario */}
-      <div className="bg-white dark:bg-black rounded-2xl shadow-sm p-2 sm:p-4">
+    <div className="w-full max-w-3xl mx-auto px-4 pt-4">
+      <div className="sticky top-0 z-10 bg-white pb-2 shadow-sm">
         <FullCalendar
           ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={currentView}
-          headerToolbar={false}
-          slotMinTime="07:00:00"
-          slotMaxTime="22:00:00"
-          slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
-          events={eventi}
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          headerToolbar={{
+            left: "prev,next today",
+            center: "title",
+            right: "",
+          }}
+          events={lezioni}
+          dateClick={handleDateClick}
           eventClick={handleEventClick}
-          eventDidMount={eventDidMount}
-          eventContent={eventContent}
-          datesSet={(arg) => setCurrentDate(arg.start)}
-          locale="it"
-          nowIndicator={true}
+          eventContent={renderEventContent}
           height="auto"
-          aspectRatio={isMobile ? 0.8 : 1.5}
         />
       </div>
 
-      {/* MODAL Dettaglio Lezione */}
-      <Dialog open={!!lezioneSelezionata} onClose={() => setLezioneSelezionata(null)} className="fixed z-50 inset-0 p-4 overflow-y-auto bg-black/50 flex items-center justify-center">
-        <Dialog.Panel className="bg-white rounded-xl max-w-sm w-full p-4 shadow-xl">
-          <div className="flex justify-between items-center mb-2">
-            <Dialog.Title className="text-lg font-semibold">📄 Dettagli Lezione</Dialog.Title>
-            <button onClick={() => setLezioneSelezionata(null)}>
-              <X size={20} />
-            </button>
-          </div>
-          {lezioneSelezionata && (
-            <div className="space-y-2 text-sm">
-              <p><strong>Allievo:</strong> {lezioneSelezionata.nome_allievo} {lezioneSelezionata.cognome_allievo}</p>
-              <p><strong>Data:</strong> {formatDate(new Date(lezioneSelezionata.data))}</p>
-              <p><strong>Ora:</strong> {lezioneSelezionata.ora_inizio} - {lezioneSelezionata.ora_fine}</p>
-              <p><strong>Stato:</strong> {lezioneSelezionata.stato}</p>
-              {lezioneSelezionata.motivazione && (
-                <p><strong>Motivazione:</strong> {lezioneSelezionata.motivazione}</p>
-              )}
-              <p><strong>Aula:</strong> {lezioneSelezionata.aula}</p>
-            </div>
+      {selectedDate && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            Lezioni del {new Date(selectedDate).toLocaleDateString("it-IT", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </h3>
+          {lezioniDelGiorno.length === 0 ? (
+            <p className="text-gray-500">Nessuna lezione in questo giorno.</p>
+          ) : (
+            <ul className="space-y-2">
+              {lezioniDelGiorno.map((lezione, idx) => (
+                <li
+                  key={idx}
+                  className="bg-white border rounded-lg p-3 shadow flex justify-between items-center"
+                >
+                  <div>
+                    <p className="font-medium text-gray-800">
+                      {lezione.nome_allievo || "Allievo sconosciuto"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {lezione.ora_inizio} - {lezione.ora_fine}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setLezioneAttiva(lezione)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <BadgeInfo size={20} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
-        </Dialog.Panel>
-      </Dialog>
+        </div>
+      )}
+
+      <Modal
+        isOpen={!!lezioneAttiva}
+        onRequestClose={closeModal}
+        contentLabel="Dettaglio Lezione"
+        className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto mt-24 relative"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-30 z-40"
+      >
+        <button
+          onClick={closeModal}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+        >
+          <X size={22} />
+        </button>
+        {lezioneAttiva && (
+          <>
+            <h2 className="text-xl font-semibold mb-2 text-gray-800">
+              Dettagli Lezione
+            </h2>
+            <p className="mb-1">
+              <strong>Allievo:</strong> {lezioneAttiva.nome_allievo}
+            </p>
+            <p className="mb-1">
+              <strong>Data:</strong>{" "}
+              {new Date(lezioneAttiva.data).toLocaleDateString("it-IT")}
+            </p>
+            <p className="mb-1">
+              <strong>Orario:</strong> {lezioneAttiva.ora_inizio} -{" "}
+              {lezioneAttiva.ora_fine}
+            </p>
+            <p className="mb-1">
+              <strong>Aula:</strong> {lezioneAttiva.aula}
+            </p>
+            <p className="mb-1">
+              <strong>Stato:</strong> {lezioneAttiva.stato}
+            </p>
+            {lezioneAttiva.motivazione && (
+              <p className="text-sm italic text-gray-600">
+                {lezioneAttiva.motivazione}
+              </p>
+            )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 };
 
 export default CalendarioFull;
-
 
 
 
