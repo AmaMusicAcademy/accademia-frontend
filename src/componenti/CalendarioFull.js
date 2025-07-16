@@ -1,88 +1,86 @@
-// src/componenti/CalendarioFull.js
+// CalendarioFull.js
 import React, { useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import './calendario.css';
+import "../calendario.css";
 
 export default function CalendarioFull({ lezioni = [] }) {
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [dataSelezionata, setDataSelezionata] = useState(null);
 
-  const colori = [
-    '#1e90ff', '#ff6347', '#32cd32', '#ffcc00', '#8a2be2', '#e91e63'
-  ];
+  const eventi = lezioni.map((lezione) => {
+    const colore =
+      lezione.stato === "annullata"
+        ? "stato-annullata"
+        : lezione.stato === "rimandata" && !lezione.riprogrammata
+        ? "stato-rimandata non-riprogrammata"
+        : "stato-generale";
 
-  // Evento clic su data
-  const handleDateClick = (arg) => {
-    setSelectedDate(arg.dateStr);
-  };
+    return {
+      title: " ",
+      start: lezione.start,
+      end: lezione.end,
+      extendedProps: {
+        stato: lezione.stato,
+        riprogrammata: lezione.riprogrammata,
+        allievo: lezione.allievo || "",
+        ora_inizio: lezione.ora_inizio,
+        ora_fine: lezione.ora_fine,
+      },
+      classNames: ["fc-event-dot", colore],
+    };
+  });
 
-  // Eventi raggruppati per giorno
-  const eventiPerData = lezioni.reduce((acc, evento) => {
-    const giorno = evento.start.split('T')[0];
-    if (!acc[giorno]) acc[giorno] = [];
-    acc[giorno].push(evento);
-    return acc;
-  }, {});
-
-  // Rende i pallini nella cella del giorno
-  const renderDayCellContent = (arg) => {
-    const dateStr = arg.date.toISOString().split('T')[0];
-    const eventi = eventiPerData[dateStr] || [];
-
-    return (
-      <div className="day-cell-dots">
-        {eventi.slice(0, 6).map((_, i) => (
-          <span
-            key={i}
-            className="event-dot"
-            style={{ backgroundColor: colori[i % colori.length] }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  // Appuntamenti del giorno selezionato
-  const eventiDelGiorno = selectedDate
-    ? lezioni.filter(e => e.start.startsWith(selectedDate))
-    : [];
+  const appuntamentiDelGiorno = eventi
+    .filter((e) => {
+      if (!dataSelezionata) return false;
+      const dataEvento = new Date(e.start);
+      return (
+        dataEvento.toDateString() === new Date(dataSelezionata).toDateString()
+      );
+    })
+    .sort((a, b) => a.extendedProps.ora_inizio.localeCompare(b.extendedProps.ora_inizio));
 
   return (
-    <div className="px-4 pt-4">
+    <div className="calendario-container">
       <FullCalendar
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "",
-        }}
-        dayCellContent={renderDayCellContent}
-        events={lezioni}
-        dateClick={handleDateClick}
-        height="auto"
+        locale="it"
+        events={eventi}
+        dayMaxEventRows={false}
         fixedWeekCount={false}
+        selectable={true}
+        headerToolbar={{
+          start: "prev",
+          center: "title",
+          end: "next",
+        }}
+        contentHeight="auto"
+        dateClick={(info) => setDataSelezionata(info.dateStr)}
       />
 
-      {selectedDate && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-2">
-            Appuntamenti del {selectedDate.split("-").reverse().join("/")}
-          </h2>
-          {eventiDelGiorno.length === 0 ? (
-            <p>Nessun appuntamento.</p>
+      {dataSelezionata && (
+        <div className="lista-appuntamenti animate-fade-in">
+          <h3 className="titolo-giorno">
+            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString("it-IT", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </h3>
+          {appuntamentiDelGiorno.length === 0 ? (
+            <p className="nessun-evento">Nessun appuntamento</p>
           ) : (
-            <ul className="space-y-2">
-              {eventiDelGiorno.map((e, idx) => (
-                <li key={idx} className="border p-2 rounded-md shadow-sm">
-                  <div className="font-medium">{e.titolo || 'Lezione'}</div>
-                  <div className="text-sm text-gray-600">
-                    {e.ora_inizio} - {e.ora_fine}
-                  </div>
-                  {e.allievo && (
-                    <div className="text-sm italic">{e.allievo}</div>
-                  )}
+            <ul className="lista">
+              {appuntamentiDelGiorno.map((e, idx) => (
+                <li key={idx} className="voce">
+                  <span className="ora">
+                    {e.extendedProps.ora_inizio} - {e.extendedProps.ora_fine}
+                  </span>
+                  <span className="allievo">{e.extendedProps.allievo}</span>
+                  <span className="stato">({e.extendedProps.stato})</span>
                 </li>
               ))}
             </ul>

@@ -1,18 +1,105 @@
-/* src/componenti/calendario.css */
-
-.day-cell-dots {
-  display: flex;
-  justify-content: center;
-  flex-wrap: nowrap;
-  padding-top: 3px;
-  gap: 3px;
-  height: 14px;
+/* calendario.css */
+.fc .fc-daygrid-event {
+  display: inline-block;
+  margin: 2px 2px;
+  padding: 0;
+  height: 8px;
+  width: 8px;
+  border-radius: 50%;
   overflow: hidden;
+  text-indent: -9999px;
+  vertical-align: middle;
 }
 
-.event-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+.fc-event-dot {
+  height: 8px !important;
+  width: 8px !important;
+  border-radius: 50% !important;
+  margin: 0 1px !important;
+  padding: 0 !important;
+}
+
+.stato-generale {
+  background-color: #4caf50 !important; /* verde */
+}
+
+.stato-annullata {
+  background-color: #f44336 !important; /* rosso */
+}
+
+.stato-rimandata.non-riprogrammata {
+  background-color: #ff9800 !important; /* arancione */
+}
+
+/* Container generale */
+.calendario-container {
+  padding: 1rem;
+  background: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Lista appuntamenti sotto il calendario */
+.lista-appuntamenti {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 1px solid #ddd;
+  background-color: #fafafa;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: all 0.3s ease-in-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lista-appuntamenti .titolo-giorno {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.lista-appuntamenti .lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-appuntamenti .voce {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lista-appuntamenti .voce:last-child {
+  border-bottom: none;
+}
+
+.lista-appuntamenti .ora {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.lista-appuntamenti .allievo {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.lista-appuntamenti .stato {
+  font-size: 0.8rem;
+  color: #888;
 }
 
