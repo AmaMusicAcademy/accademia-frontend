@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import CalendarioFull from "./componenti/CalendarioFull";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
-export default function CalendarioLezioni({ idInsegnante }) {
+export default function CalendarioLezioni() {
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
@@ -14,7 +15,10 @@ export default function CalendarioLezioni({ idInsegnante }) {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Token mancante");
 
-        const res = await fetch(`${BASE_URL}/api/insegnanti/${idInsegnante}/lezioni`, {
+        const decoded = jwtDecode(token);
+        const id = decoded.id || decoded.userId;
+
+        const res = await fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -48,10 +52,8 @@ export default function CalendarioLezioni({ idInsegnante }) {
       }
     };
 
-    if (idInsegnante) {
-      fetchLezioni();
-    }
-  }, [idInsegnante]);
+    fetchLezioni();
+  }, []);
 
   if (loading) return <p>Caricamento...</p>;
   if (errore) return <p className="text-red-600">{errore}</p>;
