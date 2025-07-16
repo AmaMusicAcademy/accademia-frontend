@@ -40,20 +40,6 @@ const colori = [
   const [allievo, setAllievo] = useState('');
   const [aula, setAula] = useState('');
 
-  const [pressTimer, setPressTimer] = useState(null);
-
-const handleLongPressStart = (dateStr) => {
-  const timer = setTimeout(() => {
-    setDataSelezionata(dateStr);
-    setShowModal(true);
-  }, 600);
-  setPressTimer(timer);
-};
-
-const handleLongPressEnd = () => {
-  clearTimeout(pressTimer);
-};
-
 
   const handleDateClick = (info) => {
     const data = info.dateStr;
