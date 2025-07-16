@@ -25,6 +25,7 @@ export default function CalendarioFull({ lezioni }) {
       oraFine: lezione.ora_fine,
       nome: lezione.nome_allievo,
       cognome: lezione.cognome_allievo,
+      aula: lezione.aula
     }
   }));
 
@@ -36,19 +37,23 @@ export default function CalendarioFull({ lezioni }) {
   };
 
   return (
-    <div className="p-4">
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={eventi}
-        dateClick={handleDateClick}
-        displayEventTime={false}
-        eventContent={renderCompactDot}
-        height="auto"
-      />
+    <div className="calendario-container">
+      <div className="calendario-sticky">
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          events={eventi}
+          dateClick={handleDateClick}
+          displayEventTime={false}
+          eventContent={renderCompactDot}
+          dayMaxEvents={5}
+          moreLinkContent={null}
+          height="auto"
+        />
+      </div>
 
       {dataSelezionata && (
-        <div className="bg-white mt-4 p-4 rounded-xl shadow">
+        <div className="bg-white mt-4 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni">
           <h2 className="text-lg font-semibold mb-3">
             Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', {
               weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -65,7 +70,7 @@ export default function CalendarioFull({ lezioni }) {
                 {lez.extendedProps.nome} {lez.extendedProps.cognome}
               </div>
               <div className="text-sm text-gray-700">
-                {lez.extendedProps.oraInizio} - {lez.extendedProps.oraFine}
+                {lez.extendedProps.oraInizio} - {lez.extendedProps.oraFine} | {lez.extendedProps.aula}
               </div>
               <div className="text-xs italic text-gray-500">
                 ({lez.extendedProps.stato})

@@ -1,17 +1,56 @@
+:root {
+  --fc-daygrid-event-dot-width: 6px;
+  --fc-daygrid-event-dot-height: 6px;
+}
+
 .fc-daygrid-event-harness {
   display: inline-block;
   margin: 0 1px;
   padding: 0;
-  height: 8px;
-  overflow: hidden;
   line-height: 1;
 }
 
 .fc-event-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: var(--fc-daygrid-event-dot-width);
+  height: var(--fc-daygrid-event-dot-height);
   border-radius: 50%;
-  background-color: currentColor;
   margin: 0 1px;
+}
+
+.calendario-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.calendario-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+.elenco-lezioni {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.bottom-nav {
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  border-top: 1px solid #ccc;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.bottom-nav ul {
+  display: flex;
+  justify-content: space-around;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
