@@ -15,24 +15,22 @@ export default function CalendarioFull({ lezioni }) {
 
   const eventi = lezioni.map((lezione, index) => ({
     id: lezione.id,
-    title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
-    start: `${lezione.data}T${lezione.oraInizio}`, // Assunto: data già in formato YYYY-MM-DD
-    end: `${lezione.data}T${lezione.oraFine}`,
+    title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
+    start: lezione.start,
+    end: lezione.end,
     extendedProps: {
       stato: lezione.stato,
-      allievo: lezione.allievo,
-      data: lezione.data,
-      oraInizio: lezione.oraInizio,
-      oraFine: lezione.oraFine,
+      oraInizio: lezione.ora_inizio,
+      oraFine: lezione.ora_fine,
+      nome: lezione.nome_allievo,
+      cognome: lezione.cognome_allievo
     },
     color: coloriDisponibili[index % coloriDisponibili.length]
   }));
 
-console.log("Lezioni originali:", lezioni);
-
   const handleDateClick = (arg) => {
-    const data = arg.dateStr; // es. '2025-06-17'
-    const lezioniDelGiorno = eventi.filter(e => e.start.startsWith(data));
+    const data = arg.dateStr;
+    const lezioniDelGiorno = eventi.filter(e => e.start.slice(0, 10) === data);
     setDataSelezionata(data);
     setLezioniGiornaliere(lezioniDelGiorno);
   };
@@ -49,9 +47,6 @@ console.log("Lezioni originali:", lezioni);
         eventContent={renderEventDot}
         height="auto"
       />
-
-      console.log("Eventi costruiti per il calendario:", eventi);
-
 
       {dataSelezionata && (
         <div className="bg-white mt-4 p-4 rounded-xl shadow">
@@ -70,7 +65,7 @@ console.log("Lezioni originali:", lezioni);
             .map((lezione, i) => (
               <div key={i} className="border-b py-2 px-3">
                 <div className="font-semibold">
-                  {lezione.extendedProps.allievo?.nome} {lezione.extendedProps.allievo?.cognome}
+                  {lezione.extendedProps.nome} {lezione.extendedProps.cognome}
                 </div>
                 <div className="text-sm text-gray-700">
                   {lezione.extendedProps.oraInizio} - {lezione.extendedProps.oraFine}
@@ -91,6 +86,7 @@ function renderEventDot(arg) {
     <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
   );
 }
+
 
 
 
