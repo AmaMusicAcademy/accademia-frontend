@@ -5,34 +5,38 @@ import interactionPlugin from '@fullcalendar/interaction';
 import './calendario.css';
 
 export default function CalendarioFull({ lezioni }) {
-  const [dataSelezionata, setDataSelezionata] = useState(null);
-  const [lezioniGiornaliere, setLezioniGiornaliere] = useState([]);
+  const [dataSelezionata, setDataSelezionata] = useState('');
+  const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
 
-  const coloriDisponibili = [
+  const colori = [
     '#007bff', '#28a745', '#ffc107', '#17a2b8',
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
+  // Mappa lezioni nei formati richiesti da FullCalendar
   const eventi = lezioni.map((lezione, index) => ({
     id: lezione.id,
     title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
-    start: lezione.start,
+    start: lezione.start, // già pronto in formato ISO
     end: lezione.end,
+    color: colori[index % colori.length],
     extendedProps: {
       stato: lezione.stato,
       oraInizio: lezione.ora_inizio,
       oraFine: lezione.ora_fine,
       nome: lezione.nome_allievo,
-      cognome: lezione.cognome_allievo
-    },
-    color: coloriDisponibili[index % coloriDisponibili.length]
+      cognome: lezione.cognome_allievo,
+    }
   }));
 
-  const handleDateClick = (arg) => {
-    const data = arg.dateStr;
-    const lezioniDelGiorno = eventi.filter(e => e.start.slice(0, 10) === data);
+  // Quando si clicca una data nel calendario
+  const handleDateClick = (info) => {
+    const data = info.dateStr;
     setDataSelezionata(data);
-    setLezioniGiornaliere(lezioniDelGiorno);
+
+    // Filtra eventi per data (ignora orario)
+    const filtrate = eventi.filter(ev => ev.start.slice(0, 10) === data);
+    setLezioniDelGiorno(filtrate);
   };
 
   return (
@@ -50,31 +54,29 @@ export default function CalendarioFull({ lezioni }) {
 
       {dataSelezionata && (
         <div className="bg-white mt-4 p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">
+          <h2 className="text-lg font-semibold mb-3">
             Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', {
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
             })}
           </h2>
 
-          {lezioniGiornaliere.length === 0 && (
-            <p className="text-gray-500 italic">Nessun appuntamento</p>
+          {lezioniDelGiorno.length === 0 && (
+            <p className="text-gray-500 italic">Nessuna lezione</p>
           )}
 
-          {lezioniGiornaliere
-            .sort((a, b) => a.extendedProps.oraInizio.localeCompare(b.extendedProps.oraInizio))
-            .map((lezione, i) => (
-              <div key={i} className="border-b py-2 px-3">
-                <div className="font-semibold">
-                  {lezione.extendedProps.nome} {lezione.extendedProps.cognome}
-                </div>
-                <div className="text-sm text-gray-700">
-                  {lezione.extendedProps.oraInizio} - {lezione.extendedProps.oraFine}
-                </div>
-                <div className="text-xs italic text-gray-500">
-                  ({lezione.extendedProps.stato})
-                </div>
+          {lezioniDelGiorno.map((lez, i) => (
+            <div key={i} className="border-b py-2">
+              <div className="font-semibold">
+                {lez.extendedProps.nome} {lez.extendedProps.cognome}
               </div>
-            ))}
+              <div className="text-sm text-gray-700">
+                {lez.extendedProps.oraInizio} - {lez.extendedProps.oraFine}
+              </div>
+              <div className="text-xs italic text-gray-500">
+                ({lez.extendedProps.stato})
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -83,9 +85,13 @@ export default function CalendarioFull({ lezioni }) {
 
 function renderEventDot(arg) {
   return (
-    <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
+    <div
+      className="fc-event-dot"
+      style={{ backgroundColor: arg.event.backgroundColor }}
+    ></div>
   );
 }
+
 
 
 
