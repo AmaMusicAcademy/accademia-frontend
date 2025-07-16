@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -13,27 +13,26 @@ export default function CalendarioFull({ lezioni }) {
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
-  const eventi = lezioni.map((lezione, index) => {
-    const dataISO = new Date(lezione.data).toISOString().slice(0, 10); // Assicura formato YYYY-MM-DD
-    return {
-      id: lezione.id,
-      title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
-      start: `${dataISO}T${lezione.oraInizio}`,
-      end: `${dataISO}T${lezione.oraFine}`,
-      extendedProps: {
-        stato: lezione.stato,
-        allievo: lezione.allievo,
-        data: dataISO,
-        oraInizio: lezione.oraInizio,
-        oraFine: lezione.oraFine,
-      },
-      color: coloriDisponibili[index % coloriDisponibili.length]
-    };
-  });
+  const eventi = lezioni.map((lezione, index) => ({
+    id: lezione.id,
+    title: `${lezione.allievo?.nome || ''} ${lezione.allievo?.cognome || ''}`,
+    start: `${lezione.data}T${lezione.oraInizio}`, // Assunto: data già in formato YYYY-MM-DD
+    end: `${lezione.data}T${lezione.oraFine}`,
+    extendedProps: {
+      stato: lezione.stato,
+      allievo: lezione.allievo,
+      data: lezione.data,
+      oraInizio: lezione.oraInizio,
+      oraFine: lezione.oraFine,
+    },
+    color: coloriDisponibili[index % coloriDisponibili.length]
+  }));
+
+console.log("Lezioni originali:", lezioni);
 
   const handleDateClick = (arg) => {
-    const data = arg.dateStr; // es. "2025-06-17"
-    const lezioniDelGiorno = eventi.filter(e => e.start.slice(0, 10) === data);
+    const data = arg.dateStr; // es. '2025-06-17'
+    const lezioniDelGiorno = eventi.filter(e => e.start.startsWith(data));
     setDataSelezionata(data);
     setLezioniGiornaliere(lezioniDelGiorno);
   };
@@ -51,14 +50,21 @@ export default function CalendarioFull({ lezioni }) {
         height="auto"
       />
 
+      console.log("Eventi costruiti per il calendario:", eventi);
+
+
       {dataSelezionata && (
         <div className="bg-white mt-4 p-4 rounded-xl shadow">
           <h2 className="text-lg font-semibold mb-2">
-            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })}
           </h2>
+
           {lezioniGiornaliere.length === 0 && (
             <p className="text-gray-500 italic">Nessun appuntamento</p>
           )}
+
           {lezioniGiornaliere
             .sort((a, b) => a.extendedProps.oraInizio.localeCompare(b.extendedProps.oraInizio))
             .map((lezione, i) => (
@@ -73,8 +79,7 @@ export default function CalendarioFull({ lezioni }) {
                   ({lezione.extendedProps.stato})
                 </div>
               </div>
-            ))
-          }
+            ))}
         </div>
       )}
     </div>
@@ -86,6 +91,7 @@ function renderEventDot(arg) {
     <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
   );
 }
+
 
 
 
