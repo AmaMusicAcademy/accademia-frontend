@@ -14,7 +14,6 @@ export default function CalendarioFull({ lezioni }) {
   ];
 
   const eventi = lezioni.map((lezione, index) => {
-    console.log("🎨 Costruzione evento da lezione:", lezione);
     return {
       id: lezione.id,
       title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
@@ -31,12 +30,9 @@ export default function CalendarioFull({ lezioni }) {
     };
   });
 
-  console.log("🗓️ Eventi finali per calendario:", eventi);
-
   const handleDateClick = (info) => {
     const data = info.dateStr;
     const filtrate = eventi.filter(ev => ev.start.slice(0, 10) === data);
-    console.log("📅 Giorno cliccato:", data, "| Eventi trovati:", filtrate);
     setDataSelezionata(data);
     setLezioniDelGiorno(filtrate);
   };
@@ -49,7 +45,6 @@ export default function CalendarioFull({ lezioni }) {
         events={eventi}
         dateClick={handleDateClick}
         displayEventTime={false}
-        eventDisplay="background"
         eventContent={renderEventDot}
         height="auto"
       />
@@ -89,7 +84,13 @@ function renderEventDot(arg) {
   return (
     <div
       className="fc-event-dot"
-      style={{ backgroundColor: arg.event.backgroundColor }}
+      style={{
+        backgroundColor: arg.event.backgroundColor,
+        width: '6px',
+        height: '6px',
+        borderRadius: '50%',
+        display: 'inline-block'
+      }}
     ></div>
   );
 }
