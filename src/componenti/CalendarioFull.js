@@ -13,25 +13,31 @@ export default function CalendarioFull({ lezioni }) {
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
-  const eventi = lezioni.map((lezione, index) => ({
-    id: lezione.id,
-    title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
-    start: lezione.start,
-    end: lezione.end,
-    color: colori[index % colori.length],
-    extendedProps: {
-      stato: lezione.stato,
-      oraInizio: lezione.ora_inizio,
-      oraFine: lezione.ora_fine,
-      nome: lezione.nome_allievo,
-      cognome: lezione.cognome_allievo,
-    }
-  }));
+  const eventi = lezioni.map((lezione, index) => {
+    console.log("🎨 Costruzione evento da lezione:", lezione);
+    return {
+      id: lezione.id,
+      title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
+      start: lezione.start,
+      end: lezione.end,
+      color: colori[index % colori.length],
+      extendedProps: {
+        stato: lezione.stato,
+        oraInizio: lezione.ora_inizio,
+        oraFine: lezione.ora_fine,
+        nome: lezione.nome_allievo,
+        cognome: lezione.cognome_allievo,
+      }
+    };
+  });
+
+  console.log("🗓️ Eventi finali per calendario:", eventi);
 
   const handleDateClick = (info) => {
     const data = info.dateStr;
-    setDataSelezionata(data);
     const filtrate = eventi.filter(ev => ev.start.slice(0, 10) === data);
+    console.log("📅 Giorno cliccato:", data, "| Eventi trovati:", filtrate);
+    setDataSelezionata(data);
     setLezioniDelGiorno(filtrate);
   };
 

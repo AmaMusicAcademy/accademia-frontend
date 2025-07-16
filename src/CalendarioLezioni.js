@@ -25,6 +25,7 @@ export default function CalendarioLezioni() {
         if (!res.ok) throw new Error("Errore nel caricamento delle lezioni");
 
         const lez = await res.json();
+        console.log("📦 Lezioni ricevute dal backend:", lez);
 
         const filtrate = lez
           .filter(l =>
@@ -44,8 +45,10 @@ export default function CalendarioLezioni() {
             };
           });
 
+        console.log("✅ Lezioni filtrate per calendario:", filtrate);
         setLezioni(filtrate);
       } catch (err) {
+        console.error("❌ Errore fetch:", err);
         setErrore(err.message);
       } finally {
         setLoading(false);
