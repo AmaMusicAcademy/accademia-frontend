@@ -13,22 +13,20 @@ export default function CalendarioFull({ lezioni }) {
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
-  const eventi = lezioni.map((lezione, index) => {
-    return {
-      id: lezione.id,
-      title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
-      start: lezione.start,
-      end: lezione.end,
-      color: colori[index % colori.length],
-      extendedProps: {
-        stato: lezione.stato,
-        oraInizio: lezione.ora_inizio,
-        oraFine: lezione.ora_fine,
-        nome: lezione.nome_allievo,
-        cognome: lezione.cognome_allievo,
-      }
-    };
-  });
+  const eventi = lezioni.map((lezione, index) => ({
+    id: lezione.id,
+    title: '',
+    start: lezione.start,
+    end: lezione.end,
+    color: colori[index % colori.length],
+    extendedProps: {
+      stato: lezione.stato,
+      oraInizio: lezione.ora_inizio,
+      oraFine: lezione.ora_fine,
+      nome: lezione.nome_allievo,
+      cognome: lezione.cognome_allievo,
+    }
+  }));
 
   const handleDateClick = (info) => {
     const data = info.dateStr;
@@ -45,7 +43,7 @@ export default function CalendarioFull({ lezioni }) {
         events={eventi}
         dateClick={handleDateClick}
         displayEventTime={false}
-        eventContent={renderEventDot}
+        eventContent={renderCompactDot}
         height="auto"
       />
 
@@ -80,17 +78,10 @@ export default function CalendarioFull({ lezioni }) {
   );
 }
 
-function renderEventDot(arg) {
+function renderCompactDot(arg) {
   return (
-    <div
-      className="fc-event-dot"
-      style={{
-        backgroundColor: arg.event.backgroundColor,
-        width: '6px',
-        height: '6px',
-        borderRadius: '50%',
-        display: 'inline-block'
-      }}
-    ></div>
+    <div className="fc-event-dot" style={{
+      backgroundColor: arg.event.backgroundColor
+    }}></div>
   );
 }

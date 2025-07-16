@@ -1,43 +1,17 @@
-/* Mantieni le celle uniformi */
-.fc .fc-daygrid-day-frame {
-  padding: 4px;
-}
-
-/* Rimuove l’altezza delle righe degli eventi */
 .fc-daygrid-event-harness {
   display: inline-block;
-  margin: 1px 2px;
+  margin: 0 1px;
   padding: 0;
+  height: 8px;
+  overflow: hidden;
+  line-height: 1;
 }
 
-/* Pallini piccoli tipo iOS */
 .fc-event-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background-color: currentColor;
+  margin: 0 1px;
 }
-
-/* Titolo mese centrato */
-.fc-toolbar-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-/* Bottoni mese */
-.fc .fc-button {
-  background-color: #f56565;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  color: white;
-}
-
-/* Sfondo evento non deve oscurare il pallino */
-.fc-event {
-  background: transparent !important;
-  border: none !important;
-}
-
-
