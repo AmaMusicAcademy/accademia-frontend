@@ -13,10 +13,11 @@ export default function CalendarioFull({ lezioni }) {
     '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
   ];
 
+  // Mappa lezioni nei formati richiesti da FullCalendar
   const eventi = lezioni.map((lezione, index) => ({
     id: lezione.id,
     title: `${lezione.nome_allievo} ${lezione.cognome_allievo}`,
-    start: lezione.start,
+    start: lezione.start, // già pronto in formato ISO
     end: lezione.end,
     color: colori[index % colori.length],
     extendedProps: {
@@ -28,9 +29,12 @@ export default function CalendarioFull({ lezioni }) {
     }
   }));
 
+  // Quando si clicca una data nel calendario
   const handleDateClick = (info) => {
     const data = info.dateStr;
     setDataSelezionata(data);
+
+    // Filtra eventi per data (ignora orario)
     const filtrate = eventi.filter(ev => ev.start.slice(0, 10) === data);
     setLezioniDelGiorno(filtrate);
   };
@@ -87,3 +91,20 @@ function renderEventDot(arg) {
     ></div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

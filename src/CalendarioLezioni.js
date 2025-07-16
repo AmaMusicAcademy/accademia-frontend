@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import CalendarioFull from "./componenti/CalendarioFull";
+import CalendarioFull from "./CalendarioFull";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -58,8 +58,3 @@ export default function CalendarioLezioni({ idInsegnante }) {
 
   return <CalendarioFull lezioni={lezioni} />;
 }
-
-
-
-
-
