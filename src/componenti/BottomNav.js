@@ -15,20 +15,21 @@ const BottomNav = ({ mostraAggiungi = false, onAggiungiClick }) => {
       {/* Centrale: o calendario 📅 oppure ➕ */}
       {mostraAggiungi ? (
         <button
-          onClick={onAggiungiClick}
-          className="bg-green-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
-          style={{ position: 'relative', zIndex: 10 }}
-        >
-          ➕
-        </button>
+  onClick={handleAggiungiLezione}
+  className="bg-red-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
+  style={{ position: 'relative', zIndex: 10 }}
+>
+  ➕
+</button>
+
       ) : (
         <button
-          onClick={() => navigate('/insegnante/calendario')}
-          className="bg-blue-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
-          style={{ position: 'relative', zIndex: 10 }}
-        >
-          📅
-        </button>
+  onClick={() => navigate('/insegnante/calendario')}
+  className="bg-red-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
+  style={{ position: 'relative', zIndex: 10 }}
+>
+  📅
+</button>
       )}
 
       {/* Allievi */}
