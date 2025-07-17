@@ -9,37 +9,37 @@ function LoginPage() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrore('');
-    try {
-      const res = await fetch(`https://app-docenti.onrender.com/api/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+  e.preventDefault();
+  setErrore('');
 
-      if (!res.ok) {
-        const err = await res.json();
-        setErrore(err.error || 'Errore login');
-        return;
-      }
+  try {
+    const res = await fetch(`https://app-docenti.onrender.com/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-      const data = await res.json();
-      localStorage.setItem('token', data.token);
-localStorage.setItem('ruolo', data.ruolo);
-localStorage.setItem('username', data.username);
+    const data = await res.json();
 
-// Redirect in base al ruolo
-if (data.ruolo === 'admin') {
-  navigate('/admin');
-} else {
-  navigate('/profilo');
-}
-
-    } catch (err) {
-      setErrore('Errore di connessione al server');
+    if (!res.ok) {
+      setErrore(data.message || 'Credenziali non valide');
+      return;
     }
-  };
+
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('ruolo', data.ruolo);
+    localStorage.setItem('username', data.username);
+
+    if (data.ruolo === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard-insegnante');
+    }
+  } catch (err) {
+    console.error(err);
+    setErrore('Errore di connessione al server');
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
