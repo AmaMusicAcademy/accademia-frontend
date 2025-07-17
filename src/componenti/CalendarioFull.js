@@ -11,6 +11,8 @@ export default function CalendarioFull({ lezioni }) {
   //const [dataSelezionata, setDataSelezionata] = useState('');
   const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
   const [data, setData] = useState('');
+  const [dataSelezionata, setDataSelezionata] = useState('');
+
 
 
 const colori = [

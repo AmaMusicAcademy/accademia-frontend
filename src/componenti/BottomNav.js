@@ -15,7 +15,7 @@ const BottomNav = ({ mostraAggiungi = false, onAggiungiClick }) => {
       {/* Centrale: o calendario 📅 oppure ➕ */}
       {mostraAggiungi ? (
         <button
-  onClick={handleAggiungiLezione}
+  onClick={() => navigate('/insegnante/calendario/aggiungi')}
   className="bg-red-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
   style={{ position: 'relative', zIndex: 10 }}
 >
