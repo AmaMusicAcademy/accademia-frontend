@@ -26,8 +26,16 @@ function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem('token', data.token);
-      localStorage.setItem('utente', JSON.stringify(data.utente));
-      navigate('/insegnante');
+localStorage.setItem('ruolo', data.ruolo);
+localStorage.setItem('username', data.username);
+
+// Redirect in base al ruolo
+if (data.ruolo === 'admin') {
+  navigate('/admin');
+} else {
+  navigate('/profilo');
+}
+
     } catch (err) {
       setErrore('Errore di connessione al server');
     }
