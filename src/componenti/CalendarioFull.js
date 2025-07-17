@@ -8,8 +8,10 @@ import './calendario.css';
 const BASE_URL = process.env.REACT_APP_API_URL;
 
 export default function CalendarioFull({ lezioni }) {
-  const [dataSelezionata, setDataSelezionata] = useState('');
+  //const [dataSelezionata, setDataSelezionata] = useState('');
   const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
+  const [data, setData] = useState('');
+
 
 const colori = [
     '#007bff', '#28a745', '#ffc107', '#17a2b8',
@@ -51,7 +53,7 @@ const colori = [
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nuovaLezione = {
-      data: dataSelezionata,
+      data: data,
       ora_inizio: oraInizio,
       ora_fine: oraFine,
       aula: aula,
@@ -76,8 +78,8 @@ const colori = [
       const nuovoEvento = {
         id: lezioneCreata.id,
         title: '',
-        start: `${dataSelezionata}T${oraInizio}`,
-        end: `${dataSelezionata}T${oraFine}`,
+        start: `${data}T${oraInizio}`,
+        end: `${data}T${oraFine}`,
         color: colori[eventi.length % colori.length],
         extendedProps: {
           ...lezioneCreata,
@@ -138,7 +140,14 @@ const colori = [
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-semibold mb-2">Nuova lezione</h2>
-            <p className="mb-2">Data selezionata: {dataSelezionata}</p>
+            <input
+  type="date"
+  className="border p-2 rounded"
+  value={data}
+  onChange={e => setData(e.target.value)}
+  required
+/>
+
             <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
               <input type="time" className="border p-2 rounded" value={oraInizio} onChange={e => setOraInizio(e.target.value)} required />
               <input type="time" className="border p-2 rounded" value={oraFine} onChange={e => setOraFine(e.target.value)} required />
@@ -154,7 +163,9 @@ const colori = [
   mostraAggiungi={true}
   onAggiungiClick={() => {
     setDataSelezionata(new Date().toISOString().split('T')[0]);
+    setData(new Date().toISOString().split('T')[0]); // Imposta la data odierna come default
     setShowModal(true);
+
   }}
 />
 
