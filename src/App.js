@@ -16,6 +16,7 @@ import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 //import AdminDashboard from './pages/AdminDashboard';
 import ProfiloAdmin from './pages/ProfiloAdmin';
+import AdminAllievi from './pages/AdminAllievi';
 
 
 
@@ -55,6 +56,7 @@ function App() {
   <Route path="/cambia-avatar" element={<CambiaAvatar />} />
   <Route path="/rimborso" element={<CalcoloRimborso />} />
   <Route path="/admin" element={<ProfiloAdmin />} />
+  <Route path="/admin/allievi" element={<AdminAllievi />} />
 </Routes>
 
   );
