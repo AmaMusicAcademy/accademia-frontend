@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import BottomNavAdmin from '../components/BottomNavAdmin';
 
 function AdminPage() {
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ function AdminPage() {
           Esci
         </button>
       </div>
+      <BottomNavAdmin />
     </div>
   );
 }
