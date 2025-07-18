@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNavAdmin from '../components/BottomNavAdmin';
+import BottomNavAdmin from '../componenti/BottomNavAdmin';
 
 const ProfiloAdmin = () => {
   const navigate = useNavigate();
