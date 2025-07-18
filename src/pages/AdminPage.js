@@ -6,48 +6,55 @@ function AdminPage() {
   const navigate = useNavigate();
   const username = localStorage.getItem('username') || 'admin';
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/');
-  };
-
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="bg-white p-6 rounded shadow mb-4">
-        <h1 className="text-xl font-bold">Benvenuto, {username}</h1>
-        <p className="text-sm text-gray-500">Ruolo: Admin</p>
+    <div className="min-h-screen pb-20 bg-gray-100">
+      {/* HEADER */}
+      <div className="bg-white px-6 py-5 shadow">
+        <div className="flex items-center space-x-4">
+          <div className="w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center text-xl font-bold text-white">
+            {username.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">{username}</h2>
+            <p className="text-gray-500 text-sm">Account Admin</p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow mb-4">
-        <h2 className="font-semibold mb-2">Gestione</h2>
-        <ul className="divide-y divide-gray-200">
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/utenti')}>Utenti (Admin/Insegnanti)</li>
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/allievi')}>Allievi</li>
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/lezioni')}>Lezioni</li>
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/aule')}>Aule</li>
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/pagamenti')}>Pagamenti</li>
-        </ul>
+      {/* SEZIONE ACCOUNT */}
+      <div className="mt-4">
+        <h3 className="text-sm text-gray-500 px-6 mb-1">ACCOUNT</h3>
+        <div className="bg-white divide-y shadow">
+          <button className="w-full text-left px-6 py-4" onClick={() => navigate('/admin/account')}>
+            Informazioni Account
+          </button>
+          <button className="w-full text-left px-6 py-4" onClick={() => navigate('/admin/password')}>
+            Cambia Password
+          </button>
+          <button className="w-full text-left px-6 py-4" onClick={() => navigate('/admin/avatar')}>
+            Cambia Immagine
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow mb-4">
-        <h2 className="font-semibold mb-2">Sicurezza</h2>
-        <ul className="divide-y divide-gray-200">
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/password')}>Cambia password</li>
-          <li className="py-2 cursor-pointer" onClick={() => navigate('/admin/avatar')}>Cambia immagine</li>
-        </ul>
+      {/* SEZIONE SICUREZZA */}
+      <div className="mt-6">
+        <h3 className="text-sm text-gray-500 px-6 mb-1">SICUREZZA</h3>
+        <div className="bg-white divide-y shadow">
+          <button className="w-full text-left px-6 py-4 text-red-600" onClick={() => {
+            localStorage.clear();
+            navigate('/');
+          }}>
+            Esci
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow">
-        <button
-          onClick={handleLogout}
-          className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600"
-        >
-          Esci
-        </button>
-      </div>
+      {/* BOTTOM NAV */}
       <BottomNavAdmin />
     </div>
   );
 }
 
 export default AdminPage;
+
