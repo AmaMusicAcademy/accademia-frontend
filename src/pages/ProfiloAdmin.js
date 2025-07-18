@@ -82,9 +82,6 @@ const ProfiloAdmin = () => {
       <span className="text-gray-400">›</span>
     </button>
   </div>
-</div>
-
-
       {/* Bottom nav */}
       <BottomNavAdmin />
     </div>
