@@ -1,4 +1,4 @@
-import React from 'react';
+/*import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UserIcon, CalendarIcon, CreditCardIcon } from 'lucide-react';
 
@@ -32,5 +32,40 @@ function BottomNavAdmin() {
     </nav>
   );
 }
+
+export default BottomNavAdmin;
+*/
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const BottomNavAdmin = ({ current }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 bg-white shadow-md flex justify-around py-2 border-t">
+      <button onClick={() => navigate('/admin')}>
+        <span className="text-xl">👤</span>
+      </button>
+
+      {current === 'allievi' ? (
+        <button
+          onClick={() => navigate('/admin/allievi/aggiungi')}
+          className="bg-red-500 text-white w-12 h-12 rounded-full -mt-6 shadow-lg flex items-center justify-center text-2xl"
+        >
+          +
+        </button>
+      ) : (
+        <button onClick={() => navigate('/admin/calendario')}>
+          <span className="text-xl">📅</span>
+        </button>
+      )}
+
+      <button onClick={() => navigate('/admin/pagamenti')}>
+        <span className="text-xl">💰</span>
+      </button>
+    </div>
+  );
+};
 
 export default BottomNavAdmin;
