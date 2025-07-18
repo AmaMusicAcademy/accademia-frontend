@@ -15,7 +15,7 @@ import CambiaAvatar from './pages/CambiaAvatar';
 import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 //import AdminDashboard from './pages/AdminDashboard';
-import AdminPage from './pages/AdminPage';
+import ProfiloAdmin from './pages/ProfiloAdmin';
 
 
 
@@ -54,8 +54,7 @@ function App() {
   <Route path="/profilo/password" element={<CambiaPassword />} />
   <Route path="/cambia-avatar" element={<CambiaAvatar />} />
   <Route path="/rimborso" element={<CalcoloRimborso />} />
-
-  <Route path="/admin" element={<AdminPage />} />
+  <Route path="/admin" element={<ProfiloAdmin />} />
 </Routes>
 
   );
