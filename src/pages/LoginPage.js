@@ -12,11 +12,19 @@ function LoginPage() {
   e.preventDefault();
   setErrore('');
 
+  console.log('Invio credenziali:', {
+    username: username.trim(),
+    password: password
+  });
+
   try {
     const res = await fetch(`https://app-docenti.onrender.com/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ 
+        username: username.trim(),   // 👈 Rimuove spazi invisibili
+        password: password
+      }),
     });
 
     const data = await res.json();
