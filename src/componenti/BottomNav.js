@@ -5,8 +5,6 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path) => location.pathname.startsWith(path);
-
   const isAllieviPage = location.pathname === '/admin/allievi';
 
   return (
