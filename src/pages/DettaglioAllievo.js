@@ -6,6 +6,8 @@ const DettaglioAllievo = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [allievo, setAllievo] = useState(null);
+  const [modalType, setModalType] = useState(null); // 'pagamenti' | 'assegna' | null
+
 
   useEffect(() => {
     const fetchAllievo = async () => {
@@ -59,10 +61,81 @@ const DettaglioAllievo = () => {
             </div>
           ))}
         </div>
+
+        <div className="mt-6 space-y-2">
+  <button
+    onClick={() => setModalType('pagamenti')}
+    className="w-full bg-white rounded-xl px-4 py-3 text-left text-gray-800 shadow border border-gray-200"
+  >
+    Pagamenti
+  </button>
+
+  <button
+    onClick={() => setModalType('assegna')}
+    className="w-full bg-white rounded-xl px-4 py-3 text-left text-gray-800 shadow border border-gray-200"
+  >
+    Assegna insegnanti
+  </button>
+</div>
       </div>
 
       {/* BottomBar con tasto "Modifica" centrale */}
       <BottomNavAdmin showEditButton onEdit={() => navigate(`/admin/allievi/${id}/modifica`)} />
+    
+{modalType && (
+  <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+    <div className="bg-white rounded-2xl w-[90%] max-w-md p-4 shadow-lg relative">
+      <h2 className="text-lg font-semibold text-center mb-4">
+        {modalType === 'pagamenti' ? 'Gestione Pagamenti' : 'Assegna Insegnanti'}
+      </h2>
+
+      {modalType === 'pagamenti' && (
+        <div>
+          <p className="text-sm text-gray-600 mb-2">Seleziona mese da segnare come pagato:</p>
+          {/* Placeholder per selezione mese */}
+          <select className="w-full border rounded px-3 py-2 text-sm">
+            <option>Gennaio 2025</option>
+            <option>Febbraio 2025</option>
+            <option>Marzo 2025</option>
+            {/* Puoi popolarli dinamicamente in seguito */}
+          </select>
+          <button className="mt-4 w-full bg-blue-500 text-white py-2 rounded shadow">
+            Segna come pagato
+          </button>
+        </div>
+      )}
+
+      {modalType === 'assegna' && (
+        <div>
+          <p className="text-sm text-gray-600 mb-2">Seleziona insegnanti da associare:</p>
+          {/* Placeholder per lista insegnanti */}
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" />
+              <span className="text-sm">Mario Rossi</span>
+            </label>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" />
+              <span className="text-sm">Luca Bianchi</span>
+            </label>
+            {/* Popolati dinamicamente in seguito */}
+          </div>
+          <button className="mt-4 w-full bg-green-500 text-white py-2 rounded shadow">
+            Assegna
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={() => setModalType(null)}
+        className="absolute top-2 right-4 text-gray-500 text-xl"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
