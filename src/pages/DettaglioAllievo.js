@@ -10,6 +10,8 @@ const DettaglioAllievo = () => {
   const [insegnanti, setInsegnanti] = useState([]);
   const [mesiPagati, setMesiPagati] = useState([]);
   const [mesiAttesi, setMesiAttesi] = useState([]);
+  const [assegnati, setAssegnati] = useState([]); // array di ID degli insegnanti selezionati
+
   const mesiOriginaliRef = useRef([]);
 
   useEffect(() => {
@@ -123,6 +125,11 @@ const DettaglioAllievo = () => {
   }
 };
 
+const toggleInsegnante = (id) => {
+  setAssegnati((prev) =>
+    prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+  );
+};
 
   if (!allievo) {
     return <div className="p-4 text-center">Caricamento...</div>;
@@ -214,11 +221,16 @@ const DettaglioAllievo = () => {
             {modalType === 'assegna' && (
   <div className="max-h-60 overflow-y-auto space-y-1">
     {insegnanti.map((i) => (
-      <div key={i.id} className="flex items-center space-x-2">
-        <input type="checkbox" disabled />
-        <span className="text-sm">{i.nome} {i.cognome}</span>
-      </div>
-    ))}
+  <label key={i.id} className="flex items-center space-x-2">
+    <input
+      type="checkbox"
+      checked={assegnati.includes(i.id)}
+      onChange={() => toggleInsegnante(i.id)}
+    />
+    <span className="text-sm">{i.nome} {i.cognome}</span>
+  </label>
+))}
+
 
     <button
       className="mt-4 w-full bg-gray-400 text-white py-2 rounded shadow"
