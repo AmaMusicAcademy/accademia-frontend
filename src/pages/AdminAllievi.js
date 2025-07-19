@@ -9,41 +9,59 @@ const AdminAllievi = () => {
   useEffect(() => {
     const fetchAllievi = async () => {
       try {
+        const token = localStorage.getItem('token');
         const res = await fetch('https://app-docenti.onrender.com/api/allievi', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
+          headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         setAllievi(data);
       } catch (err) {
-        console.error('Errore nel caricamento degli allievi:', err);
+        console.error('Errore nel recupero allievi:', err);
       }
     };
+
     fetchAllievi();
   }, []);
 
+  const handleClick = (id) => {
+    navigate(`/admin/allievi/${id}`);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
-      <div className="p-4">
-        <h1 className="text-xl font-bold mb-4 text-center">Allievi</h1>
-        <div className="space-y-2">
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      {/* Header stile iOS */}
+      <div className="flex items-center p-4 bg-white shadow">
+        <h2 className="text-lg font-semibold mx-auto">Tutti gli allievi</h2>
+      </div>
+
+      {/* Lista allievi */}
+      <div className="flex-grow p-4">
+        <div className="bg-white rounded-lg shadow divide-y">
           {allievi.map((allievo) => (
             <button
               key={allievo.id}
-              onClick={() => navigate(`/admin/allievi/${allievo.id}`)}
-              className="w-full text-left bg-white p-4 rounded shadow flex justify-between items-center"
+              onClick={() => handleClick(allievo.id)}
+              className="w-full flex justify-between items-center p-4"
             >
-              <span>{allievo.nome} {allievo.cognome}</span>
+              <div className="flex items-center space-x-2">
+                <span
+                  className={`inline-block w-3 h-3 rounded-full ${
+                    allievo.in_regola ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                ></span>
+                <span>{allievo.nome} {allievo.cognome}</span>
+              </div>
               <span className="text-gray-400">›</span>
             </button>
           ))}
         </div>
       </div>
 
-      <BottomNavAdmin current="allievi" />
+      {/* BottomNavAdmin con pulsante centrale "+" rosso */}
+      <BottomNavAdmin showAddButton onAdd={() => navigate('/admin/allievi/nuovo')} />
     </div>
   );
 };
 
 export default AdminAllievi;
+

@@ -1,45 +1,53 @@
+// Esempio BottomNavAdmin.js
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const BottomNav = ({ mostraAggiungi = false, onAggiungiClick }) => {
+const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname.startsWith(path);
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full bg-white border-t shadow z-50 flex justify-between items-center px-6 py-2">
-      {/* Profilo */}
-      <button onClick={() => navigate('/insegnante/profilo')} className="text-center flex-1">
-        <div className="text-xl">👤</div>
+    <div className="fixed bottom-0 w-full bg-white shadow-inner flex justify-between items-center px-6 py-2 z-50">
+      <button
+        onClick={() => navigate('/admin')}
+        className={`text-center ${isActive('/admin') ? 'text-blue-600' : 'text-gray-500'}`}
+      >
+        <div>👤</div>
         <div className="text-xs">Profilo</div>
       </button>
 
-      {/* Centrale: o calendario 📅 oppure ➕ */}
-      {mostraAggiungi ? (
+      {showAddButton ? (
         <button
-  onClick={onAggiungiClick}
-  className="bg-red-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
-  style={{ position: 'relative', zIndex: 10 }}
->
-  ➕
-</button>
-
+          onClick={onAdd}
+          className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md -mt-8"
+        >
+          +
+        </button>
       ) : (
-        <button
-  onClick={() => navigate('/insegnante/calendario')}
-  className="bg-red-500 text-white rounded-full p-4 -mt-8 shadow-md text-xl"
-  style={{ position: 'relative', zIndex: 10 }}
->
-  📅
-</button>
+        <div className="w-12" />
       )}
 
-      {/* Allievi */}
-      <button onClick={() => navigate('/insegnante/allievi')} className="text-center flex-1">
-        <div className="text-xl">🎓</div>
-        <div className="text-xs">Allievi</div>
+      <button
+        onClick={() => navigate('/admin/calendario')}
+        className={`text-center ${isActive('/admin/calendario') ? 'text-blue-600' : 'text-gray-500'}`}
+      >
+        <div>📅</div>
+        <div className="text-xs">Calendario</div>
       </button>
-    </nav>
+
+      <button
+        onClick={() => navigate('/admin/pagamenti')}
+        className={`text-center ${isActive('/admin/pagamenti') ? 'text-blue-600' : 'text-gray-500'}`}
+      >
+        <div>💰</div>
+        <div className="text-xs">Pagamenti</div>
+      </button>
+    </div>
   );
 };
 
-export default BottomNav;
+export default BottomNavAdmin;
+
 
