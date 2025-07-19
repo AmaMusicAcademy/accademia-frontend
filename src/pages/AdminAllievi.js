@@ -31,8 +31,18 @@ const AdminAllievi = () => {
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Header stile iOS */}
       <div className="flex items-center p-4 bg-white shadow">
-        <h2 className="text-lg font-semibold mx-auto">Tutti gli allievi</h2>
-      </div>
+  <button
+    onClick={() => navigate(-1)}
+    className="text-blue-500 font-bold text-lg"
+  >
+    ← Indietro
+  </button>
+  <h2 className="flex-grow text-center text-lg font-semibold">
+    Lista Allievi
+  </h2>
+  <div style={{ width: '70px' }}></div>
+</div>
+
 
       {/* Lista allievi */}
       <div className="flex-grow p-4">
