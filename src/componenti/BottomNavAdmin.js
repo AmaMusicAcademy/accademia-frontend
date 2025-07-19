@@ -17,6 +17,25 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd, showEditButton = false, 
         <div className="text-xs">Profilo</div>
       </button>
 
+      import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+const BottomNavAdmin = ({ showAddButton = false, onAdd, showEditButton = false, onEdit }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname.startsWith(path);
+
+  return (
+    <div className="fixed bottom-0 w-full bg-white shadow-inner flex justify-between items-center px-6 py-2 z-50">
+      <button
+        onClick={() => navigate('/admin')}
+        className={`text-center ${isActive('/admin') ? 'text-blue-600' : 'text-gray-500'}`}
+      >
+        <div>👤</div>
+        <div className="text-xs">Profilo</div>
+      </button>
+
       {showAddButton ? (
         <button
           onClick={onAdd}
@@ -42,6 +61,21 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd, showEditButton = false, 
         <div>📅</div>
         <div className="text-xs">Calendario</div>
       </button>
+
+      <button
+        onClick={() => navigate('/admin/pagamenti')}
+        className={`text-center ${isActive('/admin/pagamenti') ? 'text-blue-600' : 'text-gray-500'}`}
+      >
+        <div>💰</div>
+        <div className="text-xs">Pagamenti</div>
+      </button>
+    </div>
+  );
+};
+
+
+export default BottomNavAdmin;
+
 
       <button
         onClick={() => navigate('/admin/pagamenti')}
