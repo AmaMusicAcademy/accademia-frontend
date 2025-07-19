@@ -113,17 +113,27 @@ const DettaglioAllievo = () => {
 
   if (tipo === 'assegna') {
     const token = localStorage.getItem('token');
+
     try {
+      // Carica tutti gli insegnanti
       const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setInsegnanti(data); // ← salviamo gli insegnanti da mostrare
+      setInsegnanti(data);
+
+      // Carica gli insegnanti già assegnati all’allievo
+      const resAssegnati = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}/insegnanti`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const assegnatiData = await resAssegnati.json(); // [{ id, nome, cognome }]
+      setAssegnati(assegnatiData.map(i => i.id)); // solo gli ID
     } catch (err) {
-      console.error('Errore nel caricamento insegnanti:', err);
+      console.error('Errore nel caricamento insegnanti o assegnazioni:', err);
     }
   }
 };
+
 
 const toggleInsegnante = (id) => {
   setAssegnati((prev) =>
