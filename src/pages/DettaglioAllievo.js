@@ -7,7 +7,7 @@ const DettaglioAllievo = () => {
   const navigate = useNavigate();
   const [allievo, setAllievo] = useState(null);
   const [modalType, setModalType] = useState(null); // 'pagamenti' | 'assegna' | null
-
+  const [insegnanti, setInsegnanti] = useState([]);
   const [mesiPagati, setMesiPagati] = useState([]);
   const [mesiAttesi, setMesiAttesi] = useState([]);
   const mesiOriginaliRef = useRef([]);
@@ -106,6 +106,24 @@ const DettaglioAllievo = () => {
     return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
   };
 
+  const apriModale = async (tipo) => {
+  setModalType(tipo);
+
+  if (tipo === 'assegna') {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setInsegnanti(data); // ← salviamo gli insegnanti da mostrare
+    } catch (err) {
+      console.error('Errore nel caricamento insegnanti:', err);
+    }
+  }
+};
+
+
   if (!allievo) {
     return <div className="p-4 text-center">Caricamento...</div>;
   }
@@ -151,11 +169,12 @@ const DettaglioAllievo = () => {
           </button>
 
           <button
-            onClick={() => setModalType('assegna')}
-            className="w-full bg-white rounded-xl px-4 py-3 text-left text-gray-800 shadow border border-gray-200"
-          >
-            Assegna insegnanti
-          </button>
+  onClick={() => apriModale('assegna')}
+  className="w-full bg-white rounded-xl px-4 py-3 text-left text-gray-800 shadow border border-gray-200"
+>
+  Assegna insegnanti
+</button>
+
         </div>
       </div>
 
@@ -193,24 +212,23 @@ const DettaglioAllievo = () => {
             )}
 
             {modalType === 'assegna' && (
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Seleziona insegnanti da associare:</p>
-                {/* Placeholder per lista insegnanti */}
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  <label className="flex items-center space-x-2">
-                    <input type="checkbox" />
-                    <span className="text-sm">Mario Rossi</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input type="checkbox" />
-                    <span className="text-sm">Luca Bianchi</span>
-                  </label>
-                </div>
-                <button className="mt-4 w-full bg-green-500 text-white py-2 rounded shadow">
-                  Assegna
-                </button>
-              </div>
-            )}
+  <div className="max-h-60 overflow-y-auto space-y-1">
+    {insegnanti.map((i) => (
+      <div key={i.id} className="flex items-center space-x-2">
+        <input type="checkbox" disabled />
+        <span className="text-sm">{i.nome} {i.cognome}</span>
+      </div>
+    ))}
+
+    <button
+      className="mt-4 w-full bg-gray-400 text-white py-2 rounded shadow"
+      onClick={() => setModalType(null)}
+    >
+      Chiudi
+    </button>
+  </div>
+)}
+
 
             <button
               onClick={() => setModalType(null)}
