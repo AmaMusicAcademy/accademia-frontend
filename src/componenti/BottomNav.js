@@ -7,7 +7,7 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
 
   const isActive = (path) => location.pathname.startsWith(path);
 
-  const isAllieviPage = location.pathname.startsWith('/admin/allievi');
+  const isAllieviPage = location.pathname === '/admin/allievi';
 
   return (
     <div className="fixed bottom-0 w-full bg-white shadow-inner flex justify-between items-center px-10 py-2 h-16 z-50">
@@ -20,8 +20,8 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
         <div className="text-xs">Profilo</div>
       </button>
 
-      {/* CENTRO: "+" oppure "📅 Calendario" */}
-      {isAdminAllievi ? (
+      {/* CENTRO: "+" oppure Calendario */}
+      {isAllieviPage ? (
         <button
           onClick={onAdd}
           className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-8"
@@ -51,6 +51,7 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
 };
 
 export default BottomNavAdmin;
+
 
 
 
