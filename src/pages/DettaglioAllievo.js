@@ -13,50 +13,56 @@ const DettaglioAllievo = () => {
   const mesiOriginaliRef = useRef([]);
 
   useEffect(() => {
-    const fetchAllievo = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setAllievo(data);
+  const fetchAllievo = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      console.log('Iscrizione:', data.data_iscrizione);
 
-        // Dopo aver caricato l'allievo, carico anche i pagamenti
-        const resPag = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}/pagamenti`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const pagamenti = await resPag.json(); // [{ anno, mese }]
-        const pagati = pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
-        setMesiPagati(pagati);
-        mesiOriginaliRef.current = pagati;
+      setAllievo(data);
 
-        // Calcolo mesi attesi da data iscrizione a oggi
-        const inizio = new Date(data.data_iscrizione);
-        const oggi = new Date();
-        const lista = [];
+      if (!data.data_iscrizione) return;
 
-        const y0 = inizio.getFullYear();
-        const m0 = inizio.getMonth();
-        const y1 = oggi.getFullYear();
-        const m1 = oggi.getMonth();
+      // Calcola mesi attesi
+      const inizio = new Date(data.data_iscrizione);
+      const oggi = new Date();
+      const lista = [];
 
-        for (let y = y0; y <= y1; y++) {
-          const start = y === y0 ? m0 : 0;
-          const end = y === y1 ? m1 : 11;
-          for (let m = start; m <= end; m++) {
-            lista.push(`${y}-${String(m + 1).padStart(2, '0')}`);
-          }
+      const y0 = inizio.getFullYear();
+      const m0 = inizio.getMonth();
+      const y1 = oggi.getFullYear();
+      const m1 = oggi.getMonth();
+
+      for (let y = y0; y <= y1; y++) {
+        const start = y === y0 ? m0 : 0;
+        const end = y === y1 ? m1 : 11;
+        for (let m = start; m <= end; m++) {
+          lista.push(`${y}-${String(m + 1).padStart(2, '0')}`);
         }
-
-        setMesiAttesi(lista);
-      } catch (err) {
-        console.error('Errore nel recupero dati:', err);
       }
-    };
 
-    fetchAllievo();
-  }, [id]);
+      setMesiAttesi(lista);
+
+      // Carica pagamenti
+      const resPag = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}/pagamenti`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const pagamenti = await resPag.json(); // [{ anno, mese }]
+      const pagati = pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
+      setMesiPagati(pagati);
+      mesiOriginaliRef.current = pagati;
+
+    } catch (err) {
+      console.error('Errore nel recupero dati:', err);
+    }
+  };
+
+  fetchAllievo();
+}, [id]);
+
 
   const togglePagamento = (mese) => {
     if (mesiPagati.includes(mese)) {
