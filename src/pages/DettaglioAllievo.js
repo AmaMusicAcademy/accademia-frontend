@@ -34,7 +34,7 @@ const DettaglioAllievo = () => {
     ['Email', allievo.email || '—'],
     ['Telefono', allievo.telefono || '—'],
     ['Quota mensile', `${allievo.quota_mensile} €`],
-    ['Data iscrizione', allievo.data_iscrizione],
+    ['Data iscrizione', new Date(allievo.data_iscrizione).toLocaleDateString('it-IT')],
     ['ID', allievo.id]
   ];
 
