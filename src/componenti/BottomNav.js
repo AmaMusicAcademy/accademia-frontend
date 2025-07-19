@@ -21,7 +21,7 @@ const BottomNavAdmin = ({ showAddButton = false, onAdd }) => {
       </button>
 
       {/* CENTRO: "+" oppure "📅 Calendario" */}
-      {isAllieviPage ? (
+      {isAdminAllievi ? (
         <button
           onClick={onAdd}
           className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-8"
