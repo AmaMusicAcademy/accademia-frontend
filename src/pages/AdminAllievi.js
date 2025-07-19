@@ -7,21 +7,61 @@ const AdminAllievi = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchAllievi = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('https://app-docenti.onrender.com/api/allievi', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setAllievi(data);
-      } catch (err) {
-        console.error('Errore nel recupero allievi:', err);
-      }
-    };
+  const fetchAllievi = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://app-docenti.onrender.com/api/allievi', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
 
-    fetchAllievi();
-  }, []);
+      // Per ogni allievo, calcolo in_regola
+      const allieviConStato = await Promise.all(
+        data.map(async (allievo) => {
+          try {
+            const resPag = await fetch(`https://app-docenti.onrender.com/api/allievi/${allievo.id}/pagamenti`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const pagamenti = await resPag.json(); // [{ anno, mese }]
+            const mesiPagati = pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
+
+            // Calcolo mesi attesi da data iscrizione
+            const inizio = new Date(allievo.data_iscrizione);
+            const oggi = new Date();
+            const mesiAttesi = [];
+
+            const y0 = inizio.getFullYear();
+            const m0 = inizio.getMonth();
+            const y1 = oggi.getFullYear();
+            const m1 = oggi.getMonth();
+
+            for (let y = y0; y <= y1; y++) {
+              const start = y === y0 ? m0 : 0;
+              const end = y === y1 ? m1 : 11;
+              for (let m = start; m <= end; m++) {
+                mesiAttesi.push(`${y}-${String(m + 1).padStart(2, '0')}`);
+              }
+            }
+
+            const inRegola = mesiAttesi.every(mese => mesiPagati.includes(mese));
+
+            return { ...allievo, in_regola: inRegola };
+          } catch (err) {
+            console.error(`Errore nei pagamenti per allievo ${allievo.id}:`, err);
+            return { ...allievo, in_regola: false };
+          }
+        })
+      );
+
+      setAllievi(allieviConStato);
+    } catch (err) {
+      console.error('Errore nel recupero allievi:', err);
+    }
+  };
+
+  fetchAllievi();
+}, []);
+
 
   const handleClick = (id) => {
     navigate(`/admin/allievi/${id}`);
