@@ -131,6 +131,28 @@ const toggleInsegnante = (id) => {
   );
 };
 
+const salvaAssegnazioni = async () => {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}/insegnanti`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ insegnanti: assegnati })
+    });
+
+    if (!res.ok) throw new Error('Errore nel salvataggio');
+    alert('Assegnazioni salvate!');
+    setModalType(null);
+  } catch (err) {
+    console.error('Errore:', err);
+    alert('Errore nel salvataggio assegnazioni');
+  }
+};
+
+
   if (!allievo) {
     return <div className="p-4 text-center">Caricamento...</div>;
   }
@@ -213,7 +235,7 @@ const toggleInsegnante = (id) => {
                   className="mt-4 w-full bg-blue-500 text-white py-2 rounded shadow"
                   onClick={salvaModifiche}
                 >
-                  Salva modifiche
+                  Salva
                 </button>
               </div>
             )}
@@ -233,11 +255,12 @@ const toggleInsegnante = (id) => {
 
 
     <button
-      className="mt-4 w-full bg-gray-400 text-white py-2 rounded shadow"
-      onClick={() => setModalType(null)}
-    >
-      Chiudi
-    </button>
+  className="mt-4 w-full bg-green-500 text-white py-2 rounded shadow"
+  onClick={salvaAssegnazioni}
+>
+  Salva assegnazioni
+</button>
+
   </div>
 )}
 
