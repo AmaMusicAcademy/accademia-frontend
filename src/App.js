@@ -18,7 +18,7 @@ import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';
-import ListaInsegnanti from './pages/ListaInsegnanti';
+import AdminInsegnanti from './pages/AdminInsegnanti';
 
 
 function Layout({ children }) {
@@ -59,7 +59,7 @@ function App() {
   <Route path="/admin" element={<ProfiloAdmin />} />
   <Route path="/admin/allievi" element={<AdminAllievi />} />
   <Route path="/admin/allievi/:id" element={<DettaglioAllievo />} />
-  <Route path="/admin/insegnanti" element={<ListaInsegnanti />} />
+  <Route path="/admin/insegnanti" element={<AdminInsegnanti />} />
 
 </Routes>
 
