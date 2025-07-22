@@ -18,7 +18,7 @@ import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';
-import DettaglioAllievo from './pages/ListaInsegnanti';
+import ListaInsegnanti from './pages/ListaInsegnanti';
 
 
 function Layout({ children }) {
