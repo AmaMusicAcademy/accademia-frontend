@@ -11,7 +11,7 @@ export default function ListaInsegnanti() {
     const fetchInsegnanti = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('https://tuo-backend.onrender.com/api/insegnanti', {
+        const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
           headers: { Authorization: `Bearer ${token}` },
         });
 
