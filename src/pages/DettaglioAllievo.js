@@ -11,7 +11,7 @@ const DettaglioAllievo = () => {
   const [mesiPagati, setMesiPagati] = useState([]);
   const [mesiAttesi, setMesiAttesi] = useState([]);
   const [assegnati, setAssegnati] = useState([]); // array di ID degli insegnanti selezionati
-
+  const [insegnantiAssegnati, setInsegnantiAssegnati] = useState([]);
   const mesiOriginaliRef = useRef([]);
 
   useEffect(() => {
@@ -61,8 +61,21 @@ const DettaglioAllievo = () => {
       console.error('Errore nel recupero dati:', err);
     }
   };
+  const fetchAssegnati = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`https://app-docenti.onrender.com/api/allievi/${id}/insegnanti`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setInsegnantiAssegnati(data);
+    } catch (err) {
+      console.error('Errore nel recupero insegnanti assegnati:', err);
+    }
+  };
 
   fetchAllievo();
+  fetchAssegnati();
 }, [id]);
 
 
@@ -199,6 +212,20 @@ const salvaAssegnazioni = async () => {
           ))}
         </div>
 
+{insegnantiAssegnati.length > 0 && (
+  <div className="bg-white rounded-xl shadow mt-6 divide-y text-sm">
+    <div className="px-4 py-3 font-semibold text-gray-700">
+      Insegnanti assegnati
+    </div>
+    {insegnantiAssegnati.map((i) => (
+      <div key={i.id} className="px-4 py-3 text-gray-800">
+        {i.nome} {i.cognome}
+      </div>
+    ))}
+  </div>
+)}
+
+      
         <div className="mt-6 space-y-2">
           <button
             onClick={() => setModalType('pagamenti')}
