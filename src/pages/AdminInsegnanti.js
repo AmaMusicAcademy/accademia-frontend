@@ -4,27 +4,55 @@ import BottomNavAdmin from '../componenti/BottomNavAdmin';
 
 const AdminInsegnanti = () => {
   const [insegnanti, setInsegnanti] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [nome, setNome] = useState('');
+  const [cognome, setCognome] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchInsegnanti = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setInsegnanti(data);
-      } catch (err) {
-        console.error('Errore nel recupero insegnanti:', err);
-      }
-    };
+  const fetchInsegnanti = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setInsegnanti(data);
+    } catch (err) {
+      console.error('Errore nel recupero insegnanti:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchInsegnanti();
   }, []);
 
   const handleClick = (id) => {
     navigate(`/admin/insegnanti/${id}`);
+  };
+
+  const handleSalva = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://app-docenti.onrender.com/api/insegnanti', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nome, cognome }),
+      });
+
+      if (res.ok) {
+        setShowModal(false);
+        setNome('');
+        setCognome('');
+        fetchInsegnanti();
+      } else {
+        alert('Errore nella creazione insegnante');
+      }
+    } catch (err) {
+      console.error('Errore:', err);
+    }
   };
 
   return (
@@ -62,12 +90,49 @@ const AdminInsegnanti = () => {
         </div>
       </div>
 
-      {/* BottomNavAdmin con "+" rosso */}
-      <BottomNavAdmin showAddButton onAdd={() => navigate('/admin/insegnanti/nuovo')} />
+      <BottomNavAdmin showAddButton onAdd={() => setShowModal(true)} />
+
+      {/* Modale per aggiungere insegnante */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-80">
+            <h3 className="text-lg font-semibold mb-4">Nuovo Insegnante</h3>
+            <input
+              type="text"
+              placeholder="Nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="w-full border px-3 py-2 mb-3 rounded"
+            />
+            <input
+              type="text"
+              placeholder="Cognome"
+              value={cognome}
+              onChange={(e) => setCognome(e.target.value)}
+              className="w-full border px-3 py-2 mb-4 rounded"
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded bg-gray-200"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={handleSalva}
+                className="px-4 py-2 rounded bg-blue-600 text-white"
+              >
+                Salva
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AdminInsegnanti;
+
 
 
