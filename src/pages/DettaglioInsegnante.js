@@ -83,7 +83,7 @@ const DettaglioInsegnante = () => {
         <span className="text-gray-600">Allievo</span>
         <span className="text-gray-800 text-right">{a.nome} {a.cognome}</span>
       </div>
-    ))}
+    )}
   </div>
 )}
 
