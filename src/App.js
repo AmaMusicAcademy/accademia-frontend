@@ -19,7 +19,7 @@ import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
-import DettaglioInsegnante from './pages/admin/DettaglioInsegnante';
+import DettaglioInsegnante from './pages/DettaglioInsegnante';
 
 
 function Layout({ children }) {
