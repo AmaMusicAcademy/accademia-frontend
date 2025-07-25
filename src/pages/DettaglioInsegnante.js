@@ -72,7 +72,7 @@ const DettaglioInsegnante = () => {
         </div>
 
         {/* Allievi assegnati */}
-        {allievi.length > 0 && (
+{allievi.length > 0 && (
   <div className="bg-white rounded-xl shadow mt-6 divide-y text-sm">
     <div className="flex justify-between px-4 py-3 font-semibold text-gray-700">
       <span>Allievi assegnati</span>
@@ -83,10 +83,9 @@ const DettaglioInsegnante = () => {
         <span className="text-gray-600">Allievo</span>
         <span className="text-gray-800 text-right">{a.nome} {a.cognome}</span>
       </div>
-    )}
+    ))}
   </div>
 )}
-
 
       {/* BottomBar con tasto "Modifica" centrale */}
       <BottomNavAdmin showEditButton onEdit={() => navigate(`/admin/insegnanti/${id}/modifica`)} />
