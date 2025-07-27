@@ -20,6 +20,7 @@ import AdminAllievi from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
+import CalendarioAdmin from './pages/CalendarioAdmin';
 
 
 function Layout({ children }) {
@@ -62,6 +63,8 @@ function App() {
   <Route path="/admin/allievi/:id" element={<DettaglioAllievo />} />
   <Route path="/admin/insegnanti" element={<AdminInsegnanti />} />
   <Route path="/admin/insegnanti/:id" element={<DettaglioInsegnante />} />
+  <Route path="/admin/calendario" element={<CalendarioAdmin />} />
+
 
 
 </Routes>
