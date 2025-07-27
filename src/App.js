@@ -21,6 +21,17 @@ import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
 import CalendarioAdmin from './pages/CalendarioAdmin';
+import { Navigate } from 'react-router-dom';
+
+function ProtectedRoute({ element, allowedRoles }) {
+  const ruolo = localStorage.getItem('ruolo');
+
+  if (!allowedRoles.includes(ruolo)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return element;
+}
 
 
 function Layout({ children }) {
@@ -44,29 +55,67 @@ function Layout({ children }) {
 function App() {
   return (
     <Routes>
-  <Route path="/" element={<LoginPage />} /> {/* 👈 LOGIN come home */}
+  {/* Login sempre accessibile */}
+  <Route path="/" element={<LoginPage />} />
   <Route path="/login" element={<LoginPage />} />
-  <Route path="/insegnante" element={<DashboardInsegnante />} />
-  <Route path="/nuova-lezione" element={<NuovaLezione />} />
-  <Route path="/lezioni/:id/modifica" element={<ModificaLezione />} />
-  <Route path="/lezioni/:idInsegnante" element={<CalendarioLezioniWrapper />} />
-  <Route path="/allievi" element={<Allievi />} />
-  <Route path="/insegnante/profilo" element={<ProfiloInsegnante />} />
-  <Route path="/insegnante/allievi" element={<AllieviInsegnante />} />
-  <Route path="/insegnante/calendario" element={<CalendarioPersonale/>} />
-  <Route path="/profilo/account" element={<InformazioniAccount />} />
-  <Route path="/profilo/password" element={<CambiaPassword />} />
-  <Route path="/cambia-avatar" element={<CambiaAvatar />} />
-  <Route path="/rimborso" element={<CalcoloRimborso />} />
-  <Route path="/admin" element={<ProfiloAdmin />} />
-  <Route path="/admin/allievi" element={<AdminAllievi />} />
-  <Route path="/admin/allievi/:id" element={<DettaglioAllievo />} />
-  <Route path="/admin/insegnanti" element={<AdminInsegnanti />} />
-  <Route path="/admin/insegnanti/:id" element={<DettaglioInsegnante />} />
-  <Route path="/admin/calendario" element={<CalendarioAdmin />} />
 
+  {/* 👨‍🏫 Insegnante */}
+  <Route path="/insegnante" element={
+    <ProtectedRoute element={<DashboardInsegnante />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/nuova-lezione" element={
+    <ProtectedRoute element={<NuovaLezione />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/lezioni/:id/modifica" element={
+    <ProtectedRoute element={<ModificaLezione />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/lezioni/:idInsegnante" element={
+    <ProtectedRoute element={<CalendarioLezioniWrapper />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/allievi" element={
+    <ProtectedRoute element={<Allievi />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/insegnante/profilo" element={
+    <ProtectedRoute element={<ProfiloInsegnante />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/insegnante/allievi" element={
+    <ProtectedRoute element={<AllieviInsegnante />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/insegnante/calendario" element={
+    <ProtectedRoute element={<CalendarioPersonale />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/profilo/account" element={
+    <ProtectedRoute element={<InformazioniAccount />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/profilo/password" element={
+    <ProtectedRoute element={<CambiaPassword />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/cambia-avatar" element={
+    <ProtectedRoute element={<CambiaAvatar />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/rimborso" element={
+    <ProtectedRoute element={<CalcoloRimborso />} allowedRoles={['insegnante']} />
+  } />
 
-
+  {/* 👩‍💼 Admin */}
+  <Route path="/admin" element={
+    <ProtectedRoute element={<ProfiloAdmin />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/allievi" element={
+    <ProtectedRoute element={<AdminAllievi />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/allievi/:id" element={
+    <ProtectedRoute element={<DettaglioAllievo />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/insegnanti" element={
+    <ProtectedRoute element={<AdminInsegnanti />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/insegnanti/:id" element={
+    <ProtectedRoute element={<DettaglioInsegnante />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/calendario" element={
+    <ProtectedRoute element={<CalendarioAdmin />} allowedRoles={['admin']} />
+  } />
 </Routes>
 
   );
