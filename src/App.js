@@ -14,7 +14,6 @@ import CambiaPassword from './pages/CambiaPassword';
 import CambiaAvatar from './pages/CambiaAvatar';
 import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
-//import AdminDashboard from './pages/AdminDashboard';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';

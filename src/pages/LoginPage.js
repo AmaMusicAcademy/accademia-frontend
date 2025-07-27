@@ -41,7 +41,7 @@ function LoginPage() {
     if (data.ruolo === 'admin') {
       navigate('/admin');
     } else {
-      navigate('/insegnante');
+      navigate('/insegnante/profilo');
     }
   } catch (err) {
     console.error(err);
