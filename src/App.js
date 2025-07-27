@@ -61,6 +61,7 @@ function App() {
   <Route path="/admin/allievi" element={<AdminAllievi />} />
   <Route path="/admin/allievi/:id" element={<DettaglioAllievo />} />
   <Route path="/admin/insegnanti" element={<AdminInsegnanti />} />
+  <Route path="/admin/insegnanti/nuovo" element={<NuovoInsegnante />} />
   <Route path="/admin/insegnanti/:id" element={<DettaglioInsegnante />} />
 
 
