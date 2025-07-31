@@ -28,7 +28,7 @@ function LoginPage() {
     });
 
     const data = await res.json();
-
+/*
     if (!res.ok) {
       setErrore(data.message || 'Credenziali non valide');
       return;
@@ -43,7 +43,28 @@ function LoginPage() {
     } else {
       navigate('/insegnante/profilo');
     }
-  } catch (err) {
+  } 
+*/ 
+
+if (res.ok) {
+  const utente = {
+    username: data.username,
+    ruolo: data.ruolo,
+    id: data.id,       // Se disponibile nella risposta
+    nome: data.nome,   // Se vuoi nome/cognome direttamente
+    cognome: data.cognome
+  };
+
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('utente', JSON.stringify(utente));
+
+  if (data.ruolo === 'admin') {
+    navigate('/admin');
+  } else {
+    navigate('/insegnante/profilo');
+  }
+}
+catch (err) {
     console.error(err);
     setErrore('Errore di connessione al server');
   }
