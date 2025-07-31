@@ -63,8 +63,8 @@ if (res.ok) {
   } else {
     navigate('/insegnante/profilo');
   }
-}
-catch (err) {
+} 
+} catch (err) {
     console.error(err);
     setErrore('Errore di connessione al server');
   }
