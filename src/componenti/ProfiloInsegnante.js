@@ -2,30 +2,62 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../componenti/BottomNav';
 
+function decodeJwt(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
 const ProfiloInsegnante = () => {
   const navigate = useNavigate();
   const [utente, setUtente] = useState(() => {
     const saved = localStorage.getItem('utente');
     return saved ? JSON.parse(saved) : null;
   });
+  const [loading, setLoading] = useState(false);
 
-  // Se l'utente non è in localStorage, prova a recuperarlo dal backend
   useEffect(() => {
-    if (!utente) {
-      const token = localStorage.getItem('token');
-      if (token) {
-        fetch('https://app-docenti.onrender.com/api/insegnante/me', {
-          headers: { Authorization: `Bearer ${token}` }
+    // Se ho già tutto (compreso id), non faccio nulla
+    if (utente && utente.id) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Provo a ricavare l'id dal JWT (req.user.id lato backend)
+    const payload = decodeJwt(token);
+    const idFromToken = payload?.id;
+
+    // Se ho l'id, lo uso per chiamare /api/insegnanti/:id
+    if (idFromToken) {
+      setLoading(true);
+      fetch(`https://app-docenti.onrender.com/api/insegnanti/${idFromToken}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            // 403 se id non coincide con quello del token (o admin), 404 se non trovato
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Errore nel recupero insegnante');
+          }
+          return res.json();
         })
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.username) {
-              setUtente(data);
-              localStorage.setItem('utente', JSON.stringify(data));
-            }
-          })
-          .catch(err => console.error('Errore caricamento profilo:', err));
-      }
+        .then((dati) => {
+          const merged = { ...(utente || {}), ...dati }; // preservo eventuali campi già salvati
+          setUtente(merged);
+          localStorage.setItem('utente', JSON.stringify(merged));
+        })
+        .catch((e) => console.error(e.message))
+        .finally(() => setLoading(false));
     }
   }, [utente]);
 
@@ -35,7 +67,7 @@ const ProfiloInsegnante = () => {
     navigate('/');
   };
 
-  if (!utente) {
+  if (loading || !utente) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Caricamento profilo...</p>
@@ -59,6 +91,7 @@ const ProfiloInsegnante = () => {
 
         <h2 className="text-xl font-bold">{utente.nome} {utente.cognome}</h2>
         <p className="text-gray-500">@{utente.username}</p>
+        {utente.id && <p className="text-gray-400 text-sm mt-1">ID: {utente.id}</p>}
       </div>
 
       <div className="p-4 flex-1">
