@@ -157,12 +157,25 @@ export default function AllieviPage() {
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // Filtro lezioni per intervallo date (inclusivo)
+  // ✅ Filtro lezioni per intervallo date (inclusivo) **e** per ricerca su nome/cognome allievo
   const filteredLessons = useMemo(() => {
-    // se non c'è nessun capo, mostra da oggi in poi (già limitato a monte)
-    if (!dateFrom && !dateTo) return allLessonsFromToday;
-    return allLessonsFromToday.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
-  }, [allLessonsFromToday, dateFrom, dateTo]);
+    let list = allLessonsFromToday;
+
+    // filtro intervallo date (inclusivo)
+    if (dateFrom || dateTo) {
+      list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
+    }
+
+    // filtro ricerca condiviso con lista allievi
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((l) =>
+        `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [allLessonsFromToday, dateFrom, dateTo, search]);
 
   // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
@@ -300,8 +313,8 @@ export default function AllieviPage() {
               <EmptyState
                 title="Nessuna lezione trovata"
                 subtitle={
-                  dateFrom || dateTo
-                    ? "Nessuna lezione nell'intervallo selezionato."
+                  dateFrom || dateTo || search
+                    ? "Nessuna lezione che rispetta i filtri."
                     : "Quando verranno aggiunte, le vedrai qui."
                 }
               />
@@ -425,6 +438,7 @@ function Skeleton({ h = "48px" }) {
     <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />
   );
 }
+
 
 
 
