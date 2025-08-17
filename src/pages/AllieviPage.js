@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
+import BottomNav from "../componenti/BottomNav";
 
 // Config base API (CRA usa process.env.REACT_APP_*)
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     process.env.REACT_APP_API_BASE) ||
-  "https://accademia-backend.onrender.com"; // 👈 fallback hardcoded (cambia col tuo dominio)
+  "https://app-docenti.onrender.com"; // 👈 fallback (sostituisci col tuo URL)
 
 // --- utils ---
 function getToken() {
@@ -153,7 +154,8 @@ export default function AllieviPage() {
   }, [lessons]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-xl mx-auto px-4 py-3">
           <h1 className="text-xl font-semibold">Allievi</h1>
@@ -161,6 +163,7 @@ export default function AllieviPage() {
         </div>
       </div>
 
+      {/* Ricerca */}
       <div className="max-w-xl mx-auto px-4 py-3">
         <input
           value={search}
@@ -170,6 +173,7 @@ export default function AllieviPage() {
         />
       </div>
 
+      {/* Loading */}
       {loading && (
         <div className="max-w-xl mx-auto px-4 space-y-3">
           <Skeleton h="48px" />
@@ -178,6 +182,7 @@ export default function AllieviPage() {
         </div>
       )}
 
+      {/* Errore */}
       {!loading && err && (
         <div className="max-w-xl mx-auto px-4">
           <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -186,8 +191,10 @@ export default function AllieviPage() {
         </div>
       )}
 
+      {/* Contenuti */}
       {!loading && !err && (
         <>
+          {/* Allievi */}
           <SectionTitle title="Allievi assegnati" />
           <div className="max-w-xl mx-auto px-4 pb-4 grid gap-2">
             {filteredStudents.length === 0 ? (
@@ -204,8 +211,9 @@ export default function AllieviPage() {
             )}
           </div>
 
+          {/* Lezioni future */}
           <SectionTitle title="Lezioni future" />
-          <div className="max-w-xl mx-auto px-4 pb-24">
+          <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
               <EmptyState
                 title="Nessuna lezione in programma"
@@ -235,7 +243,8 @@ export default function AllieviPage() {
         </>
       )}
 
-      <BottomBar active="allievi" />
+      {/* Bottom Navigation */}
+      <BottomNav active="allievi" />
     </div>
   );
 }
@@ -330,7 +339,7 @@ function LessonRow({ l, last }) {
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
         {l.motivazione && stato !== "futura" && (
-          <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+          <div className="text-xs text-gray-500 mt-0.5">
             Motivo: {l.motivazione}
           </div>
         )}
@@ -342,31 +351,10 @@ function LessonRow({ l, last }) {
 function Skeleton({ h = "48px" }) {
   return (
     <div
-      className={`animate-pulse rounded-xl bg-gray-200`}
+      className="animate-pulse rounded-xl bg-gray-200"
       style={{ height: h }}
     />
   );
 }
 
-function BottomBar({ active }) {
-  const item = (key, label) => (
-    <button
-      className={`flex flex-col items-center ${
-        active === key ? "text-blue-600" : "text-gray-500"
-      }`}
-    >
-      <span className="material-icons text-base">circle</span>
-      {label}
-    </button>
-  );
-  return (
-    <nav className="fixed bottom-0 inset-x-0 border-t bg-white">
-      <div className="max-w-xl mx-auto flex justify-around py-2 text-xs">
-        {item("profilo", "Profilo")}
-        {item("calendario", "Calendario")}
-        {item("allievi", "Allievi")}
-      </div>
-    </nav>
-  );
-}
 
