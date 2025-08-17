@@ -108,7 +108,10 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       }
 
       // Lezione creata
-      if (onCreated) onCreated();
+      //if (onCreated) onCreated();
+
+      const created = await res.json().catch(() => null);
+      if (onCreated) onCreated(created); // 👈 notifica su successo
       onClose();
       // Reset form
       setForm({

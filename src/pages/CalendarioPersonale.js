@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import CalendarioLezioni from "../CalendarioLezioni";
+import BottomNav from "../componenti/BottomNav";
 
 // ✅ URL backend da .env (es: REACT_APP_API_URL=https://app-docenti.onrender.com)
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -14,7 +15,7 @@ export default function CalendarioPersonale() {
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
 
-  useEffect(() => {
+  //useEffect(() => {
     const fetchDati = async () => {
       try {
         setErrore(null);
@@ -97,9 +98,11 @@ export default function CalendarioPersonale() {
       }
     };
 
-    fetchDati();
+   // fetchDati();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  //}, []);
+
+useEffect(() => { fetchDati(); }, []); // una sola volta all’avvio
 
   function doLogout() {
     localStorage.removeItem("token");
@@ -108,6 +111,7 @@ export default function CalendarioPersonale() {
   }
 
   return (
+    <div className="min-h-screen bg-gray-100 pb-24">
     <CalendarioLezioni
       lezioni={lezioni}
       nome={nome}
@@ -115,6 +119,8 @@ export default function CalendarioPersonale() {
       loading={loading}
       error={errore}
     />
+    <BottomNav onLessonCreated={fetchDati} /> {/* 👈 refresh dopo creazione */}
+    </div>
   );
 }
 
