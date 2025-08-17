@@ -114,7 +114,7 @@ const colori = [
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={eventi}
-          dateClick={(info) => onDateClick?.(info)}
+          dateClick={handleDateClick}
           displayEventTime={false}
           eventContent={renderCompactDot}
           dayMaxEvents={5}
