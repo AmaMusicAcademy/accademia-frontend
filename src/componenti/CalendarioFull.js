@@ -13,8 +13,6 @@ export default function CalendarioFull({ lezioni }) {
   const [data, setData] = useState('');
   const [dataSelezionata, setDataSelezionata] = useState('');
 
-  const events = lezioni || [];
-
 
 
 const colori = [
@@ -110,7 +108,6 @@ const colori = [
     <div className="calendario-container">
       <div className="calendario-sticky">
         <FullCalendar
-          key={`${events.length}-${events[0]?.start || ''}`} 
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           events={eventi}
@@ -119,8 +116,6 @@ const colori = [
           eventContent={renderCompactDot}
           dayMaxEvents={5}
           moreLinkContent={null}
-          headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
-          height="auto"
         />
         
       </div>
