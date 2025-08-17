@@ -8,7 +8,7 @@ import Allievi from './Allievi';
 import LoginPage from './pages/LoginPage';
 import DashboardInsegnante from './pages/DashboardInsegnante'; // 👈 placeholder da creare
 import ProfiloInsegnante from './componenti/ProfiloInsegnante';
-import AllieviInsegnante from './componenti/AllieviInsegnante';
+import AllieviInsegnante from './pages/AllieviPage';
 import InformazioniAccount from './pages/InformazioniAccount';
 import CambiaPassword from './pages/CambiaPassword';
 import CambiaAvatar from './pages/CambiaAvatar';
