@@ -71,27 +71,47 @@ async function resolveTeacherId(token) {
   return { id: String(match.id), profile: match };
 }
 
+function ymd(dateLike) {
+  return String(dateLike || "").slice(0, 10); // "YYYY-MM-DD"
+}
+
+function isFromTodayOnward(lez) {
+  const ymdStr = ymd(lez.data);
+  if (!ymdStr) return false;
+  const lessonDay = new Date(`${ymdStr}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return lessonDay.getTime() >= today.getTime();
+}
+
+function inRangeInclusive(lez, startYMD, endYMD) {
+  const day = ymd(lez.data);
+  if (!day) return false;
+  if (startYMD && day < startYMD) return false;
+  if (endYMD && day > endYMD) return false;
+  return true;
+}
+
 function isoFromDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
   return `${dateStr}T${t}`;
 }
 
-function isFutureLesson(lez) {
-  const startISO = isoFromDateTime(lez.data?.slice(0, 10), lez.ora_inizio);
-  if (!startISO) return false;
-  return new Date(startISO) >= new Date();
-}
-
 // --- component ---
 export default function AllieviPage() {
   const token = getToken();
   const [teacherId, setTeacherId] = useState(null);
+
   const [students, setStudents] = useState([]);
-  const [lessons, setLessons] = useState([]);
+  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // dati base (oggi → futuro)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+
+  // UI state
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
+  const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
 
   useEffect(() => {
     let cancel = false;
@@ -108,21 +128,17 @@ export default function AllieviPage() {
         setTeacherId(id);
 
         // allievi assegnati
-        const allievi = await fetchJSON(
-          `${API_BASE}/api/insegnanti/${id}/allievi`,
-          null
-        );
+        const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, null);
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
 
-        // lezioni
-        const lezioni = await fetchJSON(
-          `${API_BASE}/api/insegnanti/${id}/lezioni`,
-          token
-        );
+        // tutte le lezioni dell'insegnante
+        const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni`, token);
         if (cancel) return;
-        const future = (Array.isArray(lezioni) ? lezioni : []).filter(isFutureLesson);
-        setLessons(future);
+
+        // tieni solo quelle da oggi in poi (indipendentemente dallo stato)
+        const base = (Array.isArray(lezioni) ? lezioni : []).filter(isFromTodayOnward);
+        setAllLessonsFromToday(base);
       } catch (e) {
         if (!cancel) setErr(e.message || "Errore di caricamento.");
       } finally {
@@ -134,24 +150,39 @@ export default function AllieviPage() {
     };
   }, [token]);
 
+  // Filtro studenti (ricerca)
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
-    return students.filter((s) =>
-      `${s.nome} ${s.cognome}`.toLowerCase().includes(q)
-    );
+    return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
+  // Filtro lezioni per intervallo date (inclusivo)
+  const filteredLessons = useMemo(() => {
+    // se non c'è nessun capo, mostra da oggi in poi (già limitato a monte)
+    if (!dateFrom && !dateTo) return allLessonsFromToday;
+    return allLessonsFromToday.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
+  }, [allLessonsFromToday, dateFrom, dateTo]);
+
+  // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
     const map = new Map();
-    for (const l of lessons) {
-      const ymd = String(l.data).slice(0, 10);
-      if (!ymd) continue;
-      if (!map.has(ymd)) map.set(ymd, []);
-      map.get(ymd).push(l);
+    for (const l of filteredLessons) {
+      const day = ymd(l.data);
+      if (!day) continue;
+      if (!map.has(day)) map.set(day, []);
+      map.get(day).push(l);
     }
     return Array.from(map.entries()).sort(([a], [b]) => (a < b ? -1 : 1));
-  }, [lessons]);
+  }, [filteredLessons]);
+
+  // Messaggio di errore specifico se range invertito
+  const rangeError = useMemo(() => {
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+      return "Intervallo date non valido: la data iniziale è successiva alla finale.";
+    }
+    return null;
+  }, [dateFrom, dateTo]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
@@ -163,14 +194,65 @@ export default function AllieviPage() {
         </div>
       </div>
 
-      {/* Ricerca */}
-      <div className="max-w-xl mx-auto px-4 py-3">
+      {/* Ricerca + Filtro date */}
+      <div className="max-w-xl mx-auto px-4 pt-3 pb-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca allievo…"
           className="w-full rounded-xl border px-4 py-2 text-sm focus:outline-none focus:ring"
         />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-600 w-10">Da</label>
+            <input
+              type="date"
+              className="w-full rounded-xl border px-3 py-1.5 text-sm"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-600 w-10">A</label>
+            <input
+              type="date"
+              className="w-full rounded-xl border px-3 py-1.5 text-sm"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            className="text-xs px-3 py-1.5 rounded-lg border bg-white"
+            onClick={() => {
+              const today = new Date();
+              const y = today.getFullYear();
+              const m = String(today.getMonth() + 1).padStart(2, "0");
+              const d = String(today.getDate()).padStart(2, "0");
+              setDateFrom(`${y}-${m}-${d}`);
+              setDateTo("");
+            }}
+          >
+            Da oggi
+          </button>
+          <button
+            type="button"
+            className="text-xs px-3 py-1.5 rounded-lg border bg-white"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+            }}
+          >
+            Pulisci filtro
+          </button>
+        </div>
+        {rangeError && (
+          <div className="mt-2 text-xs text-red-600">
+            {rangeError}
+          </div>
+        )}
       </div>
 
       {/* Loading */}
@@ -211,27 +293,27 @@ export default function AllieviPage() {
             )}
           </div>
 
-          {/* Lezioni future */}
+          {/* Lezioni future (filtrate) */}
           <SectionTitle title="Lezioni future" />
           <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
               <EmptyState
-                title="Nessuna lezione in programma"
-                subtitle="Quando verranno aggiunte, le vedrai qui."
+                title="Nessuna lezione trovata"
+                subtitle={
+                  dateFrom || dateTo
+                    ? "Nessuna lezione nell'intervallo selezionato."
+                    : "Quando verranno aggiunte, le vedrai qui."
+                }
               />
             ) : (
               lessonsByDay.map(([day, items]) => (
                 <div key={day} className="mb-5">
                   <div className="text-xs font-medium text-gray-500 mb-1">
-                    {format(parseISO(`${day}T00:00:00`), "EEEE d MMMM yyyy", {
-                      locale: it,
-                    })}
+                    {format(parseISO(`${day}T00:00:00`), "EEEE d MMMM yyyy", { locale: it })}
                   </div>
                   <div className="rounded-xl border bg-white">
                     {items
-                      .sort((a, b) =>
-                        (a.ora_inizio || "").localeCompare(b.ora_inizio || "")
-                      )
+                      .sort((a, b) => (a.ora_inizio || "").localeCompare(b.ora_inizio || ""))
                       .map((l, i) => (
                         <LessonRow key={l.id} l={l} last={i === items.length - 1} />
                       ))}
@@ -304,25 +386,19 @@ function Badge({ children, tone = "gray" }) {
 }
 
 function LessonRow({ l, last }) {
-  const startISO = isoFromDateTime(String(l.data).slice(0, 10), l.ora_inizio);
-  const endISO = isoFromDateTime(String(l.data).slice(0, 10), l.ora_fine);
+  const startISO = isoFromDateTime(ymd(l.data), l.ora_inizio);
+  const endISO = isoFromDateTime(ymd(l.data), l.ora_fine);
   const orario =
     startISO && endISO
-      ? `${format(new Date(startISO), "HH:mm")} – ${format(
-          new Date(endISO),
-          "HH:mm"
-        )}`
+      ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
   const stato = (l.stato || "futura").toLowerCase();
   const tone =
-    stato === "annullata"
-      ? "red"
-      : stato === "rimandata"
-      ? "orange"
-      : stato === "svolta"
-      ? "green"
-      : "blue";
+    stato === "annullata" ? "red"
+    : stato === "rimandata" ? "orange"
+    : stato === "svolta" ? "green"
+    : "blue";
 
   return (
     <div className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"}`}>
@@ -330,18 +406,14 @@ function LessonRow({ l, last }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="text-sm font-medium truncate">
-            {l.nome_allievo
-              ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim()
-              : "Allievo"}
+            {l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim() : "Allievo"}
           </div>
           <Badge tone={tone}>{stato}</Badge>
           {l.riprogrammata ? <Badge tone="purple">riprogrammata</Badge> : null}
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
         {l.motivazione && stato !== "futura" && (
-          <div className="text-xs text-gray-500 mt-0.5">
-            Motivo: {l.motivazione}
-          </div>
+          <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
         )}
       </div>
     </div>
@@ -350,11 +422,9 @@ function LessonRow({ l, last }) {
 
 function Skeleton({ h = "48px" }) {
   return (
-    <div
-      className="animate-pulse rounded-xl bg-gray-200"
-      style={{ height: h }}
-    />
+    <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />
   );
 }
+
 
 
