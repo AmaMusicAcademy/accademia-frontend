@@ -14,7 +14,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     ora_fine: "",
     aula: AULE_PREDEFINITE[0],
     id_allievo: "",
-    stato: "programmata",
     motivazione: ""
   });
   const [loading, setLoading] = useState(false);
@@ -88,7 +87,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         ora_inizio: form.ora_inizio, // "HH:MM"
         ora_fine: form.ora_fine,     // "HH:MM"
         aula: form.aula,
-        stato: form.stato,           // "programmata" per default
         motivazione: form.motivazione || null
       };
 
@@ -119,7 +117,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         ora_fine: "",
         aula: AULE_PREDEFINITE[0],
         id_allievo: "",
-        stato: "programmata",
         motivazione: ""
       });
     } catch (err) {

@@ -71,7 +71,7 @@ export default function CalendarioPersonale() {
           .filter((l) => {
             const statoValido =
               l.stato === "svolta" ||
-              l.stato === "programmata" ||
+              l.stato === "annullata" ||
               (l.stato === "rimandata" && l.riprogrammata === true);
             return (
               statoValido &&
