@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -146,15 +146,15 @@ export default function CompensoInsegnante({ insegnanteId }) {
       [`Compenso`, euro(dati.compenso)],
     ];
     // @ts-ignore
-    doc.autoTable({
-      startY: 60,
-      head: [['Voce', 'Valore']],
-      body: riepilogo,
-      styles: { fontSize: 10, cellPadding: 6 },
-      theme: 'striped',
-      headStyles: { fillColor: [0, 122, 255] },
-      margin: { left: 40, right: 40 },
-    });
+     autoTable(doc, {
+   startY: 60,
+   head: [['Voce', 'Valore']],
+   body: riepilogo,
+   styles: { fontSize: 10, cellPadding: 6 },
+   theme: 'striped',
+   headStyles: { fillColor: [0, 122, 255] },
+   margin: { left: 40, right: 40 },
+});
 
     // Tabella lezioni conteggiate
     const body = lezioniDettaglio.map((r) => [
@@ -168,21 +168,20 @@ export default function CompensoInsegnante({ insegnanteId }) {
     const startY = (doc.lastAutoTable?.finalY || 60) + 20;
 
     // @ts-ignore
-    doc.autoTable({
-      startY,
-      head: [['Data', 'Orario', 'Allievo', 'Aula', 'Stato', 'Ore']],
-      body,
-      styles: { fontSize: 9, cellPadding: 5 },
-      theme: 'grid',
-      headStyles: { fillColor: [0, 122, 255] },
-      margin: { left: 40, right: 40 },
-      didDrawPage: (data) => {
-        // piè di pagina
-        const page = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.text(`Pagina ${page}`, doc.internal.pageSize.getWidth() - 80, doc.internal.pageSize.getHeight() - 20);
-      },
-    });
+    autoTable(doc, {
+   startY,
+   head: [['Data', 'Orario', 'Allievo', 'Aula', 'Stato', 'Ore']],
+   body,
+   styles: { fontSize: 9, cellPadding: 5 },
+   theme: 'grid',
+   headStyles: { fillColor: [0, 122, 255] },
+   margin: { left: 40, right: 40 },
+   didDrawPage: (data) => {
+     const page = doc.internal.getNumberOfPages();
+     doc.setFontSize(8);
+     doc.text(`Pagina ${page}`, doc.internal.pageSize.getWidth() - 80, doc.internal.pageSize.getHeight() - 20);
+   },
+});
 
     doc.save(`compenso_${dati.mese}.pdf`);
   };
