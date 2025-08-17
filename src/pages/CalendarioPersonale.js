@@ -18,6 +18,7 @@ export default function CalendarioPersonale() {
     const fetchDati = async () => {
       try {
         setErrore(null);
+        setLoading(true);
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Token non trovato");
 
@@ -97,10 +98,6 @@ export default function CalendarioPersonale() {
         setLoading(false);
       }
     };
-
-   // fetchDati();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  //}, []);
 
 useEffect(() => { fetchDati(); }, []); // una sola volta all’avvio
 
