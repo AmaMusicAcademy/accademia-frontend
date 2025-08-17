@@ -15,7 +15,6 @@ export default function CalendarioPersonale() {
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
 
-  //useEffect(() => {
     const fetchDati = async () => {
       try {
         setErrore(null);
@@ -39,7 +38,8 @@ export default function CalendarioPersonale() {
           fetch(`${BASE_URL}/api/insegnanti/${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni`, {
+          //fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni`, {
+            fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, { // 👈 anti-cache
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
