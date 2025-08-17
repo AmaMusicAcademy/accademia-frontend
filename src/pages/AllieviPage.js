@@ -2,16 +2,28 @@ import React, { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 
-// Config base API (adatta se necessario)
-const API_BASE = import.meta.env.VITE_API_BASE_URL || process.env.REACT_APP_API_BASE || "";
+// Config base API (CRA usa process.env.REACT_APP_*)
+const API_BASE =
+  (typeof process !== "undefined" &&
+    process.env &&
+    process.env.REACT_APP_API_BASE) ||
+  "https://accademia-backend.onrender.com"; // 👈 fallback hardcoded (cambia col tuo dominio)
 
 // --- utils ---
 function getToken() {
-  try { return localStorage.getItem("token") || null; } catch { return null; }
+  try {
+    return localStorage.getItem("token") || null;
+  } catch {
+    return null;
+  }
 }
 
 function jwtPayload(token) {
-  try { return JSON.parse(atob(token.split(".")[1] || "")); } catch { return null; }
+  try {
+    return JSON.parse(atob(token.split(".")[1] || ""));
+  } catch {
+    return null;
+  }
 }
 
 async function fetchJSON(url, token, opts = {}) {
@@ -34,55 +46,50 @@ async function fetchJSON(url, token, opts = {}) {
 }
 
 /**
- * Prova a ottenere l'id dell'insegnante:
- * 1) /api/insegnante/me (richiede che il token 'id' coincida con insegnanti.id)
- * 2) fallback: decode JWT -> username -> cerca in /api/insegnanti
+ * Ottieni l'id dell'insegnante:
+ * 1) /api/insegnante/me
+ * 2) fallback: username nel JWT -> match in /api/insegnanti
  */
 async function resolveTeacherId(token) {
-  // tentativo #1
   try {
     const me = await fetchJSON(`${API_BASE}/api/insegnante/me`, token);
     if (me?.id) return { id: String(me.id), profile: me };
-  } catch (e) {
-    // passa al fallback
+  } catch {
+    // fallback
   }
 
-  // tentativo #2 (fallback via username)
   const payload = jwtPayload(token);
   const username = payload?.username;
-  if (!username) throw new Error("Impossibile determinare l'insegnante corrente (username mancante nel token).");
+  if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
 
-  const list = await fetchJSON(`${API_BASE}/api/insegnanti`, null); // endpoint non protetto nel tuo backend
-  const match = (Array.isArray(list) ? list : []).find((i) => (i.username || "").toLowerCase() === username.toLowerCase());
-  if (!match?.id) throw new Error("Non trovo un insegnante con questo username.");
+  const list = await fetchJSON(`${API_BASE}/api/insegnanti`, null);
+  const match = (Array.isArray(list) ? list : []).find(
+    (i) => (i.username || "").toLowerCase() === username.toLowerCase()
+  );
+  if (!match?.id) throw new Error("Nessun insegnante trovato per questo utente.");
   return { id: String(match.id), profile: match };
 }
 
 function isoFromDateTime(dateStr, timeStr) {
-  // date: "YYYY-MM-DD", time: "HH:MM" o "HH:MM:SS"
   if (!dateStr || !timeStr) return null;
   const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
   return `${dateStr}T${t}`;
 }
 
 function isFutureLesson(lez) {
-  const startISO = isoFromDateTime(lez.data?.slice(0,10), lez.ora_inizio);
+  const startISO = isoFromDateTime(lez.data?.slice(0, 10), lez.ora_inizio);
   if (!startISO) return false;
-  return new Date(startISO) >= new Date(); // includi anche 'oggi' da adesso in poi
+  return new Date(startISO) >= new Date();
 }
 
 // --- component ---
 export default function AllieviPage() {
   const token = getToken();
   const [teacherId, setTeacherId] = useState(null);
-  const [teacherProfile, setTeacherProfile] = useState(null);
-
   const [students, setStudents] = useState([]);
   const [lessons, setLessons] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
-
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -94,21 +101,25 @@ export default function AllieviPage() {
 
         if (!token) throw new Error("Token non presente. Esegui il login.");
 
-        const { id, profile } = await resolveTeacherId(token);
+        const { id } = await resolveTeacherId(token);
         if (cancel) return;
 
         setTeacherId(id);
-        setTeacherProfile(profile);
 
-        // 1) allievi assegnati
-        const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, null);
+        // allievi assegnati
+        const allievi = await fetchJSON(
+          `${API_BASE}/api/insegnanti/${id}/allievi`,
+          null
+        );
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
 
-        // 2) lezioni dell'insegnante (protetto)
-        const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni`, token);
+        // lezioni
+        const lezioni = await fetchJSON(
+          `${API_BASE}/api/insegnanti/${id}/lezioni`,
+          token
+        );
         if (cancel) return;
-
         const future = (Array.isArray(lezioni) ? lezioni : []).filter(isFutureLesson);
         setLessons(future);
       } catch (e) {
@@ -117,29 +128,32 @@ export default function AllieviPage() {
         if (!cancel) setLoading(false);
       }
     })();
-    return () => { cancel = true; };
+    return () => {
+      cancel = true;
+    };
   }, [token]);
 
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
-    return students.filter(s => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
+    return students.filter((s) =>
+      `${s.nome} ${s.cognome}`.toLowerCase().includes(q)
+    );
   }, [students, search]);
 
   const lessonsByDay = useMemo(() => {
     const map = new Map();
     for (const l of lessons) {
-      const ymd = String(l.data).slice(0,10); // dal backend arriva "YYYY-MM-DD..."
+      const ymd = String(l.data).slice(0, 10);
       if (!ymd) continue;
       if (!map.has(ymd)) map.set(ymd, []);
       map.get(ymd).push(l);
     }
-    return Array.from(map.entries()).sort(([a],[b]) => (a < b ? -1 : 1));
+    return Array.from(map.entries()).sort(([a], [b]) => (a < b ? -1 : 1));
   }, [lessons]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header stile iOS */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-xl mx-auto px-4 py-3">
           <h1 className="text-xl font-semibold">Allievi</h1>
@@ -174,20 +188,22 @@ export default function AllieviPage() {
 
       {!loading && !err && (
         <>
-          {/* Allievi */}
           <SectionTitle title="Allievi assegnati" />
           <div className="max-w-xl mx-auto px-4 pb-4 grid gap-2">
             {filteredStudents.length === 0 ? (
               <EmptyState
                 title="Nessun allievo"
-                subtitle={search ? "Modifica la ricerca." : "Non sono presenti assegnazioni."}
+                subtitle={
+                  search
+                    ? "Modifica la ricerca."
+                    : "Non sono presenti assegnazioni."
+                }
               />
             ) : (
               filteredStudents.map((s) => <StudentRow key={s.id} s={s} />)
             )}
           </div>
 
-          {/* Lezioni future */}
           <SectionTitle title="Lezioni future" />
           <div className="max-w-xl mx-auto px-4 pb-24">
             {lessonsByDay.length === 0 ? (
@@ -199,11 +215,15 @@ export default function AllieviPage() {
               lessonsByDay.map(([day, items]) => (
                 <div key={day} className="mb-5">
                   <div className="text-xs font-medium text-gray-500 mb-1">
-                    {format(parseISO(`${day}T00:00:00`), "EEEE d MMMM yyyy", { locale: it })}
+                    {format(parseISO(`${day}T00:00:00`), "EEEE d MMMM yyyy", {
+                      locale: it,
+                    })}
                   </div>
                   <div className="rounded-xl border bg-white">
                     {items
-                      .sort((a, b) => (a.ora_inizio || "").localeCompare(b.ora_inizio || ""))
+                      .sort((a, b) =>
+                        (a.ora_inizio || "").localeCompare(b.ora_inizio || "")
+                      )
                       .map((l, i) => (
                         <LessonRow key={l.id} l={l} last={i === items.length - 1} />
                       ))}
@@ -246,7 +266,9 @@ function StudentRow({ s }) {
         <span className="text-xs font-semibold text-gray-600">{initials}</span>
       </div>
       <div className="flex-1">
-        <div className="text-sm font-medium truncate">{s.nome} {s.cognome}</div>
+        <div className="text-sm font-medium truncate">
+          {s.nome} {s.cognome}
+        </div>
       </div>
     </div>
   );
@@ -262,23 +284,36 @@ function Badge({ children, tone = "gray" }) {
     purple: "bg-purple-100 text-purple-700 border-purple-200",
   };
   return (
-    <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${tones[tone] || tones.gray}`}>
+    <span
+      className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+        tones[tone] || tones.gray
+      }`}
+    >
       {children}
     </span>
   );
 }
 
 function LessonRow({ l, last }) {
-  const startISO = isoFromDateTime(String(l.data).slice(0,10), l.ora_inizio);
-  const endISO = isoFromDateTime(String(l.data).slice(0,10), l.ora_fine);
-  const orario = startISO && endISO ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}` : "--:--";
+  const startISO = isoFromDateTime(String(l.data).slice(0, 10), l.ora_inizio);
+  const endISO = isoFromDateTime(String(l.data).slice(0, 10), l.ora_fine);
+  const orario =
+    startISO && endISO
+      ? `${format(new Date(startISO), "HH:mm")} – ${format(
+          new Date(endISO),
+          "HH:mm"
+        )}`
+      : "--:--";
 
   const stato = (l.stato || "futura").toLowerCase();
   const tone =
-    stato === "annullata" ? "red"
-    : stato === "rimandata" ? "orange"
-    : stato === "svolta" ? "green"
-    : "blue";
+    stato === "annullata"
+      ? "red"
+      : stato === "rimandata"
+      ? "orange"
+      : stato === "svolta"
+      ? "green"
+      : "blue";
 
   return (
     <div className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"}`}>
@@ -286,14 +321,18 @@ function LessonRow({ l, last }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="text-sm font-medium truncate">
-            {l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim() : "Allievo"}
+            {l.nome_allievo
+              ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim()
+              : "Allievo"}
           </div>
           <Badge tone={tone}>{stato}</Badge>
           {l.riprogrammata ? <Badge tone="purple">riprogrammata</Badge> : null}
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
         {l.motivazione && stato !== "futura" && (
-          <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">Motivo: {l.motivazione}</div>
+          <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+            Motivo: {l.motivazione}
+          </div>
         )}
       </div>
     </div>
@@ -301,15 +340,25 @@ function LessonRow({ l, last }) {
 }
 
 function Skeleton({ h = "48px" }) {
-  return <div className={`animate-pulse rounded-xl bg-gray-200`} style={{ height: h }} />;
+  return (
+    <div
+      className={`animate-pulse rounded-xl bg-gray-200`}
+      style={{ height: h }}
+    />
+  );
 }
 
 function BottomBar({ active }) {
-  const item = (key, label) =>
-    <button className={`flex flex-col items-center ${active === key ? "text-blue-600" : "text-gray-500"}`}>
+  const item = (key, label) => (
+    <button
+      className={`flex flex-col items-center ${
+        active === key ? "text-blue-600" : "text-gray-500"
+      }`}
+    >
       <span className="material-icons text-base">circle</span>
       {label}
-    </button>;
+    </button>
+  );
   return (
     <nav className="fixed bottom-0 inset-x-0 border-t bg-white">
       <div className="max-w-xl mx-auto flex justify-around py-2 text-xs">
@@ -320,3 +369,4 @@ function BottomBar({ active }) {
     </nav>
   );
 }
+
