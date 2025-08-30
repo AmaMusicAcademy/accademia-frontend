@@ -7,6 +7,10 @@ import BottomNav from "../componenti/BottomNav";
 // ✅ URL backend da .env (es: REACT_APP_API_URL=https://app-docenti.onrender.com)
 const BASE_URL = process.env.REACT_APP_API_URL;
 
+// Altezza BottomNav e spazio minimo lista (regola se serve)
+const BOTTOM_NAV_PX = 72;   // altezza stimata della BottomNav
+const LIST_MIN_PX   = 260;  // spazio minimo per la lista sotto il calendario
+
 // Helpers
 const safeDateStr = (d) => {
   if (!d) return null;
@@ -27,7 +31,10 @@ export default function CalendarioPersonale() {
   const [cognome, setCognome] = useState("");
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
-  const [calendarKey, setCalendarKey] = useState(0); // 👈 forza il remount del calendario
+  const [calendarKey, setCalendarKey] = useState(0); // forza il remount del calendario
+
+  const CONTAINER_HEIGHT = `calc(100vh - ${BOTTOM_NAV_PX}px)`;
+  const CALENDAR_HEIGHT  = `calc(100vh - ${BOTTOM_NAV_PX}px - ${LIST_MIN_PX}px)`;
 
   const fetchNoStore = (url, options = {}) =>
     fetch(url, {
@@ -98,7 +105,7 @@ export default function CalendarioPersonale() {
         .filter(Boolean);
 
       setLezioni(enriched);
-      setCalendarKey((k) => k + 1); // 👈 forza re-render del calendario con i dati server
+      setCalendarKey((k) => k + 1); // re-render del calendario con i dati server
     } catch (err) {
       setErrore(err.message || "Errore inatteso");
     } finally {
@@ -112,48 +119,8 @@ export default function CalendarioPersonale() {
   }, []);
 
   function doLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("utente");
-    navigate("/login");
-  }
+    localStorage
 
-  // 👇 chiamata subito dopo la creazione: aggiunge localmente e forza re-render, poi fa fetch e re-forza
-  const handleLessonCreated = async (created) => {
-    const arr = Array.isArray(created) ? created : created ? [created] : [];
-    if (arr.length) {
-      const enrichedNew = arr.map(enrichOne).filter(Boolean);
-      setLezioni((prev) => {
-        const byKey = new Map(
-          prev.map((e) => [(e?.id ?? `${e.start}-${e.id_allievo ?? ""}`), e])
-        );
-        for (const e of enrichedNew) {
-          const key = e?.id ?? `${e.start}-${e.id_allievo ?? ""}`;
-          byKey.set(key, e);
-        }
-        return Array.from(byKey.values());
-      });
-      setCalendarKey((k) => k + 1); // 👈 re-render immediato del calendario
-    }
-
-    // riallinea dal server e re-render di sicurezza
-    await fetchDati();
-    setCalendarKey((k) => k + 1);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 pb-24">
-      <CalendarioLezioni
-        key={calendarKey}            /* 👈 remount forzato, il calendario rilegge gli eventi */
-        lezioni={lezioni}
-        nome={nome}
-        cognome={cognome}
-        loading={loading}
-        error={errore}
-      />
-      <BottomNav onLessonCreated={handleLessonCreated} />
-    </div>
-  );
-}
 
 
 
