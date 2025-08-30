@@ -143,7 +143,7 @@ export default function CalendarioPersonale() {
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
       <CalendarioLezioni
-        key={calendarKey}            {/* 👈 remount forzato, il calendario rilegge gli eventi */}
+        key={calendarKey}            /* 👈 remount forzato, il calendario rilegge gli eventi */
         lezioni={lezioni}
         nome={nome}
         cognome={cognome}
