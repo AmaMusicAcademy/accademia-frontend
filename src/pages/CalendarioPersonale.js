@@ -3,7 +3,6 @@ import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import CalendarioLezioni from "../CalendarioLezioni";
 import BottomNav from "../componenti/BottomNav";
-import PullToRefresh from "../componenti/PullToRefresh"; // 👈 aggiunta
 
 // ✅ URL backend da .env (es: REACT_APP_API_URL=https://app-docenti.onrender.com)
 const BASE_URL = process.env.REACT_APP_API_URL;
@@ -109,19 +108,6 @@ export default function CalendarioPersonale() {
     localStorage.removeItem("utente");
     navigate("/login");
   }
-
-  return (
-    <div className="min-h-screen bg-gray-100 pb-24">
-      {/* 👇 wrapper con pull-to-refresh: trascina giù per richiamare fetchDati() */}
-      <PullToRefresh onRefresh={fetchDati} className="min-h-[calc(100vh-6rem)]">
-        <CalendarioLezioni
-          lezioni={lezioni}
-          nome={nome}
-          cognome={cognome}
-          loading={loading}
-          error={errore}
-        />
-      </PullToRefresh>
 
       <BottomNav onLessonCreated={fetchDati} /> {/* 👈 refresh dopo creazione */}
     </div>
