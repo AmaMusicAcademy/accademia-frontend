@@ -22,7 +22,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
 
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
-  const [esito, setEsito] = useState(null); // messaggio successo/riassunto
 
   const token = useMemo(() => localStorage.getItem("token"), []);
   const insegnanteId = useMemo(() => {
@@ -93,7 +92,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
   const cambia = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
   const valida = () => {
-    setEsito(null);
     if (!form.data || !form.ora_inizio || !form.ora_fine) {
       setErrore("Compila data e orari");
       return false;
@@ -116,6 +114,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         return false;
       }
     }
+    setErrore(null);
     return true;
   };
 
@@ -139,8 +138,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     e.preventDefault();
     if (!valida()) return;
 
-    setErrore(null);
-    setEsito(null);
     setLoading(true);
 
     try {
@@ -155,29 +152,28 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         ora_fine: form.ora_fine,
         aula: form.aula,
         motivazione: form.motivazione || null,
+        stato: "svolta", // 👈 default richiesto
       };
 
       if (!isRecurring) {
         const created = await createOne(basePayload);
-        onCreated && onCreated(created);
-        setEsito("Lezione creata correttamente.");
+        onCreated && onCreated(created); // 👈 passa al genitore
         resetAndClose();
         return;
       }
 
-      // Ricorrenza settimanale
-      let ok = 0;
-      let ko = 0;
+      // Ricorrenza settimanale: ritorna array di create
+      let ok = 0, ko = 0;
+      const createdItems = [];
       for (const ymd of weeklyGenerator(form.data, untilDate)) {
         try {
-          await createOne({ ...basePayload, data: ymd });
-          ok++;
+          const c = await createOne({ ...basePayload, data: ymd });
+          ok++; if (c) createdItems.push(c);
         } catch {
           ko++;
         }
       }
-      onCreated && onCreated({ ok, ko });
-      setEsito(`Operazione completata. Create ${ok} lezioni${ko ? `, fallite ${ko}` : ""}.`);
+      onCreated && onCreated(createdItems); // 👈 array verso il genitore
       resetAndClose();
     } catch (err) {
       setErrore(err.message || "Errore inatteso");
@@ -220,11 +216,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         {errore && (
           <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
             {errore}
-          </div>
-        )}
-        {esito && (
-          <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
-            {esito}
           </div>
         )}
 
@@ -294,17 +285,6 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Motivazione (opzionale)</label>
-            <input
-              type="text"
-              className="w-full rounded-lg border px-3 py-2"
-              value={form.motivazione}
-              onChange={(e) => cambia("motivazione", e.target.value)}
-              placeholder="Es. recupero, variazione orario…"
-            />
-          </div>
-
           {/* RICORRENZA */}
           <div className="border rounded-xl p-3 space-y-2">
             <label className="flex items-center gap-2">
@@ -365,4 +345,5 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     </div>
   );
 }
+
 

@@ -14,9 +14,10 @@ const BottomNav = ({ onLessonCreated }) => {
   const openModal = useCallback(() => setShowNewLesson(true), []);
   const closeModal = useCallback(() => setShowNewLesson(false), []);
 
-  const handleCreated = useCallback(() => {
+  // 👇 inoltra al genitore la/le lezione/i create
+  const handleCreated = useCallback((created) => {
     closeModal();
-    if (onLessonCreated) onLessonCreated(); // il genitore (pagina calendario) può ricaricare gli eventi
+    if (onLessonCreated) onLessonCreated(created);
   }, [closeModal, onLessonCreated]);
 
   const centralAction = () => {
@@ -76,7 +77,7 @@ const BottomNav = ({ onLessonCreated }) => {
         <NewLessonModal
           open={showNewLesson}
           onClose={closeModal}
-          onCreated={handleCreated}
+          onCreated={handleCreated}   // 👈 qui
         />
       )}
     </>
@@ -84,6 +85,7 @@ const BottomNav = ({ onLessonCreated }) => {
 };
 
 export default BottomNav;
+
 
 
 
