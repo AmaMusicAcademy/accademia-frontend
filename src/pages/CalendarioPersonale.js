@@ -28,7 +28,6 @@ export default function CalendarioPersonale() {
         const decoded = jwtDecode(token);
         id = decoded.id || decoded.userId;
       } catch {
-        // token malformato → logout
         doLogout();
         return;
       }
@@ -64,7 +63,7 @@ export default function CalendarioPersonale() {
       setNome(info.nome || "");
       setCognome(info.cognome || "");
 
-      // ✅ Evita timezone: costruisci start/end usando la stringa data senza passare da new Date()
+      // ✅ Evita timezone: usa la stringa data
       const safeDateStr = (d) => {
         if (!d) return null;
         const iso = String(d);
@@ -101,7 +100,9 @@ export default function CalendarioPersonale() {
     }
   };
 
-  useEffect(() => { fetchDati(); }, []); // una sola volta all’avvio
+  useEffect(() => {
+    fetchDati();
+  }, []);
 
   function doLogout() {
     localStorage.removeItem("token");
@@ -109,6 +110,15 @@ export default function CalendarioPersonale() {
     navigate("/login");
   }
 
+  return (
+    <div className="min-h-screen bg-gray-100 pb-24">
+      <CalendarioLezioni
+        lezioni={lezioni}
+        nome={nome}
+        cognome={cognome}
+        loading={loading}
+        error={errore}
+      />
       <BottomNav onLessonCreated={fetchDati} /> {/* 👈 refresh dopo creazione */}
     </div>
   );
