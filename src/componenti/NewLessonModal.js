@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
-
-// Puoi sostituire con la lista aule reale (o passare via prop)
 const AULE_PREDEFINITE = ["Aula 1", "Aula 2", "Aula 3"];
 
 export default function NewLessonModal({ open, onClose, onCreated }) {
@@ -14,10 +12,17 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     ora_fine: "",
     aula: AULE_PREDEFINITE[0],
     id_allievo: "",
-    motivazione: ""
+    motivazione: "",
   });
+
+  // Ricorrenza settimanale
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [untilDate, setUntilDate] = useState(""); // YYYY-MM-DD
+  const [occurrences, setOccurrences] = useState(0); // preview conteggio
+
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
+  const [esito, setEsito] = useState(null); // messaggio successo/riassunto
 
   const token = useMemo(() => localStorage.getItem("token"), []);
   const insegnanteId = useMemo(() => {
@@ -29,7 +34,43 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     }
   }, [token]);
 
-  // Carica allievi assegnati all'insegnante
+  // ---- util date safe (YYYY-MM-DD) ----
+  const addDays = (ymd, days) => {
+    const [y, m, d] = ymd.split("-").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() + days);
+    const yy = dt.getUTCFullYear();
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getUTCDate()).padStart(2, "0");
+    return `${yy}-${mm}-${dd}`;
+  };
+  const dateGte = (a, b) => a >= b; // string compare su YYYY-MM-DD
+
+  function* weeklyGenerator(startYmd, endYmd) {
+    // entrambe inclusive (end incluso)
+    let cur = startYmd;
+    while (dateGte(endYmd, cur)) {
+      yield cur;
+      cur = addDays(cur, 7);
+    }
+  }
+
+  // Preview occorrenze per UI
+  useEffect(() => {
+    if (!isRecurring || !form.data || !untilDate) {
+      setOccurrences(0);
+      return;
+    }
+    if (untilDate < form.data) {
+      setOccurrences(0);
+      return;
+    }
+    let count = 0;
+    for (const _ of weeklyGenerator(form.data, untilDate)) count++;
+    setOccurrences(count);
+  }, [isRecurring, form.data, untilDate]);
+
+  // Carica allievi assegnati
   useEffect(() => {
     const fetchAllievi = async () => {
       if (!open || !insegnanteId || !token) return;
@@ -41,7 +82,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         );
         if (!res.ok) throw new Error("Errore nel recupero allievi assegnati");
         const data = await res.json();
-        setAllievi(data || []);
+        setAllievi(Array.isArray(data) ? data : []);
       } catch (err) {
         setErrore(err.message);
       }
@@ -49,11 +90,10 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     fetchAllievi();
   }, [open, insegnanteId, token]);
 
-  const cambia = (name, value) => {
-    setForm((f) => ({ ...f, [name]: value }));
-  };
+  const cambia = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
   const valida = () => {
+    setEsito(null);
     if (!form.data || !form.ora_inizio || !form.ora_fine) {
       setErrore("Compila data e orari");
       return false;
@@ -62,12 +102,37 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       setErrore("Seleziona un allievo");
       return false;
     }
-    // controllo orari
     if (form.ora_fine <= form.ora_inizio) {
       setErrore("L'orario di fine deve essere successivo all'inizio");
       return false;
     }
+    if (isRecurring) {
+      if (!untilDate) {
+        setErrore("Seleziona la data di fine ricorrenza");
+        return false;
+      }
+      if (untilDate < form.data) {
+        setErrore("La data di fine non può essere precedente alla data iniziale");
+        return false;
+      }
+    }
     return true;
+  };
+
+  const createOne = async (payload) => {
+    const res = await fetch(`${BASE_URL}/api/lezioni`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`HTTP ${res.status}${t ? `: ${t}` : ""}`);
+    }
+    return res.json().catch(() => null);
   };
 
   const submit = async (e) => {
@@ -75,56 +140,64 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     if (!valida()) return;
 
     setErrore(null);
+    setEsito(null);
     setLoading(true);
+
     try {
       if (!BASE_URL) throw new Error("REACT_APP_API_URL non configurata");
+      if (!insegnanteId) throw new Error("ID insegnante non disponibile");
 
-      // Payload previsto dal tuo schema lezioni
-      const payload = {
+      const basePayload = {
         id_insegnante: insegnanteId,
         id_allievo: Number(form.id_allievo),
-        data: form.data,             // "YYYY-MM-DD"
-        ora_inizio: form.ora_inizio, // "HH:MM"
-        ora_fine: form.ora_fine,     // "HH:MM"
+        data: form.data, // YYYY-MM-DD
+        ora_inizio: form.ora_inizio,
+        ora_fine: form.ora_fine,
         aula: form.aula,
-        motivazione: form.motivazione || null
+        motivazione: form.motivazione || null,
       };
 
-      // 🔸 Endpoint: suppongo esista POST /api/lezioni (adegua se diverso)
-      const res = await fetch(`${BASE_URL}/api/lezioni`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        let msg = "Errore nella creazione della lezione";
-        if (res.status === 404) msg += " (endpoint non presente sul server)";
-        throw new Error(`${msg}${t ? `: ${t}` : ""}`);
+      if (!isRecurring) {
+        const created = await createOne(basePayload);
+        onCreated && onCreated(created);
+        setEsito("Lezione creata correttamente.");
+        resetAndClose();
+        return;
       }
 
-      // Lezione creata
-      const created = await res.json().catch(() => null);
-      if (onCreated) onCreated(created); // 👈 notifica su successo
-      onClose();
-      // Reset form
-      setForm({
-        data: "",
-        ora_inizio: "",
-        ora_fine: "",
-        aula: AULE_PREDEFINITE[0],
-        id_allievo: "",
-        motivazione: ""
-      });
+      // Ricorrenza settimanale
+      let ok = 0;
+      let ko = 0;
+      for (const ymd of weeklyGenerator(form.data, untilDate)) {
+        try {
+          await createOne({ ...basePayload, data: ymd });
+          ok++;
+        } catch {
+          ko++;
+        }
+      }
+      onCreated && onCreated({ ok, ko });
+      setEsito(`Operazione completata. Create ${ok} lezioni${ko ? `, fallite ${ko}` : ""}.`);
+      resetAndClose();
     } catch (err) {
       setErrore(err.message || "Errore inatteso");
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetAndClose = () => {
+    setForm({
+      data: "",
+      ora_inizio: "",
+      ora_fine: "",
+      aula: AULE_PREDEFINITE[0],
+      id_allievo: "",
+      motivazione: "",
+    });
+    setIsRecurring(false);
+    setUntilDate("");
+    onClose();
   };
 
   if (!open) return null;
@@ -145,7 +218,14 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         </div>
 
         {errore && (
-          <div className="mb-3 text-sm text-red-600">{errore}</div>
+          <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+            {errore}
+          </div>
+        )}
+        {esito && (
+          <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2">
+            {esito}
+          </div>
         )}
 
         <form onSubmit={submit} className="space-y-3">
@@ -225,6 +305,41 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
             />
           </div>
 
+          {/* RICORRENZA */}
+          <div className="border rounded-xl p-3 space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+              />
+              <span className="text-sm font-medium">Ricorrenza settimanale</span>
+            </label>
+
+            {isRecurring && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Fino al (incluso)
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full rounded-lg border px-3 py-2"
+                    value={untilDate}
+                    onChange={(e) => setUntilDate(e.target.value)}
+                    min={form.data || undefined}
+                    required
+                  />
+                </div>
+                <div className="text-xs text-gray-600 flex items-end">
+                  {occurrences > 0
+                    ? `Verranno create ${occurrences} lezioni (ogni 7 giorni).`
+                    : "Seleziona una data di fine valida."}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
@@ -238,7 +353,11 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
               disabled={loading}
               className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50"
             >
-              {loading ? "Salvataggio…" : "Crea lezione"}
+              {loading
+                ? "Salvataggio…"
+                : isRecurring
+                ? "Crea ricorrenza"
+                : "Crea lezione"}
             </button>
           </div>
         </form>
@@ -246,3 +365,4 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     </div>
   );
 }
+
