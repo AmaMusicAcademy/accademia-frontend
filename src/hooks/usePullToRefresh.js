@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Gesto pull-to-refresh sul contenitore (ref interno).
- * - onRefresh: funzione async da eseguire al rilascio
- * - threshold: px per attivare il refresh
- * - maxPull: pull massimo
- * - disabled: disattiva gesture (es. mentre una modale è aperta)
+ * Nessuna trasformazione del layout.
  */
 export default function usePullToRefresh({ onRefresh, threshold = 60, maxPull = 120, disabled = false } = {}) {
   const containerRef = useRef(null);
@@ -22,6 +19,7 @@ export default function usePullToRefresh({ onRefresh, threshold = 60, maxPull = 
 
     const onTouchStart = (e) => {
       if (refreshing) return;
+      // abilita solo se siamo già in cima
       canDragRef.current = el.scrollTop <= 0;
       if (!canDragRef.current) return;
       draggingRef.current = true;
@@ -35,23 +33,35 @@ export default function usePullToRefresh({ onRefresh, threshold = 60, maxPull = 
       if (dy > 0) {
         const eased = Math.min(maxPull, dy * 0.6);
         setPull(eased);
-        e.preventDefault(); // evita refresh nativo
+        // evita rubber-band/refresh nativo
+        e.preventDefault();
       }
     };
 
     const endDrag = async () => {
       if (!draggingRef.current) return;
       draggingRef.current = false;
+
+      const doReset = () => {
+        // reset “forte” per iOS: assicura che lo scroll torni a 0
+        const node = containerRef.current;
+        if (node) {
+          node.scrollTop = 0;
+        }
+        setPull(0);
+      };
+
       if (pull >= threshold && typeof onRefresh === "function") {
         try {
           setRefreshing(true);
           await onRefresh();
         } finally {
           setRefreshing(false);
-          setPull(0);
+          // piccolo delay per evitare che l'inerzia di iOS rimanga “su”
+          setTimeout(doReset, 0);
         }
       } else {
-        setPull(0);
+        setTimeout(doReset, 0);
       }
     };
 
@@ -68,11 +78,11 @@ export default function usePullToRefresh({ onRefresh, threshold = 60, maxPull = 
     };
   }, [onRefresh, threshold, maxPull, refreshing, disabled]);
 
-  // Se disattivo, azzero sempre il pull
   useEffect(() => {
     if (disabled) setPull(0);
   }, [disabled]);
 
   return { containerRef, pull, refreshing, threshold };
 }
+
 
