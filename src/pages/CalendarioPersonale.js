@@ -119,7 +119,55 @@ export default function CalendarioPersonale() {
   }, []);
 
   function doLogout() {
-    localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("utente");
+    navigate("/login");
+  }
+
+  // Aggiunge localmente subito, poi riallinea dal server e forza re-render
+  const handleLessonCreated = async (created) => {
+    const arr = Array.isArray(created) ? created : created ? [created] : [];
+    if (arr.length) {
+      const enrichedNew = arr.map(enrichOne).filter(Boolean);
+      setLezioni((prev) => {
+        const byKey = new Map(
+          prev.map((e) => [(e?.id ?? `${e.start}-${e.id_allievo ?? ""}`), e])
+        );
+        for (const e of enrichedNew) {
+          const key = e?.id ?? `${e.start}-${e.id_allievo ?? ""}`;
+          byKey.set(key, e);
+        }
+        return Array.from(byKey.values());
+      });
+      setCalendarKey((k) => k + 1); // re-render immediato
+    }
+
+    await fetchDati();
+    setCalendarKey((k) => k + 1);   // re-render di sicurezza
+  };
+
+  return (
+    <div className="h-screen bg-gray-100">
+      <div
+        className="px-2 pt-2 overflow-hidden"
+        style={{ height: CONTAINER_HEIGHT }}
+      >
+        {/* Remount forzato: il calendario rilegge gli eventi quando cambia la key */}
+        <CalendarioLezioni
+          key={calendarKey}
+          lezioni={lezioni}
+          nome={nome}
+          cognome={cognome}
+          loading={loading}
+          error={errore}
+          calendarHeight={CALENDAR_HEIGHT} // altezza del riquadro calendario
+        />
+      </div>
+
+      <BottomNav onLessonCreated={handleLessonCreated} />
+    </div>
+  );
+}
 
 
 
