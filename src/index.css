@@ -33,3 +33,11 @@ code {
 .fc .fc-button-primary:not(:disabled).fc-button-active {
   background-color: #c73732;
 }
+
+html, body, #root {
+  height: 100%;
+}
+body {
+  overscroll-behavior-y: none; /* riduce rimbalzo su Android/Chrome */
+  touch-action: pan-y;
+}
