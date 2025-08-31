@@ -509,14 +509,17 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  const stato = (l.stato || "svolta").toLowerCase();
-  const isRimandata = stato === "rimandata";
-  const isAnnullata = stato === "annullata";
+  // 👇 calcolo etichetta visuale: se riprogrammata => mostra SOLO "riprogrammata"
+  const rawState = (l.stato || "svolta").toLowerCase();
+  const showState = l.riprogrammata ? "riprogrammata" : rawState;
+  const isRimandataOrRiprogrammata = rawState === "rimandata"; // copre anche riprogrammata (stato=rimandata)
+  const isAnnullata = rawState === "annullata";
 
   const tone =
-    isAnnullata ? "red"
-    : isRimandata ? "orange"
-    : stato === "svolta" ? "green"
+    showState === "annullata" ? "red"
+    : showState === "riprogrammata" ? "purple"
+    : showState === "rimandata" ? "orange"
+    : showState === "svolta" ? "green"
     : "blue";
 
   return (
@@ -531,11 +534,10 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
           <div className="text-sm font-medium truncate">
             {l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim() : "Allievo"}
           </div>
-          <Badge tone={tone}>{stato}</Badge>
-          {l.riprogrammata ? <Badge tone="purple">riprogrammata</Badge> : null}
+          <Badge tone={tone}>{showState}</Badge>
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
-        {l.motivazione && stato !== "svolta" && (
+        {l.motivazione && rawState !== "svolta" && (
           <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
         )}
       </div>
@@ -543,7 +545,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       {/* Azioni – per stato */}
       {!isAnnullata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {isRimandata ? (
+          {isRimandataOrRiprogrammata ? (
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"

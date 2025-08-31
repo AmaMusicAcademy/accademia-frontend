@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -7,39 +7,35 @@ const BASE_URL = process.env.REACT_APP_API_URL;
  * - open: bool
  * - onClose(): void
  * - onSaved(updated): void
- * - lesson: { id, id_insegnante, id_allievo, data, ora_inizio, ora_fine, aula, motivazione, stato, riprogrammata, start, end }
+ * - lesson: { id, id_insegnante, id_allievo, data, ora_inizio, ora_fine, aula, motivazione, stato, riprogrammata, storico_programmazioni?: [{data,ora_inizio,ora_fine,aula,recorded_at}], start, end }
  * - mode: "edit" | "reschedule"
  */
 export default function EditLessonModal({ open, onClose, onSaved, lesson, mode = "edit" }) {
-  const [form, setForm] = useState({
-    data: "",
-    ora_inizio: "",
-    ora_fine: "",
-    aula: "",
-    motivazione: "",
-  });
+  const [form, setForm] = useState({ data: "", ora_inizio: "", ora_fine: "", aula: "", motivazione: "" });
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
 
-  // --- helpers
+  const history = useMemo(() => {
+    const h = Array.isArray(lesson?.storico_programmazioni) ? lesson.storico_programmazioni : [];
+    // ordina dal più recente (recorded_at) al più vecchio
+    return [...h].sort((a, b) => String(b.recorded_at || "").localeCompare(String(a.recorded_at || "")));
+  }, [lesson]);
+
   const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
   const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "");
 
-  // 🔎 risolvi ID se quello in memoria non esiste più
   const resolveLessonId = async (src) => {
     const token = localStorage.getItem("token");
-    // 1) GET diretta
-    {
-      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    // tenta GET diretta
+    if (src?.id != null) {
+      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, { headers: { Authorization: `Bearer ${token}` } });
       if (r.ok) return src.id;
       if (r.status !== 404) {
         const t = await r.text().catch(() => "");
         throw new Error(t || `Errore lettura lezione (${r.status})`);
       }
     }
-    // 2) fallback tramite elenco dell'insegnante
+    // fallback per elenco insegnante
     const inz = Number(src.id_insegnante);
     const res = await fetch(`${BASE_URL}/api/insegnanti/${inz}/lezioni?t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -50,8 +46,11 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     }
     const list = await res.json();
     const key = (o) =>
-      [ymd(o.data) || ymd(src.start), hhmm(o.ora_inizio) || hhmm(src.start?.slice?.(11, 16)),
-       hhmm(o.ora_fine) || hhmm(src.end?.slice?.(11, 16)), String(o.id_allievo || ""), String(o.aula || "")]
+      [ymd(o.data) || ymd(src.start),
+       o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+       o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
+       String(o.id_allievo || ""),
+       String(o.aula || "")]
         .join("|");
     const want = key(src);
     const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
@@ -92,6 +91,7 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     ora_inizio: form.ora_inizio,
     ora_fine: form.ora_fine,
     aula: form.aula,
+    // 👇 se sto riprogrammando, lo stato DB resta "rimandata", ma per la UI risulterà "riprogrammata" (riprogrammata=true)
     stato: mode === "reschedule" ? "rimandata" : (src.stato || "svolta"),
     motivazione: form.motivazione || "",
     riprogrammata: mode === "reschedule" ? true : Boolean(src.riprogrammata) || false,
@@ -101,8 +101,7 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     e.preventDefault();
     if (!valida()) return;
     if (!lesson?.id) {
-      setErrore("ID lezione non disponibile");
-      return;
+      // ok, lo risolvo via fallback
     }
     try {
       setErrore(null);
@@ -110,7 +109,6 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token mancante");
 
-      // verifica/risolvi ID reale
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson);
 
@@ -147,6 +145,21 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
           <button onClick={onClose} className="text-gray-500 text-xl">✕</button>
         </div>
 
+        {/* ⬇️ storico programmazioni */}
+        {history.length > 0 && (
+          <div className="mb-3 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded p-2">
+            <div className="font-medium mb-1">Storico programmazioni</div>
+            <ul className="space-y-1 list-disc pl-4">
+              {history.map((h, idx) => (
+                <li key={idx}>
+                  {h.data} {h.ora_inizio?.slice(0,5)}–{h.ora_fine?.slice(0,5)}
+                  {h.aula ? ` (Aula ${h.aula})` : ""} {h.recorded_at ? `— spostata il ${new Date(h.recorded_at).toLocaleString("it-IT")}` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {errore && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{errore}</div>}
 
         <form onSubmit={submit} className="space-y-3">
@@ -154,12 +167,12 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
             <div>
               <label className="block text-xs text-gray-600 mb-1">Data</label>
               <input type="date" className="w-full rounded-lg border px-3 py-2"
-                value={form.data} onChange={(e) => cambia("data", e.target.value)} required />
+                value={form.data} onChange={(e) => setForm(f => ({...f, data: e.target.value}))} required />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">Aula</label>
               <input type="text" className="w-full rounded-lg border px-3 py-2"
-                value={form.aula} onChange={(e) => cambia("aula", e.target.value)} />
+                value={form.aula} onChange={(e) => setForm(f => ({...f, aula: e.target.value}))} />
             </div>
           </div>
 
@@ -167,19 +180,20 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
             <div>
               <label className="block text-xs text-gray-600 mb-1">Ora inizio</label>
               <input type="time" className="w-full rounded-lg border px-3 py-2"
-                value={form.ora_inizio} onChange={(e) => cambia("ora_inizio", e.target.value)} required />
+                value={form.ora_inizio} onChange={(e) => setForm(f => ({...f, ora_inizio: e.target.value}))} required />
             </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1">Ora fine</label>
               <input type="time" className="w-full rounded-lg border px-3 py-2"
-                value={form.ora_fine} onChange={(e) => cambia("ora_fine", e.target.value)} required />
+                value={form.ora_fine} onChange={(e) => setForm(f => ({...f, ora_fine: e.target.value}))} required />
             </div>
           </div>
 
           <div>
             <label className="block text-xs text-gray-600 mb-1">Motivazione (opz.)</label>
             <input type="text" className="w-full rounded-lg border px-3 py-2"
-              value={form.motivazione} onChange={(e) => cambia("motivazione", e.target.value)} placeholder="Es. spostata per indisponibilità…" />
+              value={form.motivazione} onChange={(e) => setForm(f => ({...f, motivazione: e.target.value}))}
+              placeholder="Es. spostata per indisponibilità…" />
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
@@ -193,5 +207,6 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     </div>
   );
 }
+
 
 

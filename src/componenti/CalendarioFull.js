@@ -5,17 +5,6 @@ import interactionPlugin from "@fullcalendar/interaction";
 import itLocale from "@fullcalendar/core/locales/it";
 import "./calendario.css";
 
-/**
- * Props:
- * - lezioni: array eventi { id, id_insegnante, id_allievo, data, ora_inizio, ora_fine, aula, stato, riprogrammata, motivazione, start, end, ... }
- * - height?: string|number -> altezza calendario; se assente la calcolo
- * - listMinPx?: number -> spazio minimo per lista (default 260)
- * - bottomNavPx?: number -> altezza bottom bar per calcolo auto (default 72)
- * - showActions?: boolean -> mostra bottoni Rimanda/Riprogramma + Annulla (default false)
- * - onOpenEdit?(lesson, mode): apre modal esterna ("edit" | "reschedule")
- * - onRimanda?(lesson)
- * - onAnnulla?(lesson)
- */
 export default function CalendarioFull({
   lezioni = [],
   height,
@@ -26,7 +15,6 @@ export default function CalendarioFull({
   onRimanda,
   onAnnulla,
 }) {
-  // oggi (timezone-safe)
   const todayYMD = useMemo(
     () =>
       new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
@@ -41,7 +29,6 @@ export default function CalendarioFull({
     "#6610f2", "#e83e8c", "#fd7e14", "#20c997",
   ];
 
-  // 🔄 mappa lezioni -> eventi FullCalendar (mantengo la lezione originale in extendedProps.source)
   const [eventi, setEventi] = useState([]);
   useEffect(() => {
     const mapped = (Array.isArray(lezioni) ? lezioni : []).map((l, index) => ({
@@ -51,20 +38,20 @@ export default function CalendarioFull({
       end: l.end,
       color: colori[index % colori.length],
       extendedProps: {
-        stato: l.stato,
+        // 👇 stato "visuale": se riprogrammata → mostra "riprogrammata"
+        displayState: l.riprogrammata ? "riprogrammata" : (l.stato || ""),
         riprogrammata: l.riprogrammata,
         oraInizio: l.ora_inizio,
         oraFine: l.ora_fine,
         nome: l.nome_allievo,
         cognome: l.cognome_allievo,
         aula: l.aula,
-        source: l, // 👈 lezione originale
+        source: l,
       },
     }));
     setEventi(mapped);
   }, [lezioni]);
 
-  // Altezza dinamica se non specificata
   const [autoHeightPx, setAutoHeightPx] = useState(360);
   useEffect(() => {
     if (height != null) return;
@@ -86,7 +73,6 @@ export default function CalendarioFull({
 
   const calHeightProp = height ?? autoHeightPx;
 
-  // Lezioni del giorno selezionato (derivate dagli eventi mappati)
   const lezioniDelGiorno = useMemo(() => {
     const day = dataSelezionata;
     return eventi
@@ -116,7 +102,6 @@ export default function CalendarioFull({
 
   return (
     <div className="calendario-container h-full flex flex-col overflow-hidden px-2 pt-2">
-      {/* CALENDARIO */}
       <div className="rounded-xl bg-white shadow calendario-sticky">
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
@@ -136,11 +121,7 @@ export default function CalendarioFull({
         />
       </div>
 
-      {/* LISTA DEL GIORNO */}
-      <div
-        className="bg-white mt-2 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni flex-1"
-        style={{ minHeight: listMinPx }}
-      >
+      <div className="bg-white mt-2 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni flex-1" style={{ minHeight: 260 }}>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">
             Appuntamenti del {fmtIT(dataSelezionata)}
@@ -159,10 +140,10 @@ export default function CalendarioFull({
 
         {lezioniDelGiorno.map((ev, i) => {
           const raw = ev.extendedProps?.source || {};
-          const isRimandata = ev.extendedProps?.stato === "rimandata";
           const titolo = `${ev.extendedProps?.nome || ""} ${ev.extendedProps?.cognome || ""}`.trim() || "Lezione";
           const oraI = ev.extendedProps?.oraInizio || String(ev.start).slice(11, 16);
           const oraF = ev.extendedProps?.oraFine || String(ev.end).slice(11, 16);
+          const displayState = ev.extendedProps?.displayState;
 
           return (
             <div
@@ -176,40 +157,10 @@ export default function CalendarioFull({
                   <div className="text-sm text-gray-700">
                     {oraI} - {oraF}{ev.extendedProps?.aula ? ` | ${ev.extendedProps.aula}` : ""}
                   </div>
-                  {ev.extendedProps?.stato && (
-                    <div className="text-xs italic text-gray-500">
-                      ({ev.extendedProps.stato}{ev.extendedProps.riprogrammata ? " - riprogrammata" : ""})
-                    </div>
+                  {displayState && (
+                    <div className="text-xs italic text-gray-500">({displayState})</div>
                   )}
                 </div>
-
-                {showActions && (
-                  <div
-                    className="flex flex-col sm:flex-row gap-2 shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      className={`px-2 py-1 rounded-md text-xs ${isRimandata ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-800"}`}
-                      title={isRimandata ? "Riprogramma" : "Rimanda"}
-                      onClick={() => {
-                        if (isRimandata) {
-                          onOpenEdit && onOpenEdit(raw, "reschedule");
-                        } else {
-                          onRimanda && onRimanda(raw);
-                        }
-                      }}
-                    >
-                      {isRimandata ? "Riprogramma" : "Rimanda"}
-                    </button>
-                    <button
-                      className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                      title="Annulla"
-                      onClick={() => onAnnulla && onAnnulla(raw)}
-                    >
-                      Annulla
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           );
@@ -220,11 +171,7 @@ export default function CalendarioFull({
 }
 
 function renderCompactDot(arg) {
-  return (
-    <div
-      className="fc-event-dot"
-      style={{ backgroundColor: arg.event.backgroundColor }}
-    />
-  );
+  return <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }} />;
 }
+
 
