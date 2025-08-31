@@ -4,7 +4,7 @@ import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
 import EditLessonModal from "../componenti/EditLessonModal";
 
-// Base API: compatibile con entrambe le variabili d'ambiente usate nel progetto
+// Base API
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
@@ -44,12 +44,12 @@ async function fetchJSON(url, token, opts = {}) {
   }
   return res.json();
 }
-/** Ottieni l'id dell'insegnante: 1) /api/insegnante/me  2) fallback: username nel JWT -> match in /api/insegnanti */
+/** 1) /api/insegnante/me  2) fallback: username dal JWT → /api/insegnanti */
 async function resolveTeacherId(token) {
   try {
     const me = await fetchJSON(`${API_BASE}/api/insegnante/me`, token);
     if (me?.id) return { id: String(me.id), profile: me };
-  } catch { /* fallback */ }
+  } catch {}
   const payload = jwtPayload(token);
   const username = payload?.username;
   if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
@@ -91,7 +91,7 @@ const sameKey = (o) =>
     String(o.aula || "")
   ].join("|");
 
-// history helpers per etichetta “riprogrammata”
+// history helpers → etichetta “riprogrammata”
 const parseHistory = (v) => {
   if (Array.isArray(v)) return v;
   if (typeof v === "string") { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } }
@@ -157,8 +157,7 @@ export default function AllieviPage() {
   const refetchLessons = async (id = teacherId) => {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
-    const base = (Array.isArray(lezioni) ? lezioni : [])
-      .filter(isFromTodayOnward); // 👈 nessun filtro su stato
+    const base = (Array.isArray(lezioni) ? lezioni : []).filter(isFromTodayOnward);
     setAllLessonsFromToday(base);
   };
 
@@ -206,7 +205,6 @@ export default function AllieviPage() {
   // verifica ID sul server, altrimenti risolvi per “chiave naturale”
   const resolveLessonId = async (src) => {
     if (!token) throw new Error("Token non presente");
-    // GET diretta
     if (src?.id != null) {
       const r = await fetch(`${API_BASE}/api/lezioni/${src.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -217,7 +215,6 @@ export default function AllieviPage() {
         throw new Error(t || `Errore lettura lezione (${r.status})`);
       }
     }
-    // fallback: elenco lezioni dell'insegnante
     const res = await fetch(`${API_BASE}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -239,7 +236,7 @@ export default function AllieviPage() {
     return found.id;
   };
 
-  // PATCH dedicati: non toccano data/ora/aula
+  // PATCH dedicati
   const patchRimanda = async (lessonId, motivazione = "") => {
     const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}/rimanda`, {
       method: "PATCH",
@@ -274,10 +271,16 @@ export default function AllieviPage() {
 
   const handleRimanda = async (lesson) => {
     try {
-      // NON togliere dalla lista Allievi; cambia solo stato localmente
-      patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
+      const motivo = window.prompt(
+        "Confermi di rimandare questa lezione?\nInserisci una motivazione (opzionale):",
+        lesson.motivazione || ""
+      );
+      if (motivo === null) return; // annullato dall'utente
+
+      // in lista Allievi NON scompare: solo cambio stato (e salvo motivazione)
+      patchLocal(lesson, { stato: "rimandata", riprogrammata: false, motivazione: motivo });
       const realId = await resolveLessonId(lesson);
-      await patchRimanda(realId, lesson.motivazione || "");
+      await patchRimanda(realId, motivo);
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
@@ -287,9 +290,15 @@ export default function AllieviPage() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      patchLocal(lesson, { stato: "annullata", riprogrammata: false });
+      const motivo = window.prompt(
+        "Confermi l'annullamento della lezione?\nInserisci una motivazione (opzionale):",
+        lesson.motivazione || ""
+      );
+      if (motivo === null) return;
+
+      patchLocal(lesson, { stato: "annullata", riprogrammata: false, motivazione: motivo });
       const realId = await resolveLessonId(lesson);
-      await patchAnnulla(realId, lesson.motivazione || "");
+      await patchAnnulla(realId, motivo);
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
@@ -520,7 +529,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : `${hhmm(l.ora_inizio)} – ${hhmm(l.ora_fine)}`;
 
-  const label = statoLabel(l);
+  const label = statoLabel(l); // 👈 usa label normalizzata
   const isRimandata = label === "rimandata";
   const isAnnullata = label === "annullata";
   const isRiprogrammata = label === "riprogrammata";
@@ -552,9 +561,10 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       </div>
 
       {/* Azioni – per stato */}
-      {!isAnnullata && !isRiprogrammata && (
+      {!isAnnullata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isRimandata ? (
+            // RIMANDATA (non riprogrammata): Riprogramma + Annulla
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
@@ -572,6 +582,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
               </button>
             </>
           ) : (
+            // Tutti gli altri (svolta, riprogrammata, ecc.): Rimanda + Annulla
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
