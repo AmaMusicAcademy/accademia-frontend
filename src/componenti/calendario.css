@@ -1,6 +1,7 @@
 :root {
   --fc-daygrid-event-dot-width: 6px;
   --fc-daygrid-event-dot-height: 6px;
+  --fc-daygrid-row-min-height: 24px;
 }
 
 .fc-daygrid-event-harness {
@@ -48,9 +49,9 @@
 
 /* lista del giorno sotto */
 .elenco-lezioni {
-  max-height: 78vh;
+  max-height: 38vh;
   overflow-y: auto;
-  margin-top: 5px;
+  margin-top: 12px;
   
 }
 
