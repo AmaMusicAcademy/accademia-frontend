@@ -1,232 +1,212 @@
-import React, { useEffect, useMemo, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import itLocale from "@fullcalendar/core/locales/it";
-import "./calendario.css";
+import React, { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
+import CalendarioFull from "./componenti/CalendarioFull";
+import EditLessonModal from "./componenti/EditLessonModal";
 
-export default function CalendarioFull({
-  lezioni = [],
-  height,
-  listMinPx = 260,
-  bottomNavPx = 72,
-  showActions = false,
-  onOpenEdit,
-  onRimanda,
-  onAnnulla,
-}) {
-  const todayYMD = useMemo(
-    () =>
-      new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 10),
-    []
-  );
-  const [dataSelezionata, setDataSelezionata] = useState(todayYMD);
+const BASE_URL = process.env.REACT_APP_API_URL;
 
-  const colori = [
-    "#007bff", "#28a745", "#ffc107", "#17a2b8",
-    "#6610f2", "#e83e8c", "#fd7e14", "#20c997",
-  ];
+function toBool(v) {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === "true" || s === "t" || s === "1" || s === "yes";
+}
+const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+const safeDateStr = (d) => (d ? String(d).slice(0, 10) : null);
 
-  const [eventi, setEventi] = useState([]);
-  useEffect(() => {
-    const mapped = (Array.isArray(lezioni) ? lezioni : []).map((l, index) => ({
-      id: l.id,
-      title: "",
-      start: l.start,
-      end: l.end,
-      color: colori[index % colori.length],
-      extendedProps: {
-        // 👇 stato "visuale": se riprogrammata → mostra "riprogrammata"
-        displayState: l.riprogrammata ? "riprogrammata" : (l.stato || ""),
-        riprogrammata: l.riprogrammata,
-        stato: l.stato,
-        oraInizio: l.ora_inizio,
-        oraFine: l.ora_fine,
-        nome: l.nome_allievo,
-        cognome: l.cognome_allievo,
-        aula: l.aula,
-        source: l, // oggetto grezzo per azioni
-      },
-    }));
-    setEventi(mapped);
-  }, [lezioni]);
+export default function CalendarioLezioni() {
+  const navigate = useNavigate();
+  const [lezioni, setLezioni] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errore, setErrore] = useState(null);
 
-  const [autoHeightPx, setAutoHeightPx] = useState(360);
-  useEffect(() => {
-    if (height != null) return;
-    const calc = () => {
-      const vh = window.innerHeight || 700;
-      const outerPadding = 16 * 2;
-      const gap = 8;
-      const h = Math.max(260, vh - bottomNavPx - listMinPx - outerPadding - gap);
-      setAutoHeightPx(h);
-    };
-    calc();
-    window.addEventListener("resize", calc);
-    window.addEventListener("orientationchange", calc);
-    return () => {
-      window.removeEventListener("resize", calc);
-      window.removeEventListener("orientationchange", calc);
-    };
-  }, [height, bottomNavPx, listMinPx]);
+  // modale modifica/riprogramma
+  const [editOpen, setEditOpen] = useState(false);
+  const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
+  const [editLesson, setEditLesson] = useState(null);
 
-  const calHeightProp = height ?? autoHeightPx;
+  const token = localStorage.getItem("token");
 
-  const lezioniDelGiorno = useMemo(() => {
-    const day = dataSelezionata;
-    return eventi
-      .filter((ev) => String(ev.start).slice(0, 10) === day)
-      .sort((a, b) => {
-        const ta = a.extendedProps?.oraInizio || String(a.start).slice(11, 16) || "";
-        const tb = b.extendedProps?.oraInizio || String(b.start).slice(11, 16) || "";
-        return ta.localeCompare(tb);
-      });
-  }, [eventi, dataSelezionata]);
-
-  const handleDateClick = (info) => setDataSelezionata(info.dateStr.slice(0, 10));
-  const handleEventClick = (arg) => {
-    const ds = arg?.event?.startStr?.slice(0, 10);
-    if (ds) setDataSelezionata(ds);
-  };
-
-  const fmtIT = (ymd) => {
+  const fetchLezioni = async () => {
     try {
-      const [y, m, d] = ymd.split("-").map(Number);
-      const dt = new Date(Date.UTC(y, m - 1, d));
-      return dt.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    } catch { return ymd; }
+      setErrore(null);
+      setLoading(true);
+
+      if (!BASE_URL) throw new Error("Config mancante: REACT_APP_API_URL non impostata");
+      if (!token) throw new Error("Token mancante");
+
+      let id;
+      try {
+        const decoded = jwtDecode(token);
+        id = decoded.id || decoded.userId;
+      } catch {
+        doLogout();
+        return;
+      }
+      if (!id) throw new Error("ID utente non presente nel token");
+
+      const res = await fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        doLogout();
+        return;
+      }
+      if (!res.ok) throw new Error("Errore nel caricamento delle lezioni");
+
+      const lez = await res.json();
+
+      // 👇 mostra SOLO: "svolta" oppure "rimandata" con riprogrammata=true
+      const filtrate = (Array.isArray(lez) ? lez : [])
+        .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // 👈 normalizza
+        .filter(
+          (l) =>
+            (l.stato === "svolta" ||
+              (l.stato === "rimandata" && l.riprogrammata === true)) &&
+            safeDateStr(l.data) &&
+            l.ora_inizio &&
+            l.ora_fine
+        )
+        .map((l) => {
+          const dateStr = safeDateStr(l.data);
+          return {
+            ...l,
+            start: `${dateStr}T${l.ora_inizio}`,
+            end: `${dateStr}T${l.ora_fine}`,
+          };
+        });
+
+      setLezioni(filtrate);
+    } catch (err) {
+      console.error("❌ Errore fetch lezioni:", err);
+      setErrore(err.message || "Errore inatteso");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const hhmm = (s) => (s ? String(s).slice(0, 5) : "");
+  useEffect(() => { fetchLezioni(); /* eslint-disable-next-line */ }, []);
+
+  function doLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("utente");
+    navigate("/login");
+  }
+
+  // --- azioni dal calendario (lista giornaliera) ---
+
+  const resolveLessonId = async (src) => {
+    if (src?.id != null) {
+      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) return src.id;
+    }
+    const decoded = jwtDecode(token);
+    const teacherId = decoded.id || decoded.userId;
+    const res = await fetch(`${BASE_URL}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`Errore recupero lezioni insegnante (${res.status})`);
+    const list = await res.json();
+    const key = (o) => [
+      ymd(o.data) || ymd(src.start),
+      o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+      o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
+      String(o.id_allievo || ""),
+      String(o.aula || "")
+    ].join("|");
+    const want = key(src);
+    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
+    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
+    return found.id;
+  };
+
+  const buildPutBody = (src, overrides = {}) => ({
+    id_insegnante: Number(src.id_insegnante),
+    id_allievo: Number(src.id_allievo),
+    data: ymd(src.data) || ymd(src.start),
+    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11,16) : ""),
+    ora_fine:   src.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11,16)   : ""),
+    aula: src.aula || "",
+    stato: src.stato || "svolta",
+    motivazione: src.motivazione || "",
+    riprogrammata: Boolean(src.riprogrammata) || false,
+    ...overrides,
+  });
+
+  const putLesson = async (lessonId, payload) => {
+    const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore aggiornamento (${res.status})`);
+    }
+    return res.json().catch(() => null);
+  };
+
+  const handleRimanda = async (lesson) => {
+    try {
+      // nel calendario: sparisce subito
+      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
+      await putLesson(realId, payload);
+      await fetchLezioni();
+    } catch (e) {
+      alert(e.message || "Errore nel rimandare la lezione");
+      await fetchLezioni();
+    }
+  };
+
+  const handleAnnulla = async (lesson) => {
+    try {
+      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
+      await putLesson(realId, payload);
+      await fetchLezioni();
+    } catch (e) {
+      alert(e.message || "Errore nell'annullare la lezione");
+      await fetchLezioni();
+    }
+  };
+
+  const openEdit = (lesson, mode = "edit") => {
+    setEditLesson(lesson);
+    setEditMode(mode);
+    setEditOpen(true);
+  };
+  const handleSaved = async () => {
+    setEditOpen(false);
+    await fetchLezioni();
+  };
+
+  if (loading) return <p>Caricamento...</p>;
+  if (errore)  return <p className="text-red-600">{errore}</p>;
 
   return (
-    <div className="calendario-container h-full flex flex-col overflow-hidden px-2 pt-2">
-      <div className="rounded-xl bg-white shadow calendario-sticky">
-        <FullCalendar
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          locale={itLocale}
-          firstDay={1}
-          events={eventi}
-          height={calHeightProp}
-          expandRows={true}
-          dayMaxEvents={true}
-          moreLinkContent={null}
-          displayEventTime={false}
-          dateClick={handleDateClick}
-          eventClick={handleEventClick}
-          eventContent={renderCompactDot}
-          headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
-        />
-      </div>
-
-      <div className="bg-white mt-2 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni flex-1" style={{ minHeight: 260 }}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">
-            Appuntamenti del {fmtIT(dataSelezionata)}
-          </h2>
-          <button
-            className="rounded-lg border px-2 py-1 text-xs text-gray-600"
-            onClick={() => setDataSelezionata(todayYMD)}
-          >
-            Oggi
-          </button>
-        </div>
-
-        {lezioniDelGiorno.length === 0 && (
-          <p className="text-gray-500 italic">Nessuna lezione</p>
-        )}
-
-        {lezioniDelGiorno.map((ev, i) => {
-          const raw = ev.extendedProps?.source || {};
-          const titolo = `${ev.extendedProps?.nome || ""} ${ev.extendedProps?.cognome || ""}`.trim() || "Lezione";
-          const oraI = ev.extendedProps?.oraInizio || String(ev.start).slice(11, 16);
-          const oraF = ev.extendedProps?.oraFine || String(ev.end).slice(11, 16);
-
-          const rawState = (ev.extendedProps?.stato || "svolta").toLowerCase();
-          const showState = rawState === "annullata"
-            ? "annullata"
-            : (ev.extendedProps?.riprogrammata ? "riprogrammata" : rawState);
-
-          const tone =
-            showState === "annullata" ? "text-red-600"
-            : showState === "riprogrammata" ? "text-purple-600"
-            : showState === "rimandata" ? "text-amber-600"
-            : showState === "svolta" ? "text-green-600"
-            : "text-gray-600";
-
-          const isAnnullata = rawState === "annullata";
-          const isRimandataOrRiprogrammata = rawState === "rimandata"; // comprende riprogrammate
-
-          return (
-            <div
-              key={ev.id || i}
-              className="border-b py-2"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => onOpenEdit && onOpenEdit(raw, "edit")}
-                  title="Modifica lezione"
-                >
-                  <div className="font-semibold">{titolo}</div>
-                  <div className="text-sm text-gray-700">
-                    {oraI} - {oraF}{ev.extendedProps?.aula ? ` | ${ev.extendedProps.aula}` : ""}
-                  </div>
-                  <div className={`text-xs italic ${tone}`}>({showState})</div>
-                </div>
-
-                {/* Azioni */}
-                {showActions && !isAnnullata && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isRimandataOrRiprogrammata ? (
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
-                          title="Riprogramma"
-                          onClick={() => onOpenEdit && onOpenEdit(raw, "reschedule")}
-                        >
-                          Riprogramma
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla && onAnnulla(raw)}
-                        >
-                          Annulla
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
-                          title="Rimanda"
-                          onClick={() => onRimanda && onRimanda(raw)}
-                        >
-                          Rimanda
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla && onAnnulla(raw)}
-                        >
-                          Annulla
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <>
+      <CalendarioFull
+        lezioni={lezioni}
+        showActions
+        onOpenEdit={(lesson, mode) => openEdit(lesson, mode || "edit")}
+        onRimanda={handleRimanda}
+        onAnnulla={handleAnnulla}
+      />
+      <EditLessonModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSaved={handleSaved}
+        lesson={editLesson}
+        mode={editMode}
+      />
+    </>
   );
-}
-
-function renderCompactDot(arg) {
-  return <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }} />;
 }

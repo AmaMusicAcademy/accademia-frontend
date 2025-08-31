@@ -61,6 +61,14 @@ async function resolveTeacherId(token) {
   return { id: String(match.id), profile: match };
 }
 
+function toBool(v) {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === "true" || s === "t" || s === "1" || s === "yes";
+}
+
 function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
 function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
 function isFromTodayOnward(lez) {
@@ -144,7 +152,8 @@ export default function AllieviPage() {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
     const base = (Array.isArray(lezioni) ? lezioni : [])
-      .filter(isFromTodayOnward); // 👈 nessun filtro su stato
+      .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // 👈 normalizza
+      .filter(isFromTodayOnward);
     setAllLessonsFromToday(base);
   };
 
@@ -257,7 +266,9 @@ export default function AllieviPage() {
       prev.map((e) => {
         const matchById = target?.id != null && e?.id != null && Number(e.id) === Number(target.id);
         const matchByKey = sameKey(e) === sameKey(target);
-        return (matchById || matchByKey) ? { ...e, ...patch } : e;
+        return (matchById || matchByKey)
+          ? { ...e, ...patch, riprogrammata: toBool(patch.riprogrammata ?? e.riprogrammata) }
+          : e;
       })
     );
   };
@@ -278,7 +289,6 @@ export default function AllieviPage() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      // 👇 annullata → mai “riprogrammata”
       patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
@@ -426,7 +436,13 @@ export default function AllieviPage() {
                           key={`${l.id || "k"}-${i}`}
                           l={l}
                           last={i === items.length - 1}
-                          onOpenEdit={(mode) => openEdit(l, mode || "edit")}
+                          onOpenEdit={(mode) => {
+                            // passa una lezione con riprogrammata normalizzata
+                            const norm = { ...l, riprogrammata: toBool(l.riprogrammata) };
+                            setEditLesson(norm);
+                            setEditMode(mode || "edit");
+                            setEditOpen(true);
+                          }}
                           onRimanda={() => handleRimanda(l)}
                           onAnnulla={() => handleAnnulla(l)}
                         />
@@ -513,15 +529,13 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  // Etichetta: se annullata → sempre “annullata”.
-  // Altrimenti se riprogrammata=true → mostra “riprogrammata”, sennò raw.
   const rawState = (l.stato || "svolta").toLowerCase();
-  const showState = rawState === "annullata"
-    ? "annullata"
-    : (l.riprogrammata ? "riprogrammata" : rawState);
-
   const isAnnullata = rawState === "annullata";
-  const isRimandataOrRiprogrammata = rawState === "rimandata";
+
+  // 👇 usa riprogrammata normalizzata (toBool)
+  const isRiprogrammata = toBool(l.riprogrammata);
+  const showState = isAnnullata ? "annullata" : (isRiprogrammata ? "riprogrammata" : rawState);
+  const isRimandataOrRiprogrammata = rawState === "rimandata"; // pulsanti: Riprogramma/Annulla quando rimandata
 
   const tone =
     showState === "annullata" ? "red"

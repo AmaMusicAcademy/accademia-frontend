@@ -6,6 +6,16 @@ import EditLessonModal from "./componenti/EditLessonModal";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
+function toBool(v) {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v === 1;
+  if (v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return s === "true" || s === "t" || s === "1" || s === "yes";
+}
+const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+const safeDateStr = (d) => (d ? String(d).slice(0, 10) : null);
+
 export default function CalendarioLezioni() {
   const navigate = useNavigate();
   const [lezioni, setLezioni] = useState([]);
@@ -18,12 +28,6 @@ export default function CalendarioLezioni() {
   const [editLesson, setEditLesson] = useState(null);
 
   const token = localStorage.getItem("token");
-
-  const safeDateStr = (d) => {
-    if (!d) return null;
-    const s = String(d);
-    return s.length >= 10 ? s.slice(0, 10) : s;
-  };
 
   const fetchLezioni = async () => {
     try {
@@ -57,6 +61,7 @@ export default function CalendarioLezioni() {
 
       // 👇 mostra SOLO: "svolta" oppure "rimandata" con riprogrammata=true
       const filtrate = (Array.isArray(lez) ? lez : [])
+        .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // 👈 normalizza
         .filter(
           (l) =>
             (l.stato === "svolta" ||
@@ -93,15 +98,12 @@ export default function CalendarioLezioni() {
 
   // --- azioni dal calendario (lista giornaliera) ---
 
-  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
   const resolveLessonId = async (src) => {
-    // tentativo diretto
     if (src?.id != null) {
       const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (r.ok) return src.id;
-      // se 404 proseguo con fallback
     }
     const decoded = jwtDecode(token);
     const teacherId = decoded.id || decoded.userId;
@@ -151,7 +153,7 @@ export default function CalendarioLezioni() {
 
   const handleRimanda = async (lesson) => {
     try {
-      // Nel calendario, "rimanda" => diventa rimandata (non riprogrammata) → sparisce
+      // nel calendario: sparisce subito
       setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
@@ -165,7 +167,6 @@ export default function CalendarioLezioni() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      // annullata → sparisce dal calendario
       setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
