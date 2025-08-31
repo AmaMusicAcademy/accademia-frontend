@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import CalendarioFull from "./componenti/CalendarioFull";
@@ -16,9 +16,29 @@ const sameKey = (o) =>
     String(o.aula || ""),
   ].join("|");
 
-export default function CalendarioLezioni() {
+/**
+ * CalendarioLezioni
+ *
+ * - Modalità DOCENTE (uncontrolled): nessuna prop -> carica lezioni del docente dal token, azioni abilitate.
+ * - Modalità ADMIN (controlled): se arrivano lezioni/loading/error allora usa quelle e NON fa fetch interni.
+ *   In questa modalità è read-only di default; per abilitare azioni passa gli handler come prop.
+ */
+export default function CalendarioLezioni(props) {
+  const {
+    // Modalità controllata (ADMIN)
+    lezioni: lezioniProp,
+    loading: loadingProp,
+    error: errorProp,
+    mostraInsegnante = false,
+    onOpenEdit: onOpenEditProp,     // opzionale (ADMIN)
+    onRimanda: onRimandaProp,       // opzionale (ADMIN)
+    onAnnulla: onAnnullaProp,       // opzionale (ADMIN)
+  } = props || {};
+
+  const controlled = typeof lezioniProp !== "undefined"; // se true -> ADMIN mode (no fetch interni)
   const navigate = useNavigate();
 
+  // Stato interno (usato solo in modalità docente)
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
@@ -26,12 +46,14 @@ export default function CalendarioLezioni() {
   const [teacherId, setTeacherId] = useState(null);
   const [token, setToken] = useState(null);
 
-  // Modale modifica/riprogramma
+  // Modale modifica/riprogramma (solo quando usiamo i nostri handler interni)
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
+  // ---- Modalità DOCENTE: setup token e id ----
   useEffect(() => {
+    if (controlled) return; // in modalità admin non facciamo nulla
     try {
       const t = localStorage.getItem("token");
       if (!t) throw new Error("Token mancante");
@@ -50,10 +72,18 @@ export default function CalendarioLezioni() {
     } catch (e) {
       setErrore(e.message || "Errore autenticazione");
     }
-  }, []);
+  }, [controlled]);
 
+  const doLogout = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("utente");
+    navigate("/login");
+  }, [navigate]);
+
+  // ---- Modalità DOCENTE: fetch lezioni proprie ----
   const refetchLessons = useCallback(async () => {
-    if (!teacherId || !token) return;
+    if (controlled) return;           // admin: i dati arrivano da props
+    if (!teacherId || !token) return; // docente: wait setup
     try {
       setLoading(true);
       setErrore(null);
@@ -72,18 +102,14 @@ export default function CalendarioLezioni() {
     } finally {
       setLoading(false);
     }
-  }, [teacherId, token]);
+  }, [controlled, teacherId, token, doLogout]);
 
   useEffect(() => {
+    if (controlled) return; // admin non fa fetch
     if (teacherId && token) refetchLessons();
-  }, [teacherId, token, refetchLessons]);
+  }, [controlled, teacherId, token, refetchLessons]);
 
-  function doLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("utente");
-    navigate("/login");
-  }
-
+  // ---- Utilities comuni (usate dagli handler interni) ----
   const resolveLessonId = async (src) => {
     if (!token) throw new Error("Token non presente");
     if (src?.id != null) {
@@ -115,7 +141,7 @@ export default function CalendarioLezioni() {
     return found.id;
   };
 
-  // --- nuove chiamate ai PATCH dedicati ---
+  // --- nuove chiamate ai PATCH dedicati (usate solo in modalità docente) ---
   const patchRimanda = async (lessonId, motivazione = "") => {
     const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}/rimanda`, {
       method: "PATCH",
@@ -141,66 +167,91 @@ export default function CalendarioLezioni() {
     return res.json();
   };
 
-  // update ottimistico locale
+  // update ottimistico locale (solo docente)
   const patchLocal = (target, patch) => {
     setLezioni((prev) => prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e)));
   };
 
-  const handleRimanda = async (lesson) => {
-    try {
-      patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
-      const realId = await resolveLessonId(lesson);
-      await patchRimanda(realId, lesson.motivazione || "");
-      await refetchLessons();
-    } catch (e) {
-      alert(e.message || "Errore nel rimandare la lezione");
-      refetchLessons();
-    }
-  };
+  // --- Handler azioni ---
+  // Se il parent (ADMIN) passa handler, usiamo quelli; altrimenti usiamo i nostri (DOCENTE)
+  const handleRimanda = useCallback(
+    async (lesson) => {
+      if (onRimandaProp) return onRimandaProp(lesson);
+      try {
+        patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
+        const realId = await resolveLessonId(lesson);
+        await patchRimanda(realId, lesson.motivazione || "");
+        await refetchLessons();
+      } catch (e) {
+        alert(e.message || "Errore nel rimandare la lezione");
+        refetchLessons();
+      }
+    },
+    [onRimandaProp, refetchLessons]
+  );
 
-  const handleAnnulla = async (lesson) => {
-    try {
-      patchLocal(lesson, { stato: "annullata", riprogrammata: false });
-      const realId = await resolveLessonId(lesson);
-      await patchAnnulla(realId, lesson.motivazione || "");
-      await refetchLessons();
-    } catch (e) {
-      alert(e.message || "Errore nell'annullare la lezione");
-      refetchLessons();
-    }
-  };
+  const handleAnnulla = useCallback(
+    async (lesson) => {
+      if (onAnnullaProp) return onAnnullaProp(lesson);
+      try {
+        patchLocal(lesson, { stato: "annullata", riprogrammata: false });
+        const realId = await resolveLessonId(lesson);
+        await patchAnnulla(realId, lesson.motivazione || "");
+        await refetchLessons();
+      } catch (e) {
+        alert(e.message || "Errore nell'annullare la lezione");
+        refetchLessons();
+      }
+    },
+    [onAnnullaProp, refetchLessons]
+  );
 
-  // modale
-  const openEdit = (lesson, mode = "edit") => {
-    setEditLesson(lesson);
-    setEditMode(mode);
-    setEditOpen(true);
-  };
+  const openEdit = useCallback(
+    (lesson, mode = "edit") => {
+      if (onOpenEditProp) return onOpenEditProp(lesson, mode);
+      setEditLesson(lesson);
+      setEditMode(mode);
+      setEditOpen(true);
+    },
+    [onOpenEditProp]
+  );
   const closeEdit = () => setEditOpen(false);
   const handleSaved = async () => {
     closeEdit();
-    await refetchLessons();
+    if (!controlled) await refetchLessons();
+    // in admin/controlled, il parent decide se/come refetchare
   };
 
-  if (loading) return <p>Caricamento...</p>;
-  if (errore) return <p className="text-red-600">{errore}</p>;
+  // ---- Dati visualizzati: prop (admin) o stato (docente) ----
+  const lezioniToShow   = controlled ? (lezioniProp || []) : lezioni;
+  const loadingToShow   = controlled ? !!loadingProp : loading;
+  const erroreToShow    = controlled ? (errorProp || null) : errore;
+
+  if (loadingToShow) return <p>Caricamento...</p>;
+  if (erroreToShow)  return <p className="text-red-600">{erroreToShow}</p>;
 
   return (
     <>
       <CalendarioFull
-        lezioni={lezioni}
-        onOpenEdit={openEdit}
-        onRimanda={handleRimanda}
-        onAnnulla={handleAnnulla}
+        lezioni={lezioniToShow}
+        onOpenEdit={onOpenEditProp ? onOpenEditProp : openEdit}
+        onRimanda={onRimandaProp ? onRimandaProp : handleRimanda}
+        onAnnulla={onAnnullaProp ? onAnnullaProp : handleAnnulla}
+        // 👇 nuovo flag: se CalendarioFull lo gestisce, può mostrare il docente
+        mostraInsegnante={mostraInsegnante}
+        // NB: nessun cambio al resto delle props: il lato docente resta invariato
       />
 
-      <EditLessonModal
-        open={editOpen}
-        onClose={closeEdit}
-        onSaved={handleSaved}
-        lesson={editLesson}
-        mode={editMode}
-      />
+      {/* Modale usata SOLAMENTE in modalità docente (quando non forniamo handler esterni) */}
+      {!onOpenEditProp && (
+        <EditLessonModal
+          open={editOpen}
+          onClose={closeEdit}
+          onSaved={handleSaved}
+          lesson={editLesson}
+          mode={editMode}
+        />
+      )}
     </>
   );
 }
