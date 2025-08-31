@@ -251,16 +251,20 @@ export default function AllieviPage() {
     return res.json().catch(() => null);
   };
 
-  // update ottimistico locale
+  // update ottimistico locale — preferisci match per id, fallback “chiave naturale”
   const patchLocal = (target, patch) => {
     setAllLessonsFromToday((prev) =>
-      prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e))
+      prev.map((e) => {
+        const matchById = target?.id != null && e?.id != null && Number(e.id) === Number(target.id);
+        const matchByKey = sameKey(e) === sameKey(target);
+        return (matchById || matchByKey) ? { ...e, ...patch } : e;
+      })
     );
   };
 
   const handleRimanda = async (lesson) => {
     try {
-      // non rimuovere dalla lista → aggiorna stato localmente
+      // 👇 assicurati che NON risulti “riprogrammata”
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
@@ -274,7 +278,7 @@ export default function AllieviPage() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      // 👇 FIX: forza riprogrammata=false
+      // 👇 annullata → mai “riprogrammata”
       patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
@@ -291,9 +295,8 @@ export default function AllieviPage() {
     setEditMode(mode);
     setEditOpen(true);
   };
-  const closeEdit = () => setEditOpen(false);
   const handleSaved = async () => {
-    closeEdit();
+    setEditOpen(false);
     await refetchLessons();
   };
 
@@ -510,14 +513,15 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  // 👇 etichetta visuale: priorità “annullata”, altrimenti “riprogrammata” batte “rimandata”
+  // Etichetta: se annullata → sempre “annullata”.
+  // Altrimenti se riprogrammata=true → mostra “riprogrammata”, sennò raw.
   const rawState = (l.stato || "svolta").toLowerCase();
   const showState = rawState === "annullata"
     ? "annullata"
     : (l.riprogrammata ? "riprogrammata" : rawState);
 
-  const isRimandataOrRiprogrammata = rawState === "rimandata"; // copre anche quelle con riprogrammata=true
   const isAnnullata = rawState === "annullata";
+  const isRimandataOrRiprogrammata = rawState === "rimandata";
 
   const tone =
     showState === "annullata" ? "red"
@@ -593,3 +597,4 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
 function Skeleton({ h = "48px" }) {
   return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }
+
