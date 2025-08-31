@@ -96,7 +96,7 @@ export default function AllieviPage() {
   const [teacherId, setTeacherId] = useState(null);
 
   const [students, setStudents] = useState([]);
-  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // dati base (oggi → futuro, SOLO attive)
+  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // oggi → futuro (tutti gli stati)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
@@ -139,13 +139,12 @@ export default function AllieviPage() {
     return () => { cancel = true; };
   }, [token]);
 
-  // Refetch lezioni (mostra solo attive = stato "svolta")
+  // Refetch lezioni (oggi → futuro, TUTTI gli stati)
   const refetchLessons = async (id = teacherId) => {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
     const base = (Array.isArray(lezioni) ? lezioni : [])
-      .filter(isFromTodayOnward)
-      .filter((l) => (l.stato || "svolta") === "svolta"); // 👈 solo attive
+      .filter(isFromTodayOnward); // 👈 nessun filtro su stato
     setAllLessonsFromToday(base);
   };
 
@@ -188,7 +187,7 @@ export default function AllieviPage() {
     return null;
   }, [dateFrom, dateTo]);
 
-  // --- azioni (Rimanda / Annulla / Modifica / Riprogramma) ---
+  // --- azioni (Rimanda / Riprogramma / Annulla / Modifica) ---
 
   // verifica ID sul server, altrimenti risolvi per “chiave naturale”
   const resolveLessonId = async (src) => {
@@ -252,19 +251,21 @@ export default function AllieviPage() {
     return res.json().catch(() => null);
   };
 
-  const removeFromUI = (target) => {
+  // update ottimistico locale
+  const patchLocal = (target, patch) => {
     setAllLessonsFromToday((prev) =>
-      prev.filter((e) => e.id !== target.id && sameKey(e) !== sameKey(target))
+      prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e))
     );
   };
 
   const handleRimanda = async (lesson) => {
     try {
-      removeFromUI(lesson); // sparisce subito
+      // non rimuovere dalla lista → aggiorna stato localmente
+      patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
       await putLesson(realId, payload);
-      await refetchLessons(); // riallinea
+      await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
       refetchLessons();
@@ -273,7 +274,7 @@ export default function AllieviPage() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      removeFromUI(lesson);
+      patchLocal(lesson, { stato: "annullata" });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "annullata" });
       await putLesson(realId, payload);
@@ -395,7 +396,7 @@ export default function AllieviPage() {
             )}
           </div>
 
-          {/* Lezioni future (solo attive) */}
+          {/* Lezioni future (tutti gli stati) */}
           <SectionTitle title="Lezioni future" />
           <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
@@ -421,7 +422,7 @@ export default function AllieviPage() {
                           key={`${l.id || "k"}-${i}`}
                           l={l}
                           last={i === items.length - 1}
-                          onOpenEdit={() => openEdit(l, "edit")}
+                          onOpenEdit={(mode) => openEdit(l, mode || "edit")}
                           onRimanda={() => handleRimanda(l)}
                           onAnnulla={() => handleAnnulla(l)}
                         />
@@ -510,17 +511,18 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
 
   const stato = (l.stato || "svolta").toLowerCase();
   const isRimandata = stato === "rimandata";
+  const isAnnullata = stato === "annullata";
 
   const tone =
-    stato === "annullata" ? "red"
-    : stato === "rimandata" ? "orange"
+    isAnnullata ? "red"
+    : isRimandata ? "orange"
     : stato === "svolta" ? "green"
     : "blue";
 
   return (
     <div
       className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"} cursor-pointer`}
-      onClick={onOpenEdit}
+      onClick={() => onOpenEdit && onOpenEdit("edit")}
       title="Modifica lezione"
     >
       <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
@@ -538,23 +540,46 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
         )}
       </div>
 
-      {/* Azioni – stopPropagation per non aprire il modale col click */}
-      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-        <button
-          className={`px-2 py-1 rounded-md text-xs ${isRimandata ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-800"}`}
-          title={isRimandata ? "Riprogramma" : "Rimanda"}
-          onClick={() => (isRimandata ? onOpenEdit() : onRimanda())}
-        >
-          {isRimandata ? "Riprogramma" : "Rimanda"}
-        </button>
-        <button
-          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-          title="Annulla"
-          onClick={onAnnulla}
-        >
-          Annulla
-        </button>
-      </div>
+      {/* Azioni – per stato */}
+      {!isAnnullata && (
+        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          {isRimandata ? (
+            <>
+              <button
+                className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
+                title="Riprogramma"
+                onClick={() => onOpenEdit && onOpenEdit("reschedule")}
+              >
+                Riprogramma
+              </button>
+              <button
+                className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                title="Annulla"
+                onClick={onAnnulla}
+              >
+                Annulla
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
+                title="Rimanda"
+                onClick={onRimanda}
+              >
+                Rimanda
+              </button>
+              <button
+                className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                title="Annulla"
+                onClick={onAnnulla}
+              >
+                Annulla
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
