@@ -270,7 +270,7 @@ export default function CalendarioFull({ lezioni }) {
             //height="auto"
             //contentHeight="auto"
             //expandRows={true}
-            aspectRatio={1.05}
+            aspectRatio={1.15}
             fixedWeekCount={true}
             handleWindowResize={true}
           />
