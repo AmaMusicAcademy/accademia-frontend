@@ -48,7 +48,7 @@
 
 /* lista del giorno sotto */
 .elenco-lezioni {
-  max-height: 38vh;
+  max-height: 30vh;
   overflow-y: auto;
   margin-top: 12px;
   
