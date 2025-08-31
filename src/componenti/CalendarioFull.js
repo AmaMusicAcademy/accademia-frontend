@@ -41,12 +41,13 @@ export default function CalendarioFull({
         // 👇 stato "visuale": se riprogrammata → mostra "riprogrammata"
         displayState: l.riprogrammata ? "riprogrammata" : (l.stato || ""),
         riprogrammata: l.riprogrammata,
+        stato: l.stato,
         oraInizio: l.ora_inizio,
         oraFine: l.ora_fine,
         nome: l.nome_allievo,
         cognome: l.cognome_allievo,
         aula: l.aula,
-        source: l,
+        source: l, // oggetto grezzo per azioni
       },
     }));
     setEventi(mapped);
@@ -143,24 +144,80 @@ export default function CalendarioFull({
           const titolo = `${ev.extendedProps?.nome || ""} ${ev.extendedProps?.cognome || ""}`.trim() || "Lezione";
           const oraI = ev.extendedProps?.oraInizio || String(ev.start).slice(11, 16);
           const oraF = ev.extendedProps?.oraFine || String(ev.end).slice(11, 16);
-          const displayState = ev.extendedProps?.displayState;
+
+          const rawState = (ev.extendedProps?.stato || "svolta").toLowerCase();
+          const showState = rawState === "annullata"
+            ? "annullata"
+            : (ev.extendedProps?.riprogrammata ? "riprogrammata" : rawState);
+
+          const tone =
+            showState === "annullata" ? "text-red-600"
+            : showState === "riprogrammata" ? "text-purple-600"
+            : showState === "rimandata" ? "text-amber-600"
+            : showState === "svolta" ? "text-green-600"
+            : "text-gray-600";
+
+          const isAnnullata = rawState === "annullata";
+          const isRimandataOrRiprogrammata = rawState === "rimandata"; // comprende riprogrammate
 
           return (
             <div
               key={ev.id || i}
-              className="border-b py-2 cursor-pointer"
-              onClick={() => onOpenEdit && onOpenEdit(raw, "edit")}
+              className="border-b py-2"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
+                <div
+                  className="flex-1 cursor-pointer"
+                  onClick={() => onOpenEdit && onOpenEdit(raw, "edit")}
+                  title="Modifica lezione"
+                >
                   <div className="font-semibold">{titolo}</div>
                   <div className="text-sm text-gray-700">
                     {oraI} - {oraF}{ev.extendedProps?.aula ? ` | ${ev.extendedProps.aula}` : ""}
                   </div>
-                  {displayState && (
-                    <div className="text-xs italic text-gray-500">({displayState})</div>
-                  )}
+                  <div className={`text-xs italic ${tone}`}>({showState})</div>
                 </div>
+
+                {/* Azioni */}
+                {showActions && !isAnnullata && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isRimandataOrRiprogrammata ? (
+                      <>
+                        <button
+                          className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
+                          title="Riprogramma"
+                          onClick={() => onOpenEdit && onOpenEdit(raw, "reschedule")}
+                        >
+                          Riprogramma
+                        </button>
+                        <button
+                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                          title="Annulla"
+                          onClick={() => onAnnulla && onAnnulla(raw)}
+                        >
+                          Annulla
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
+                          title="Rimanda"
+                          onClick={() => onRimanda && onRimanda(raw)}
+                        >
+                          Rimanda
+                        </button>
+                        <button
+                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                          title="Annulla"
+                          onClick={() => onAnnulla && onAnnulla(raw)}
+                        >
+                          Annulla
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -173,5 +230,3 @@ export default function CalendarioFull({
 function renderCompactDot(arg) {
   return <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }} />;
 }
-
-

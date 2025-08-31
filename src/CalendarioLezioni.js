@@ -12,16 +12,18 @@ export default function CalendarioLezioni() {
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
 
+  // modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
-  const [editMode, setEditMode] = useState("edit");
+  const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  const openEdit = (lesson, mode = "edit") => {
-    setEditLesson(lesson);
-    setEditMode(mode);
-    setEditOpen(true);
+  const token = localStorage.getItem("token");
+
+  const safeDateStr = (d) => {
+    if (!d) return null;
+    const s = String(d);
+    return s.length >= 10 ? s.slice(0, 10) : s;
   };
-  const closeEdit = () => setEditOpen(false);
 
   const fetchLezioni = async () => {
     try {
@@ -29,8 +31,6 @@ export default function CalendarioLezioni() {
       setLoading(true);
 
       if (!BASE_URL) throw new Error("Config mancante: REACT_APP_API_URL non impostata");
-
-      const token = localStorage.getItem("token");
       if (!token) throw new Error("Token mancante");
 
       let id;
@@ -55,13 +55,7 @@ export default function CalendarioLezioni() {
 
       const lez = await res.json();
 
-      const safeDateStr = (d) => {
-        if (!d) return null;
-        const s = String(d);
-        return s.length >= 10 ? s.slice(0, 10) : s;
-      };
-
-      // 👇 mostra "svolta" + "rimandata" SOLO se riprogrammata = true
+      // 👇 mostra SOLO: "svolta" oppure "rimandata" con riprogrammata=true
       const filtrate = (Array.isArray(lez) ? lez : [])
         .filter(
           (l) =>
@@ -97,13 +91,104 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
+  // --- azioni dal calendario (lista giornaliera) ---
+
+  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+  const resolveLessonId = async (src) => {
+    // tentativo diretto
+    if (src?.id != null) {
+      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) return src.id;
+      // se 404 proseguo con fallback
+    }
+    const decoded = jwtDecode(token);
+    const teacherId = decoded.id || decoded.userId;
+    const res = await fetch(`${BASE_URL}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`Errore recupero lezioni insegnante (${res.status})`);
+    const list = await res.json();
+    const key = (o) => [
+      ymd(o.data) || ymd(src.start),
+      o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+      o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
+      String(o.id_allievo || ""),
+      String(o.aula || "")
+    ].join("|");
+    const want = key(src);
+    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
+    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
+    return found.id;
+  };
+
+  const buildPutBody = (src, overrides = {}) => ({
+    id_insegnante: Number(src.id_insegnante),
+    id_allievo: Number(src.id_allievo),
+    data: ymd(src.data) || ymd(src.start),
+    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11,16) : ""),
+    ora_fine:   src.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11,16)   : ""),
+    aula: src.aula || "",
+    stato: src.stato || "svolta",
+    motivazione: src.motivazione || "",
+    riprogrammata: Boolean(src.riprogrammata) || false,
+    ...overrides,
+  });
+
+  const putLesson = async (lessonId, payload) => {
+    const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore aggiornamento (${res.status})`);
+    }
+    return res.json().catch(() => null);
+  };
+
+  const handleRimanda = async (lesson) => {
+    try {
+      // Nel calendario, "rimanda" => diventa rimandata (non riprogrammata) → sparisce
+      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
+      await putLesson(realId, payload);
+      await fetchLezioni();
+    } catch (e) {
+      alert(e.message || "Errore nel rimandare la lezione");
+      await fetchLezioni();
+    }
+  };
+
+  const handleAnnulla = async (lesson) => {
+    try {
+      // annullata → sparisce dal calendario
+      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
+      await putLesson(realId, payload);
+      await fetchLezioni();
+    } catch (e) {
+      alert(e.message || "Errore nell'annullare la lezione");
+      await fetchLezioni();
+    }
+  };
+
+  const openEdit = (lesson, mode = "edit") => {
+    setEditLesson(lesson);
+    setEditMode(mode);
+    setEditOpen(true);
+  };
   const handleSaved = async () => {
-    closeEdit();
+    setEditOpen(false);
     await fetchLezioni();
   };
 
   if (loading) return <p>Caricamento...</p>;
-  if (errore) return <p className="text-red-600">{errore}</p>;
+  if (errore)  return <p className="text-red-600">{errore}</p>;
 
   return (
     <>
@@ -111,8 +196,9 @@ export default function CalendarioLezioni() {
         lezioni={lezioni}
         showActions
         onOpenEdit={(lesson, mode) => openEdit(lesson, mode || "edit")}
+        onRimanda={handleRimanda}
+        onAnnulla={handleAnnulla}
       />
-
       <EditLessonModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -123,6 +209,3 @@ export default function CalendarioLezioni() {
     </>
   );
 }
-
-
-

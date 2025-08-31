@@ -108,7 +108,7 @@ export default function AllieviPage() {
   // UI state
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
-  const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
+  const [dateTo,   setDateTo]   = useState(""); // "YYYY-MM-DD"
 
   // primo caricamento
   useEffect(() => {
@@ -274,9 +274,10 @@ export default function AllieviPage() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      patchLocal(lesson, { stato: "annullata" });
+      // 👇 FIX: forza riprogrammata=false
+      patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
-      const payload = buildPutBody(lesson, { stato: "annullata" });
+      const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
       await putLesson(realId, payload);
       await refetchLessons();
     } catch (e) {
@@ -509,10 +510,13 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  // 👇 calcolo etichetta visuale: se riprogrammata => mostra SOLO "riprogrammata"
+  // 👇 etichetta visuale: priorità “annullata”, altrimenti “riprogrammata” batte “rimandata”
   const rawState = (l.stato || "svolta").toLowerCase();
-  const showState = l.riprogrammata ? "riprogrammata" : rawState;
-  const isRimandataOrRiprogrammata = rawState === "rimandata"; // copre anche riprogrammata (stato=rimandata)
+  const showState = rawState === "annullata"
+    ? "annullata"
+    : (l.riprogrammata ? "riprogrammata" : rawState);
+
+  const isRimandataOrRiprogrammata = rawState === "rimandata"; // copre anche quelle con riprogrammata=true
   const isAnnullata = rawState === "annullata";
 
   const tone =
@@ -589,8 +593,3 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
 function Skeleton({ h = "48px" }) {
   return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }
-
-
-
-
-
