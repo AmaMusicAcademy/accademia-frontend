@@ -116,6 +116,7 @@ export default function AllieviPage() {
 
   // Modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
+  the:
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
@@ -123,6 +124,18 @@ export default function AllieviPage() {
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
   const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
+
+  // ✅ Filtro per stato (checkbox multiple)
+  const [statusOnly, setStatusOnly] = useState({
+    svolta: false,
+    annullata: false,
+    riprogrammata: false,
+    rimandata: false,
+  });
+  const toggleStatus = (key) =>
+    setStatusOnly((s) => ({ ...s, [key]: !s[key] }));
+  const clearStatusFilters = () =>
+    setStatusOnly({ svolta: false, annullata: false, riprogrammata: false, rimandata: false });
 
   // primo caricamento
   useEffect(() => {
@@ -168,18 +181,31 @@ export default function AllieviPage() {
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // Filtro lezioni per intervallo date + ricerca su allievo
+  // Filtro lezioni per intervallo date + ricerca + stato
   const filteredLessons = useMemo(() => {
     let list = allLessonsFromToday;
+
+    // filtro intervallo date
     if (dateFrom || dateTo) list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
+
+    // filtro ricerca
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((l) =>
         `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
       );
     }
+
+    // filtro per stato (se sono flaggati uno o più checkbox)
+    const activeStates = Object.entries(statusOnly)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    if (activeStates.length > 0) {
+      list = list.filter((l) => activeStates.includes(statoLabel(l)));
+    }
+
     return list;
-  }, [allLessonsFromToday, dateFrom, dateTo, search]);
+  }, [allLessonsFromToday, dateFrom, dateTo, search, statusOnly]);
 
   // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
@@ -275,9 +301,8 @@ export default function AllieviPage() {
         "Confermi di rimandare questa lezione?\nInserisci una motivazione (opzionale):",
         lesson.motivazione || ""
       );
-      if (motivo === null) return; // annullato dall'utente
+      if (motivo === null) return;
 
-      // in lista Allievi NON scompare: solo cambio stato (e salvo motivazione)
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false, motivazione: motivo });
       const realId = await resolveLessonId(lesson);
       await patchRimanda(realId, motivo);
@@ -327,7 +352,7 @@ export default function AllieviPage() {
         </div>
       </div>
 
-      {/* Ricerca + Filtro date */}
+      {/* Ricerca + Filtro date + Filtro stato */}
       <div className="max-w-xl mx-auto px-4 pt-3 pb-2">
         <input
           value={search}
@@ -335,6 +360,8 @@ export default function AllieviPage() {
           placeholder="Cerca allievo…"
           className="w-full rounded-xl border px-4 py-2 text-sm focus:outline-none focus:ring"
         />
+
+        {/* Intervallo date */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-600 w-10">Da</label>
@@ -355,6 +382,8 @@ export default function AllieviPage() {
             />
           </div>
         </div>
+
+        {/* Azioni rapide su date */}
         <div className="mt-2 flex gap-2">
           <button
             type="button"
@@ -375,9 +404,58 @@ export default function AllieviPage() {
             className="text-xs px-3 py-1.5 rounded-lg border bg-white"
             onClick={() => { setDateFrom(""); setDateTo(""); }}
           >
-            Pulisci filtro
+            Pulisci date
           </button>
         </div>
+
+        {/* ⚡ Filtro STATO */}
+        <div className="mt-3">
+          <div className="text-xs font-medium text-gray-600 mb-1">Mostra solo:</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={statusOnly.svolta}
+                onChange={() => toggleStatus("svolta")}
+              />
+              <span>Svolte</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={statusOnly.annullata}
+                onChange={() => toggleStatus("annullata")}
+              />
+              <span>Annullate</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={statusOnly.riprogrammata}
+                onChange={() => toggleStatus("riprogrammata")}
+              />
+              <span>Riprogrammate</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={statusOnly.rimandata}
+                onChange={() => toggleStatus("rimandata")}
+              />
+              <span>Rimandate</span>
+            </label>
+          </div>
+          <div className="mt-2">
+            <button
+              type="button"
+              className="text-xs px-3 py-1.5 rounded-lg border bg-white"
+              onClick={clearStatusFilters}
+            >
+              Pulisci stati
+            </button>
+          </div>
+        </div>
+
         {rangeError && (
           <div className="mt-2 text-xs text-red-600">
             {rangeError}
@@ -417,14 +495,14 @@ export default function AllieviPage() {
             )}
           </div>
 
-          {/* Lezioni future (tutti gli stati) */}
+          {/* Lezioni future (tutti gli stati, filtrati) */}
           <SectionTitle title="Lezioni future" />
           <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
               <EmptyState
                 title="Nessuna lezione trovata"
                 subtitle={
-                  dateFrom || dateTo || search
+                  dateFrom || dateTo || search || Object.values(statusOnly).some(Boolean)
                     ? "Nessuna lezione che rispetta i filtri."
                     : "Quando verranno aggiunte, le vedrai qui."
                 }
@@ -529,7 +607,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : `${hhmm(l.ora_inizio)} – ${hhmm(l.ora_fine)}`;
 
-  const label = statoLabel(l); // 👈 usa label normalizzata
+  const label = statoLabel(l);
   const isRimandata = label === "rimandata";
   const isAnnullata = label === "annullata";
   const isRiprogrammata = label === "riprogrammata";
@@ -564,7 +642,6 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       {!isAnnullata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isRimandata ? (
-            // RIMANDATA (non riprogrammata): Riprogramma + Annulla
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
@@ -582,7 +659,6 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
               </button>
             </>
           ) : (
-            // Tutti gli altri (svolta, riprogrammata, ecc.): Rimanda + Annulla
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
