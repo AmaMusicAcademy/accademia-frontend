@@ -13,18 +13,10 @@ const API_BASE =
 
 // --- utils ---
 function getToken() {
-  try {
-    return localStorage.getItem("token") || null;
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem("token") || null; } catch { return null; }
 }
 function jwtPayload(token) {
-  try {
-    return JSON.parse(atob(token.split(".")[1] || ""));
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(atob(token.split(".")[1] || "")); } catch { return null; }
 }
 async function fetchJSON(url, token, opts = {}) {
   const res = await fetch(url, {
@@ -116,7 +108,6 @@ export default function AllieviPage() {
 
   // Modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
-  the:
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
@@ -196,7 +187,7 @@ export default function AllieviPage() {
       );
     }
 
-    // filtro per stato (se sono flaggati uno o più checkbox)
+    // filtro per stato (se uno o più checkbox selezionati)
     const activeStates = Object.entries(statusOnly)
       .filter(([, v]) => v)
       .map(([k]) => k);
@@ -262,7 +253,7 @@ export default function AllieviPage() {
     return found.id;
   };
 
-  // PATCH dedicati
+  // PATCH dedicati (rimanda/annulla)
   const patchRimanda = async (lessonId, motivazione = "") => {
     const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}/rimanda`, {
       method: "PATCH",
