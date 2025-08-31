@@ -22,9 +22,8 @@
 .calendario-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  padding-bottom: 80px; /* spazio per BottomNav */
+  min-height: 100vh;
+  padding: 0 12px 80px; /* spazio per BottomNav */
 }
 
 /* gutter laterali per calendario + lista */
@@ -49,16 +48,21 @@
 
 /* lista del giorno sotto */
 .elenco-lezioni {
-  flex: 1;
+  max-height: 38vh;
   overflow-y: auto;
-  max-height: 36vh; /* regola per dare più/meno spazio alla lista */
+  margin-top: 12px;
+  
 }
 
 /* -------- FullCalendar tuning -------- */
 
 /* Il calendario cresce in altezza (niente scroller interni) */
 .fc .fc-scroller {
-  overflow: visible !important;
+  overflow: visible !important;}
+.fc .fc-view-harness,
+.fc .fc-view-harness-active {
+  height: auto !important;
+
 }
 
 /* Variante “compact” per header e celle, così il calendario è un filo più basso */

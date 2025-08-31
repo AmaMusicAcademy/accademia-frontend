@@ -267,9 +267,10 @@ export default function CalendarioFull({ lezioni }) {
             moreLinkContent={null}
 
             /* calendario leggermente più basso ma con tutte le settimane */
-            aspectRatio={2.0}
+            height="auto"
+            contentHeight="auto"
             expandRows={true}
-            fixedWeekCount={false}
+            fixedWeekCount={true}
             handleWindowResize={true}
           />
         </div>
