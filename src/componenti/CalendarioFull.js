@@ -52,6 +52,13 @@ const visibleInCalendar = (src) => {
   return true;
 };
 
+// 👇 helper per docente
+function docenteLabel(src) {
+  const ep = src?.extendedProps || src || {};
+  const parts = [ep.nome_insegnante, ep.cognome_insegnante].filter(Boolean);
+  return parts.join(" ").trim();
+}
+
 // chiamate specifiche backend
 async function patchRimanda(id, motivazione, token) {
   const res = await fetch(`${API_BASE}/api/lezioni/${id}/rimanda`, {
@@ -73,7 +80,7 @@ async function patchAnnulla(id, motivazione, token) {
 }
 
 // ---------- componente ----------
-export default function CalendarioFull({ lezioni }) {
+export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
   const token = getToken();
 
   // eventi per FullCalendar + lista
@@ -293,6 +300,7 @@ export default function CalendarioFull({ lezioni }) {
               const { label, toneClass } = renderLabelAndTone(ev);
               const isRimandata = label === "rimandata";
               const isAnnullata = label === "annullata";
+              const docente = docenteLabel(ev); // 👈 qui
 
               return (
                 <div
@@ -318,6 +326,14 @@ export default function CalendarioFull({ lezioni }) {
                         </span>
                       ) : null}
                     </div>
+
+                    {/* 👇 docente (solo se richiesto) */}
+                    {mostraInsegnante && docente && (
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        👨‍🏫 {docente}
+                      </div>
+                    )}
+
                     {ep.motivazione && label !== "svolta" && (
                       <div className="text-xs text-gray-500 mt-0.5">Motivo: {ep.motivazione}</div>
                     )}
