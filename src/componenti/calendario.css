@@ -59,7 +59,7 @@
 /* Il calendario cresce in altezza (niente scroller interni) 
 .fc .fc-scroller {
   overflow: visible !important;
-}
+}*/
 
 /* Variante “compact” per header e celle, così il calendario è un filo più basso */
 .calendario-compact .fc .fc-toolbar {
