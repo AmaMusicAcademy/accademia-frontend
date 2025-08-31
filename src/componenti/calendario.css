@@ -28,13 +28,13 @@
 
 /* gutter laterali per calendario + lista */
 .cal-gutters {
-  padding-left: 12px;
-  padding-right: 12px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 @media (min-width: 640px) {
   .cal-gutters {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 2px;
+    padding-right: 2px;
   }
 }
 
