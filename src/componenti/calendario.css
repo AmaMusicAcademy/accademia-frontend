@@ -1,7 +1,6 @@
 :root {
   --fc-daygrid-event-dot-width: 6px;
   --fc-daygrid-event-dot-height: 6px;
-  --fc-daygrid-row-min-height: 24px;
 }
 
 .fc-daygrid-event-harness {
@@ -57,7 +56,7 @@
 
 /* -------- FullCalendar tuning -------- */
 
-/* Il calendario cresce in altezza (niente scroller interni) */
+/* Il calendario cresce in altezza (niente scroller interni) 
 .fc .fc-scroller {
   overflow: visible !important;
 }
