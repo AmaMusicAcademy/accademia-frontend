@@ -36,11 +36,14 @@ export default function CalendarioAdmin() {
 
         const data = await res.json();
 
-        // ⬇️ Stati corretti: includiamo solo quelli mostrati anche lato docente
-        // (in passato era "programmata"; ORA consideriamo "svolta" e "riprogrammata")
-        const eventiValidi = (Array.isArray(data) ? data : []).filter(
-          (l) => l.stato === "svolta" || l.stato === "riprogrammata"
-        );
+        // Normalizza stato: tratta { stato:"rimandata", riprogrammata:true } come "riprogrammata"
+        const normalizzaStato = (l) =>
+          l?.stato === "rimandata" && l?.riprogrammata === true ? "riprogrammata" : (l?.stato || "svolta");
+
+        // Includi solo "svolta" e "riprogrammata" (come lato insegnante)
+        const eventiValidi = (Array.isArray(data) ? data : [])
+          .map((l) => ({ ...l, stato: normalizzaStato(l) }))
+          .filter((l) => l.stato === "svolta" || l.stato === "riprogrammata");
 
         if (!abort) setLezioni(eventiValidi);
       } catch (err) {
@@ -51,7 +54,9 @@ export default function CalendarioAdmin() {
     };
 
     fetchLezioni();
-    return () => { abort = true; };
+    return () => {
+      abort = true;
+    };
   }, [token, navigate]);
 
   return (
@@ -61,7 +66,7 @@ export default function CalendarioAdmin() {
       error={errore}
       nome="Tutti"
       cognome="gli insegnanti"
-      mostraInsegnante={true}   // 👈 per far comparire il docente
+      mostraInsegnante={true}   // mostra il docente accanto all’evento
     />
   );
 }
