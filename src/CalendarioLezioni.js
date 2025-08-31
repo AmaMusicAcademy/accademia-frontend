@@ -24,6 +24,18 @@ export default function CalendarioLezioni() {
   };
   const closeEdit = () => setEditOpen(false);
 
+  // --- helper: normalizza YYYY-MM-DD e HH:MM
+  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+  const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "");
+  const sameKey = (o) => [
+    ymd(o.data) || ymd(o.start),
+    o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11, 16) : ""),
+    o.ora_fine   || (typeof o.end   === "string" ? o.end.slice(11, 16)   : ""),
+    String(o.id_allievo || ""),
+    String(o.aula || "")
+  ].join("|");
+  const sameLesson = (a, b) => sameKey(a) === sameKey(b);
+
   const fetchLezioni = async () => {
     try {
       setErrore(null);
@@ -64,13 +76,11 @@ export default function CalendarioLezioni() {
         return s.length >= 10 ? s.slice(0, 10) : s;
       };
 
-      // Mostriamo: "svolta", "annullata", e "rimandata" SOLO se riprogrammata = true
+      // ❗️Mostra SOLO lezioni "svolta" (annullate e rimandate non compaiono mai)
       const filtrate = (Array.isArray(lez) ? lez : [])
         .filter(
           (l) =>
-            (l.stato === "svolta" ||
-              l.stato === "annullata" ||
-              (l.stato === "rimandata" && l.riprogrammata === true)) &&
+            l.stato === "svolta" &&
             safeDateStr(l.data) &&
             l.ora_inizio &&
             l.ora_fine
@@ -104,10 +114,6 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
-  // --- helper: normalizza YYYY-MM-DD e HH:MM
-  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
-  const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "");
-
   // 🔎 verifica l'id sul server, altrimenti risolvi l'id cercando per chiave "naturale"
   const resolveLessonId = async (src) => {
     const token = localStorage.getItem("token");
@@ -136,9 +142,13 @@ export default function CalendarioLezioni() {
     }
     const list = await res.json();
     const key = (o) =>
-      [ymd(o.data) || ymd(src.start), hhmm(o.ora_inizio) || hhmm(src.start?.slice?.(11, 16)),
-       hhmm(o.ora_fine) || hhmm(src.end?.slice?.(11, 16)), String(o.id_allievo || ""), String(o.aula || "")]
-        .join("|");
+      [
+        ymd(o.data) || ymd(src.start),
+        o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+        o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
+        String(o.id_allievo || ""),
+        String(o.aula || "")
+      ].join("|");
 
     const want = key(src);
     const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
@@ -151,8 +161,8 @@ export default function CalendarioLezioni() {
       id_insegnante: Number(src.id_insegnante),
       id_allievo: Number(src.id_allievo),
       data: src.data || ymd(src.start),
-      ora_inizio: src.ora_inizio || hhmm(src.start?.slice?.(11, 16)),
-      ora_fine: src.ora_fine || hhmm(src.end?.slice?.(11, 16)),
+      ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+      ora_fine: src.ora_fine || (typeof src.end === "string" ? src.end.slice(11, 16) : ""),
       aula: src.aula || "",
       stato: src.stato || "svolta",
       motivazione: src.motivazione || "",
@@ -188,19 +198,30 @@ export default function CalendarioLezioni() {
   // --- azioni:
   const handleRimanda = async (lesson) => {
     try {
+      // 🔸 rimuovi SUBITO dalla UI
+      setLezioni((prev) => prev.filter((e) => e.id !== lesson.id && !sameLesson(e, lesson)));
+      // 🔸 aggiorna sul server
       await safeUpdateLesson(lesson, { stato: "rimandata", riprogrammata: false });
+      // 🔸 riallinea
       await fetchLezioni();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
+      // in caso di errore, riallineo comunque dal server
+      fetchLezioni();
     }
   };
 
   const handleAnnulla = async (lesson) => {
     try {
+      // 🔸 rimuovi SUBITO dalla UI
+      setLezioni((prev) => prev.filter((e) => e.id !== lesson.id && !sameLesson(e, lesson)));
+      // 🔸 aggiorna sul server
       await safeUpdateLesson(lesson, { stato: "annullata" });
+      // 🔸 riallinea
       await fetchLezioni();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
+      fetchLezioni();
     }
   };
 
@@ -232,4 +253,5 @@ export default function CalendarioLezioni() {
     </>
   );
 }
+
 
