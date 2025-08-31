@@ -48,7 +48,7 @@
 
 /* lista del giorno sotto */
 .elenco-lezioni {
-  max-height: 38vh;
+  max-height: 48vh;
   overflow-y: auto;
   margin-top: 12px;
   
@@ -58,11 +58,7 @@
 
 /* Il calendario cresce in altezza (niente scroller interni) */
 .fc .fc-scroller {
-  overflow: visible !important;}
-.fc .fc-view-harness,
-.fc .fc-view-harness-active {
-  height: auto !important;
-
+  overflow: visible !important;
 }
 
 /* Variante “compact” per header e celle, così il calendario è un filo più basso */
@@ -80,7 +76,7 @@
   line-height: 24px;
 }
 .calendario-compact .fc .fc-col-header-cell-cushion {
-  padding: 4px 0;
+  padding: 2px 0;
   font-size: 12px;
 }
 .calendario-compact .fc .fc-daygrid-day-number {
