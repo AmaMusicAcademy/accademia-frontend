@@ -279,6 +279,11 @@ export default function CalendarioFull({ lezioni }) {
           eventContent={renderCompactDot}
           dayMaxEvents={5}
           moreLinkContent={null}
+            height="auto"
+  contentHeight="auto"
+  expandRows={true}
+  fixedWeekCount={false}
+  handleWindowResize={true}
         />
       </div>
 
