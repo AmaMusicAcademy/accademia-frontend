@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
+import EditLessonModal from "../componenti/EditLessonModal";
 
 // Config base API (CRA usa process.env.REACT_APP_*)
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     process.env.REACT_APP_API_BASE) ||
-  "https://app-docenti.onrender.com"; // 👈 fallback (sostituisci col tuo URL)
+  "https://app-docenti.onrender.com"; // 👈 fallback
 
 // --- utils ---
 function getToken() {
@@ -18,7 +19,6 @@ function getToken() {
     return null;
   }
 }
-
 function jwtPayload(token) {
   try {
     return JSON.parse(atob(token.split(".")[1] || ""));
@@ -26,7 +26,6 @@ function jwtPayload(token) {
     return null;
   }
 }
-
 async function fetchJSON(url, token, opts = {}) {
   const res = await fetch(url, {
     ...opts,
@@ -45,24 +44,15 @@ async function fetchJSON(url, token, opts = {}) {
   }
   return res.json();
 }
-
-/**
- * Ottieni l'id dell'insegnante:
- * 1) /api/insegnante/me
- * 2) fallback: username nel JWT -> match in /api/insegnanti
- */
+/** Ottieni l'id dell'insegnante: 1) /api/insegnante/me  2) fallback: username nel JWT -> match in /api/insegnanti */
 async function resolveTeacherId(token) {
   try {
     const me = await fetchJSON(`${API_BASE}/api/insegnante/me`, token);
     if (me?.id) return { id: String(me.id), profile: me };
-  } catch {
-    // fallback
-  }
-
+  } catch { /* fallback */ }
   const payload = jwtPayload(token);
   const username = payload?.username;
   if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
-
   const list = await fetchJSON(`${API_BASE}/api/insegnanti`, null);
   const match = (Array.isArray(list) ? list : []).find(
     (i) => (i.username || "").toLowerCase() === username.toLowerCase()
@@ -71,19 +61,15 @@ async function resolveTeacherId(token) {
   return { id: String(match.id), profile: match };
 }
 
-function ymd(dateLike) {
-  return String(dateLike || "").slice(0, 10); // "YYYY-MM-DD"
-}
-
+function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
+function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
 function isFromTodayOnward(lez) {
   const ymdStr = ymd(lez.data);
   if (!ymdStr) return false;
   const lessonDay = new Date(`${ymdStr}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   return lessonDay.getTime() >= today.getTime();
 }
-
 function inRangeInclusive(lez, startYMD, endYMD) {
   const day = ymd(lez.data);
   if (!day) return false;
@@ -91,12 +77,18 @@ function inRangeInclusive(lez, startYMD, endYMD) {
   if (endYMD && day > endYMD) return false;
   return true;
 }
-
 function isoFromDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
   return `${dateStr}T${t}`;
 }
+const sameKey = (o) =>
+  [ymd(o.data) || ymd(o.start),
+   o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11,16) : ""),
+   o.ora_fine   || (typeof o.end   === "string" ? o.end.slice(11,16)   : ""),
+   String(o.id_allievo || ""),
+   String(o.aula || "")]
+  .join("|");
 
 // --- component ---
 export default function AllieviPage() {
@@ -104,15 +96,21 @@ export default function AllieviPage() {
   const [teacherId, setTeacherId] = useState(null);
 
   const [students, setStudents] = useState([]);
-  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // dati base (oggi → futuro)
+  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // dati base (oggi → futuro, SOLO attive)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+
+  // Modale modifica/riprogramma
+  const [editOpen, setEditOpen] = useState(false);
+  const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
+  const [editLesson, setEditLesson] = useState(null);
 
   // UI state
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
   const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
 
+  // primo caricamento
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -121,7 +119,6 @@ export default function AllieviPage() {
         setErr(null);
 
         if (!token) throw new Error("Token non presente. Esegui il login.");
-
         const { id } = await resolveTeacherId(token);
         if (cancel) return;
 
@@ -132,23 +129,25 @@ export default function AllieviPage() {
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
 
-        // tutte le lezioni dell'insegnante
-        const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni`, token);
-        if (cancel) return;
-
-        // tieni solo quelle da oggi in poi (indipendentemente dallo stato)
-        const base = (Array.isArray(lezioni) ? lezioni : []).filter(isFromTodayOnward);
-        setAllLessonsFromToday(base);
+        await refetchLessons(id);
       } catch (e) {
         if (!cancel) setErr(e.message || "Errore di caricamento.");
       } finally {
         if (!cancel) setLoading(false);
       }
     })();
-    return () => {
-      cancel = true;
-    };
+    return () => { cancel = true; };
   }, [token]);
+
+  // Refetch lezioni (mostra solo attive = stato "svolta")
+  const refetchLessons = async (id = teacherId) => {
+    if (!id || !token) return;
+    const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
+    const base = (Array.isArray(lezioni) ? lezioni : [])
+      .filter(isFromTodayOnward)
+      .filter((l) => (l.stato || "svolta") === "svolta"); // 👈 solo attive
+    setAllLessonsFromToday(base);
+  };
 
   // Filtro studenti (ricerca)
   const filteredStudents = useMemo(() => {
@@ -157,23 +156,16 @@ export default function AllieviPage() {
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // ✅ Filtro lezioni per intervallo date (inclusivo) **e** per ricerca su nome/cognome allievo
+  // Filtro lezioni per intervallo date + ricerca su allievo
   const filteredLessons = useMemo(() => {
     let list = allLessonsFromToday;
-
-    // filtro intervallo date (inclusivo)
-    if (dateFrom || dateTo) {
-      list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
-    }
-
-    // filtro ricerca condiviso con lista allievi
+    if (dateFrom || dateTo) list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((l) =>
         `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
       );
     }
-
     return list;
   }, [allLessonsFromToday, dateFrom, dateTo, search]);
 
@@ -189,13 +181,119 @@ export default function AllieviPage() {
     return Array.from(map.entries()).sort(([a], [b]) => (a < b ? -1 : 1));
   }, [filteredLessons]);
 
-  // Messaggio di errore specifico se range invertito
   const rangeError = useMemo(() => {
     if (dateFrom && dateTo && dateFrom > dateTo) {
       return "Intervallo date non valido: la data iniziale è successiva alla finale.";
     }
     return null;
   }, [dateFrom, dateTo]);
+
+  // --- azioni (Rimanda / Annulla / Modifica / Riprogramma) ---
+
+  // verifica ID sul server, altrimenti risolvi per “chiave naturale”
+  const resolveLessonId = async (src) => {
+    if (!token) throw new Error("Token non presente");
+    // GET diretta
+    if (src?.id != null) {
+      const r = await fetch(`${API_BASE}/api/lezioni/${src.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) return src.id;
+      if (r.status !== 404) {
+        const t = await r.text().catch(() => "");
+        throw new Error(t || `Errore lettura lezione (${r.status})`);
+      }
+    }
+    // fallback: elenco lezioni dell'insegnante
+    const res = await fetch(`${API_BASE}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore nel recupero lezioni insegnante (${res.status})`);
+    }
+    const list = await res.json();
+    const key = (o) => [
+      ymd(o.data) || ymd(src.start),
+      o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+      o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
+      String(o.id_allievo || ""),
+      String(o.aula || "")
+    ].join("|");
+    const want = key(src);
+    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
+    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
+    return found.id;
+  };
+
+  const buildPutBody = (src, overrides = {}) => ({
+    id_insegnante: Number(src.id_insegnante),
+    id_allievo: Number(src.id_allievo),
+    data: ymd(src.data) || ymd(src.start),
+    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11,16) : ""),
+    ora_fine:   src.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11,16)   : ""),
+    aula: src.aula || "",
+    stato: src.stato || "svolta",
+    motivazione: src.motivazione || "",
+    riprogrammata: Boolean(src.riprogrammata) || false,
+    ...overrides,
+  });
+
+  const putLesson = async (lessonId, payload) => {
+    const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore aggiornamento (${res.status})`);
+    }
+    return res.json().catch(() => null);
+  };
+
+  const removeFromUI = (target) => {
+    setAllLessonsFromToday((prev) =>
+      prev.filter((e) => e.id !== target.id && sameKey(e) !== sameKey(target))
+    );
+  };
+
+  const handleRimanda = async (lesson) => {
+    try {
+      removeFromUI(lesson); // sparisce subito
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
+      await putLesson(realId, payload);
+      await refetchLessons(); // riallinea
+    } catch (e) {
+      alert(e.message || "Errore nel rimandare la lezione");
+      refetchLessons();
+    }
+  };
+
+  const handleAnnulla = async (lesson) => {
+    try {
+      removeFromUI(lesson);
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson, { stato: "annullata" });
+      await putLesson(realId, payload);
+      await refetchLessons();
+    } catch (e) {
+      alert(e.message || "Errore nell'annullare la lezione");
+      refetchLessons();
+    }
+  };
+
+  const openEdit = (lesson, mode = "edit") => {
+    setEditLesson(lesson);
+    setEditMode(mode);
+    setEditOpen(true);
+  };
+  const closeEdit = () => setEditOpen(false);
+  const handleSaved = async () => {
+    closeEdit();
+    await refetchLessons();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
@@ -253,10 +351,7 @@ export default function AllieviPage() {
           <button
             type="button"
             className="text-xs px-3 py-1.5 rounded-lg border bg-white"
-            onClick={() => {
-              setDateFrom("");
-              setDateTo("");
-            }}
+            onClick={() => { setDateFrom(""); setDateTo(""); }}
           >
             Pulisci filtro
           </button>
@@ -268,7 +363,7 @@ export default function AllieviPage() {
         )}
       </div>
 
-      {/* Loading */}
+      {/* Loading / Errore */}
       {loading && (
         <div className="max-w-xl mx-auto px-4 space-y-3">
           <Skeleton h="48px" />
@@ -276,8 +371,6 @@ export default function AllieviPage() {
           <Skeleton h="112px" />
         </div>
       )}
-
-      {/* Errore */}
       {!loading && err && (
         <div className="max-w-xl mx-auto px-4">
           <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
@@ -295,18 +388,14 @@ export default function AllieviPage() {
             {filteredStudents.length === 0 ? (
               <EmptyState
                 title="Nessun allievo"
-                subtitle={
-                  search
-                    ? "Modifica la ricerca."
-                    : "Non sono presenti assegnazioni."
-                }
+                subtitle={search ? "Modifica la ricerca." : "Non sono presenti assegnazioni."}
               />
             ) : (
               filteredStudents.map((s) => <StudentRow key={s.id} s={s} />)
             )}
           </div>
 
-          {/* Lezioni future (filtrate) */}
+          {/* Lezioni future (solo attive) */}
           <SectionTitle title="Lezioni future" />
           <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
@@ -328,7 +417,14 @@ export default function AllieviPage() {
                     {items
                       .sort((a, b) => (a.ora_inizio || "").localeCompare(b.ora_inizio || ""))
                       .map((l, i) => (
-                        <LessonRow key={l.id} l={l} last={i === items.length - 1} />
+                        <LessonRow
+                          key={`${l.id || "k"}-${i}`}
+                          l={l}
+                          last={i === items.length - 1}
+                          onOpenEdit={() => openEdit(l, "edit")}
+                          onRimanda={() => handleRimanda(l)}
+                          onAnnulla={() => handleAnnulla(l)}
+                        />
                       ))}
                   </div>
                 </div>
@@ -338,8 +434,17 @@ export default function AllieviPage() {
         </>
       )}
 
+      {/* Modale modifica/riprogramma */}
+      <EditLessonModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSaved={handleSaved}
+        lesson={editLesson}
+        mode={editMode}
+      />
+
       {/* Bottom Navigation */}
-      <BottomNav active="allievi" />
+      <BottomNav />
     </div>
   );
 }
@@ -352,7 +457,6 @@ function SectionTitle({ title }) {
     </div>
   );
 }
-
 function EmptyState({ title, subtitle }) {
   return (
     <div className="rounded-xl border bg-white p-6 text-center">
@@ -361,7 +465,6 @@ function EmptyState({ title, subtitle }) {
     </div>
   );
 }
-
 function StudentRow({ s }) {
   const initials = `${(s.nome || "?")[0] ?? ""}${(s.cognome || "?")[0] ?? ""}`.toUpperCase();
   return (
@@ -377,7 +480,6 @@ function StudentRow({ s }) {
     </div>
   );
 }
-
 function Badge({ children, tone = "gray" }) {
   const tones = {
     gray: "bg-gray-100 text-gray-700 border-gray-200",
@@ -398,7 +500,7 @@ function Badge({ children, tone = "gray" }) {
   );
 }
 
-function LessonRow({ l, last }) {
+function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
   const startISO = isoFromDateTime(ymd(l.data), l.ora_inizio);
   const endISO = isoFromDateTime(ymd(l.data), l.ora_fine);
   const orario =
@@ -406,7 +508,9 @@ function LessonRow({ l, last }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  const stato = (l.stato || "futura").toLowerCase();
+  const stato = (l.stato || "svolta").toLowerCase();
+  const isRimandata = stato === "rimandata";
+
   const tone =
     stato === "annullata" ? "red"
     : stato === "rimandata" ? "orange"
@@ -414,7 +518,11 @@ function LessonRow({ l, last }) {
     : "blue";
 
   return (
-    <div className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"}`}>
+    <div
+      className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"} cursor-pointer`}
+      onClick={onOpenEdit}
+      title="Modifica lezione"
+    >
       <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -425,19 +533,36 @@ function LessonRow({ l, last }) {
           {l.riprogrammata ? <Badge tone="purple">riprogrammata</Badge> : null}
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
-        {l.motivazione && stato !== "futura" && (
+        {l.motivazione && stato !== "svolta" && (
           <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
         )}
+      </div>
+
+      {/* Azioni – stopPropagation per non aprire il modale col click */}
+      <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          className={`px-2 py-1 rounded-md text-xs ${isRimandata ? "bg-amber-600 text-white" : "bg-amber-100 text-amber-800"}`}
+          title={isRimandata ? "Riprogramma" : "Rimanda"}
+          onClick={() => (isRimandata ? onOpenEdit() : onRimanda())}
+        >
+          {isRimandata ? "Riprogramma" : "Rimanda"}
+        </button>
+        <button
+          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+          title="Annulla"
+          onClick={onAnnulla}
+        >
+          Annulla
+        </button>
       </div>
     </div>
   );
 }
 
 function Skeleton({ h = "48px" }) {
-  return (
-    <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />
-  );
+  return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }
+
 
 
 
