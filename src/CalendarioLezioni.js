@@ -45,7 +45,7 @@ export default function CalendarioLezioni() {
       }
       if (!id) throw new Error("ID utente non presente nel token");
 
-      const res = await fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni`, {
+      const res = await fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -104,14 +104,55 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
-  // ---- Helpers PUT completi (coerenti col backend) ----
+  // --- helper: normalizza YYYY-MM-DD e HH:MM
+  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+  const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "");
+
+  // 🔎 verifica l'id sul server, altrimenti risolvi l'id cercando per chiave "naturale"
+  const resolveLessonId = async (src) => {
+    const token = localStorage.getItem("token");
+    // 1) tenta GET /api/lezioni/:id
+    if (src?.id != null) {
+      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) return src.id; // id valido
+      if (r.status !== 404) {
+        const t = await r.text().catch(() => "");
+        throw new Error(t || `Errore lettura lezione (${r.status})`);
+      }
+      // se 404 → passa al fallback
+    }
+
+    // 2) fallback: cerca tra le lezioni dell'insegnante una lezione equivalente
+    const inz = Number(src.id_insegnante);
+    if (!inz) throw new Error("id_insegnante mancante per la risoluzione ID");
+    const res = await fetch(`${BASE_URL}/api/insegnanti/${inz}/lezioni?t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore nel recupero lezioni insegnante (${res.status})`);
+    }
+    const list = await res.json();
+    const key = (o) =>
+      [ymd(o.data) || ymd(src.start), hhmm(o.ora_inizio) || hhmm(src.start?.slice?.(11, 16)),
+       hhmm(o.ora_fine) || hhmm(src.end?.slice?.(11, 16)), String(o.id_allievo || ""), String(o.aula || "")]
+        .join("|");
+
+    const want = key(src);
+    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
+    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
+    return found.id;
+  };
+
   const buildPutBody = (src, overrides = {}) => {
     const base = {
       id_insegnante: Number(src.id_insegnante),
       id_allievo: Number(src.id_allievo),
-      data: src.data || (typeof src.start === "string" ? src.start.slice(0, 10) : ""),
-      ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
-      ora_fine: src.ora_fine || (typeof src.end === "string" ? src.end.slice(11, 16) : ""),
+      data: src.data || ymd(src.start),
+      ora_inizio: src.ora_inizio || hhmm(src.start?.slice?.(11, 16)),
+      ora_fine: src.ora_fine || hhmm(src.end?.slice?.(11, 16)),
       aula: src.aula || "",
       stato: src.stato || "svolta",
       motivazione: src.motivazione || "",
@@ -137,12 +178,18 @@ export default function CalendarioLezioni() {
     return res.json().catch(() => null);
   };
 
-  // ---- Azioni richieste ----
+  // 🔁 wrapper robusto usato da Rimanda/Annulla
+  const safeUpdateLesson = async (src, overrides) => {
+    const realId = await resolveLessonId(src);
+    const payload = buildPutBody({ ...src, id: realId }, overrides);
+    return putLesson(realId, payload);
+  };
+
+  // --- azioni:
   const handleRimanda = async (lesson) => {
     try {
-      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
-      await putLesson(lesson.id, payload);
-      await fetchLezioni(); // ricarica
+      await safeUpdateLesson(lesson, { stato: "rimandata", riprogrammata: false });
+      await fetchLezioni();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
     }
@@ -150,9 +197,8 @@ export default function CalendarioLezioni() {
 
   const handleAnnulla = async (lesson) => {
     try {
-      const payload = buildPutBody(lesson, { stato: "annullata" });
-      await putLesson(lesson.id, payload);
-      await fetchLezioni(); // ricarica
+      await safeUpdateLesson(lesson, { stato: "annullata" });
+      await fetchLezioni();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
     }

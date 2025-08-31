@@ -21,13 +21,51 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
 
+  // --- helpers
+  const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
+  const hhmm = (t) => (typeof t === "string" ? t.slice(0, 5) : "");
+
+  // 🔎 risolvi ID se quello in memoria non esiste più
+  const resolveLessonId = async (src) => {
+    const token = localStorage.getItem("token");
+    // 1) GET diretta
+    {
+      const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) return src.id;
+      if (r.status !== 404) {
+        const t = await r.text().catch(() => "");
+        throw new Error(t || `Errore lettura lezione (${r.status})`);
+      }
+    }
+    // 2) fallback tramite elenco dell'insegnante
+    const inz = Number(src.id_insegnante);
+    const res = await fetch(`${BASE_URL}/api/insegnanti/${inz}/lezioni?t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore nel recupero lezioni insegnante (${res.status})`);
+    }
+    const list = await res.json();
+    const key = (o) =>
+      [ymd(o.data) || ymd(src.start), hhmm(o.ora_inizio) || hhmm(src.start?.slice?.(11, 16)),
+       hhmm(o.ora_fine) || hhmm(src.end?.slice?.(11, 16)), String(o.id_allievo || ""), String(o.aula || "")]
+        .join("|");
+    const want = key(src);
+    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
+    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
+    return found.id;
+  };
+
   useEffect(() => {
     if (!open || !lesson) return;
     setErrore(null);
     setForm({
-      data: (lesson.data && String(lesson.data).slice(0,10)) || (typeof lesson.start === "string" ? lesson.start.slice(0,10) : ""),
-      ora_inizio: lesson.ora_inizio || (typeof lesson.start === "string" ? lesson.start.slice(11,16) : ""),
-      ora_fine:   lesson.ora_fine   || (typeof lesson.end   === "string" ? lesson.end.slice(11,16)   : ""),
+      data: (lesson.data && String(lesson.data).slice(0, 10)) || (typeof lesson.start === "string" ? lesson.start.slice(0, 10) : ""),
+      ora_inizio: lesson.ora_inizio || (typeof lesson.start === "string" ? lesson.start.slice(11, 16) : ""),
+      ora_fine: lesson.ora_fine || (typeof lesson.end === "string" ? lesson.end.slice(11, 16) : ""),
       aula: lesson.aula || "",
       motivazione: lesson.motivazione || "",
     });
@@ -47,16 +85,16 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     return true;
   };
 
-  const buildPutBody = () => ({
-    id_insegnante: Number(lesson.id_insegnante),
-    id_allievo: Number(lesson.id_allievo),
+  const buildPutBody = (src) => ({
+    id_insegnante: Number(src.id_insegnante),
+    id_allievo: Number(src.id_allievo),
     data: form.data,
     ora_inizio: form.ora_inizio,
     ora_fine: form.ora_fine,
     aula: form.aula,
-    stato: mode === "reschedule" ? "rimandata" : (lesson.stato || "svolta"),
+    stato: mode === "reschedule" ? "rimandata" : (src.stato || "svolta"),
     motivazione: form.motivazione || "",
-    riprogrammata: mode === "reschedule" ? true : Boolean(lesson.riprogrammata) || false,
+    riprogrammata: mode === "reschedule" ? true : Boolean(src.riprogrammata) || false,
   });
 
   const submit = async (e) => {
@@ -72,9 +110,11 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token mancante");
 
-      const payload = buildPutBody();
+      // verifica/risolvi ID reale
+      const realId = await resolveLessonId(lesson);
+      const payload = buildPutBody(lesson);
 
-      const res = await fetch(`${BASE_URL}/api/lezioni/${lesson.id}`, {
+      const res = await fetch(`${BASE_URL}/api/lezioni/${realId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
@@ -86,7 +126,7 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
       }
 
       const updated = await res.json().catch(() => null);
-      onSaved && onSaved(updated || { ...lesson, ...payload });
+      onSaved && onSaved(updated || { ...lesson, id: realId, ...payload });
       onClose && onClose();
     } catch (err) {
       setErrore(err.message || "Errore inatteso");
