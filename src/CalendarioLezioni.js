@@ -1,95 +1,85 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import CalendarioFull from "./componenti/CalendarioFull";
 import EditLessonModal from "./componenti/EditLessonModal";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
+const BASE_URL = process.env.REACT_APP_API_URL || "https://app-docenti.onrender.com";
 
-function toBool(v) {
-  if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v === 1;
-  if (v == null) return false;
-  const s = String(v).trim().toLowerCase();
-  return s === "true" || s === "t" || s === "1" || s === "yes";
-}
-const ymd = (d) => (typeof d === "string" ? d.slice(0, 10) : "");
-const safeDateStr = (d) => (d ? String(d).slice(0, 10) : null);
+// helpers
+const ymd = (d) => (d ? String(d).slice(0, 10) : "");
+const sameKey = (o) =>
+  [
+    ymd(o.data) || ymd(o.start),
+    o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11, 16) : ""),
+    o.ora_fine || (typeof o.end === "string" ? o.end.slice(11, 16) : ""),
+    String(o.id_allievo || ""),
+    String(o.aula || ""),
+  ].join("|");
 
 export default function CalendarioLezioni() {
   const navigate = useNavigate();
+
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
 
-  // modale modifica/riprogramma
+  const [teacherId, setTeacherId] = useState(null);
+  const [token, setToken] = useState(null);
+
+  // Modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
-  const [editMode, setEditMode] = useState("edit");
+  const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  const token = localStorage.getItem("token");
-
-  const fetchLezioni = async () => {
+  // --- auth bootstrap
+  useEffect(() => {
     try {
-      setErrore(null);
-      setLoading(true);
-      if (!BASE_URL) throw new Error("Config mancante: REACT_APP_API_URL non impostata");
-      if (!token) throw new Error("Token mancante");
+      const t = localStorage.getItem("token");
+      if (!t) throw new Error("Token mancante");
+      setToken(t);
 
       let id;
       try {
-        const decoded = jwtDecode(token);
+        const decoded = jwtDecode(t);
         id = decoded.id || decoded.userId;
       } catch {
         doLogout();
         return;
       }
       if (!id) throw new Error("ID utente non presente nel token");
+      setTeacherId(id);
+    } catch (e) {
+      setErrore(e.message || "Errore autenticazione");
+    }
+  }, []);
 
-      const res = await fetch(`${BASE_URL}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, {
+  // --- fetch lezioni
+  const refetchLessons = useCallback(async () => {
+    if (!teacherId || !token) return;
+    try {
+      setLoading(true);
+      setErrore(null);
+      const res = await fetch(`${BASE_URL}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.status === 401 || res.status === 403) {
         doLogout();
         return;
       }
       if (!res.ok) throw new Error("Errore nel caricamento delle lezioni");
-
       const lez = await res.json();
-
-      // MOSTRA in calendario:
-      // - svolta
-      // - rimandata + riprogrammata TRUE + history presente
-      const filtrate = (Array.isArray(lez) ? lez : [])
-        .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) }))
-        .filter((l) => {
-          const dateStr = safeDateStr(l.data);
-          const okBase = dateStr && l.ora_inizio && l.ora_fine;
-          if (!okBase) return false;
-          if (l.stato === "svolta") return true;
-          if (l.stato === "rimandata" && l.riprogrammata && Array.isArray(l.old_schedules) && l.old_schedules.length > 0) return true;
-          return false;
-        })
-        .map((l) => {
-          const dateStr = safeDateStr(l.data);
-          return {
-            ...l,
-            start: `${dateStr}T${l.ora_inizio}`,
-            end: `${dateStr}T${l.ora_fine}`,
-          };
-        });
-
-      setLezioni(filtrate);
+      setLezioni(Array.isArray(lez) ? lez : []);
     } catch (err) {
-      console.error("❌ Errore fetch lezioni:", err);
       setErrore(err.message || "Errore inatteso");
     } finally {
       setLoading(false);
     }
-  };
+  }, [teacherId, token]);
 
-  useEffect(() => { fetchLezioni(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    if (teacherId && token) refetchLessons();
+  }, [teacherId, token, refetchLessons]);
 
   function doLogout() {
     localStorage.removeItem("token");
@@ -97,29 +87,36 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
-  // --- azioni dalla lista del calendario ---
-
+  // --- risoluzione ID robusta (se mai servisse)
   const resolveLessonId = async (src) => {
+    if (!token) throw new Error("Token non presente");
     if (src?.id != null) {
       const r = await fetch(`${BASE_URL}/api/lezioni/${src.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (r.ok) return src.id;
+      if (r.status !== 404) {
+        const t = await r.text().catch(() => "");
+        throw new Error(t || `Errore lettura lezione (${r.status})`);
+      }
     }
-    const decoded = jwtDecode(token);
-    const teacherId = decoded.id || decoded.userId;
+    // fallback: cerca per “chiave naturale”
     const res = await fetch(`${BASE_URL}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error(`Errore recupero lezioni insegnante (${res.status})`);
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore nel recupero lezioni insegnante (${res.status})`);
+    }
     const list = await res.json();
-    const key = (o) => [
-      ymd(o.data) || ymd(src.start),
-      o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
-      o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
-      String(o.id_allievo || ""),
-      String(o.aula || "")
-    ].join("|");
+    const key = (o) =>
+      [
+        ymd(o.data) || ymd(src.start),
+        o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+        o.ora_fine || (typeof src.end === "string" ? src.end.slice(11, 16) : ""),
+        String(o.id_allievo || ""),
+        String(o.aula || ""),
+      ].join("|");
     const want = key(src);
     const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
     if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
@@ -130,12 +127,13 @@ export default function CalendarioLezioni() {
     id_insegnante: Number(src.id_insegnante),
     id_allievo: Number(src.id_allievo),
     data: ymd(src.data) || ymd(src.start),
-    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11,16) : ""),
-    ora_fine:   src.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11,16)   : ""),
+    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
+    ora_fine: src.ora_fine || (typeof src.end === "string" ? src.end.slice(11, 16) : ""),
     aula: src.aula || "",
     stato: src.stato || "svolta",
     motivazione: src.motivazione || "",
     riprogrammata: Boolean(src.riprogrammata) || false,
+    old_schedules: src.old_schedules,
     ...overrides,
   });
 
@@ -152,62 +150,72 @@ export default function CalendarioLezioni() {
     return res.json().catch(() => null);
   };
 
+  // update ottimistico locale (mappa per “chiave naturale”)
+  const patchLocal = (target, patch) => {
+    setLezioni((prev) => prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e)));
+  };
+
+  // --- azioni invocate da CalendarioFull (lista sotto al calendario)
   const handleRimanda = async (lesson) => {
     try {
-      // nel calendario deve sparire subito
-      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      // nel calendario scompare (perché non riprogrammata) ma resta nella lista della pagina Allievi
+      patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
       await putLesson(realId, payload);
-      await fetchLezioni();
+      await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
-      await fetchLezioni();
+      refetchLessons();
     }
   };
 
   const handleAnnulla = async (lesson) => {
     try {
-      setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
+      patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
       await putLesson(realId, payload);
-      await fetchLezioni();
+      await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
-      await fetchLezioni();
+      refetchLessons();
     }
   };
 
+  // apertura modale da: click sulla card (edit) o tasto “Riprogramma”
   const openEdit = (lesson, mode = "edit") => {
     setEditLesson(lesson);
     setEditMode(mode);
     setEditOpen(true);
   };
+  const closeEdit = () => setEditOpen(false);
+
   const handleSaved = async () => {
-    setEditOpen(false);
-    await fetchLezioni();
+    // dopo salvataggio del modale, riallinea tutto
+    closeEdit();
+    await refetchLessons();
   };
 
   if (loading) return <p>Caricamento...</p>;
-  if (errore)  return <p className="text-red-600">{errore}</p>;
+  if (errore) return <p className="text-red-600">{errore}</p>;
 
   return (
     <>
       <CalendarioFull
         lezioni={lezioni}
-        showActions
-        onOpenEdit={(lesson, mode) => openEdit(lesson, mode || "edit")}
+        onOpenEdit={openEdit}
         onRimanda={handleRimanda}
         onAnnulla={handleAnnulla}
       />
+
       <EditLessonModal
         open={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={closeEdit}
         onSaved={handleSaved}
         lesson={editLesson}
         mode={editMode}
       />
     </>
   );
-} 
+}

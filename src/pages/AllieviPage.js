@@ -4,18 +4,27 @@ import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
 import EditLessonModal from "../componenti/EditLessonModal";
 
+// Config base API (CRA usa process.env.REACT_APP_*)
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     process.env.REACT_APP_API_BASE) ||
-  "https://app-docenti.onrender.com";
+  "https://app-docenti.onrender.com"; // 👈 fallback
 
 // --- utils ---
 function getToken() {
-  try { return localStorage.getItem("token") || null; } catch { return null; }
+  try {
+    return localStorage.getItem("token") || null;
+  } catch {
+    return null;
+  }
 }
 function jwtPayload(token) {
-  try { return JSON.parse(atob(token.split(".")[1] || "")); } catch { return null; }
+  try {
+    return JSON.parse(atob(token.split(".")[1] || ""));
+  } catch {
+    return null;
+  }
 }
 async function fetchJSON(url, token, opts = {}) {
   const res = await fetch(url, {
@@ -35,11 +44,12 @@ async function fetchJSON(url, token, opts = {}) {
   }
   return res.json();
 }
+/** Ottieni l'id dell'insegnante: 1) /api/insegnante/me  2) fallback: username nel JWT -> match in /api/insegnanti */
 async function resolveTeacherId(token) {
   try {
     const me = await fetchJSON(`${API_BASE}/api/insegnante/me`, token);
     if (me?.id) return { id: String(me.id), profile: me };
-  } catch {}
+  } catch { /* fallback */ }
   const payload = jwtPayload(token);
   const username = payload?.username;
   if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
@@ -51,20 +61,11 @@ async function resolveTeacherId(token) {
   return { id: String(match.id), profile: match };
 }
 
-function toBool(v) {
-  if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v === 1;
-  if (v == null) return false;
-  const s = String(v).trim().toLowerCase();
-  return s === "true" || s === "t" || s === "1" || s === "yes";
-}
-function hasHistory(o) {
-  return Array.isArray(o?.old_schedules) && o.old_schedules.length > 0;
-}
-function ymd(dateLike) { return String(dateLike || "").slice(0, 10); }
+function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
 function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
 function isFromTodayOnward(lez) {
-  const ymdStr = ymd(lez.data); if (!ymdStr) return false;
+  const ymdStr = ymd(lez.data);
+  if (!ymdStr) return false;
   const lessonDay = new Date(`${ymdStr}T00:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   return lessonDay.getTime() >= today.getTime();
@@ -89,37 +90,65 @@ const sameKey = (o) =>
    String(o.aula || "")]
   .join("|");
 
+// -- helpers per etichette stato/riprogramma --
+const parseHistory = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") {
+    try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; }
+  }
+  return [];
+};
+const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
+
+const statoLabel = (l) => {
+  const raw = (l?.stato || "svolta").toLowerCase();
+  // "riprogrammata" è una label di comodo quando la lezione è stata rimandata e poi riprogrammata (con history)
+  if (raw === "rimandata" && l?.riprogrammata && hasHistory(l)) return "riprogrammata";
+  return raw; // svolta | rimandata | annullata
+};
+const badgeTone = (label) => {
+  if (label === "annullata") return "red";
+  if (label === "riprogrammata") return "purple";
+  if (label === "rimandata") return "orange";
+  if (label === "svolta") return "green";
+  return "gray";
+};
+
 // --- component ---
 export default function AllieviPage() {
   const token = getToken();
   const [teacherId, setTeacherId] = useState(null);
 
   const [students, setStudents] = useState([]);
-  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]);
+  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // oggi → futuro (tutti gli stati)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // Modale
+  // Modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  // UI
+  // UI state
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo,   setDateTo]   = useState("");
+  const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
+  const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
 
-  // primo load
+  // primo caricamento
   useEffect(() => {
     let cancel = false;
     (async () => {
       try {
-        setLoading(true); setErr(null);
+        setLoading(true);
+        setErr(null);
+
         if (!token) throw new Error("Token non presente. Esegui il login.");
         const { id } = await resolveTeacherId(token);
         if (cancel) return;
+
         setTeacherId(id);
 
+        // allievi assegnati
         const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, null);
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
@@ -134,35 +163,36 @@ export default function AllieviPage() {
     return () => { cancel = true; };
   }, [token]);
 
-  // Refetch lezioni (oggi → futuro)
+  // Refetch lezioni (oggi → futuro, TUTTI gli stati)
   const refetchLessons = async (id = teacherId) => {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
     const base = (Array.isArray(lezioni) ? lezioni : [])
-      .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // normalizza
-      .filter(isFromTodayOnward);
+      .filter(isFromTodayOnward); // 👈 nessun filtro su stato
     setAllLessonsFromToday(base);
   };
 
-  // Filtro studenti
+  // Filtro studenti (ricerca)
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // Filtro lezioni
+  // Filtro lezioni per intervallo date + ricerca su allievo
   const filteredLessons = useMemo(() => {
     let list = allLessonsFromToday;
     if (dateFrom || dateTo) list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
     const q = search.trim().toLowerCase();
-    if (q) list = list.filter((l) =>
-      `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
-    );
+    if (q) {
+      list = list.filter((l) =>
+        `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
+      );
+    }
     return list;
   }, [allLessonsFromToday, dateFrom, dateTo, search]);
 
-  // Raggruppo
+  // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
     const map = new Map();
     for (const l of filteredLessons) {
@@ -181,10 +211,12 @@ export default function AllieviPage() {
     return null;
   }, [dateFrom, dateTo]);
 
-  // --- azioni ---
+  // --- azioni (Rimanda / Riprogramma / Annulla / Modifica) ---
 
+  // verifica ID sul server, altrimenti risolvi per “chiave naturale”
   const resolveLessonId = async (src) => {
     if (!token) throw new Error("Token non presente");
+    // GET diretta
     if (src?.id != null) {
       const r = await fetch(`${API_BASE}/api/lezioni/${src.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -195,6 +227,7 @@ export default function AllieviPage() {
         throw new Error(t || `Errore lettura lezione (${r.status})`);
       }
     }
+    // fallback: elenco lezioni dell'insegnante
     const res = await fetch(`${API_BASE}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -226,6 +259,7 @@ export default function AllieviPage() {
     stato: src.stato || "svolta",
     motivazione: src.motivazione || "",
     riprogrammata: Boolean(src.riprogrammata) || false,
+    old_schedules: src.old_schedules,
     ...overrides,
   });
 
@@ -242,21 +276,16 @@ export default function AllieviPage() {
     return res.json().catch(() => null);
   };
 
+  // update ottimistico locale
   const patchLocal = (target, patch) => {
     setAllLessonsFromToday((prev) =>
-      prev.map((e) => {
-        const matchById = target?.id != null && e?.id != null && Number(e.id) === Number(target.id);
-        const matchByKey = sameKey(e) === sameKey(target);
-        return (matchById || matchByKey)
-          ? { ...e, ...patch, riprogrammata: toBool(patch.riprogrammata ?? e.riprogrammata) }
-          : e;
-      })
+      prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e))
     );
   };
 
   const handleRimanda = async (lesson) => {
     try {
-      // stato rimandata, MA non riprogrammata
+      // non rimuovere dalla lista (in Allievi rimangono): aggiorna stato localmente
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
@@ -286,13 +315,14 @@ export default function AllieviPage() {
     setEditMode(mode);
     setEditOpen(true);
   };
+  const closeEdit = () => setEditOpen(false);
   const handleSaved = async () => {
-    setEditOpen(false);
+    closeEdit();
     await refetchLessons();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-xl mx-auto px-4 py-3">
@@ -352,13 +382,19 @@ export default function AllieviPage() {
             Pulisci filtro
           </button>
         </div>
-        {rangeError && <div className="mt-2 text-xs text-red-600">{rangeError}</div>}
+        {rangeError && (
+          <div className="mt-2 text-xs text-red-600">
+            {rangeError}
+          </div>
+        )}
       </div>
 
       {/* Loading / Errore */}
       {loading && (
         <div className="max-w-xl mx-auto px-4 space-y-3">
-          <Skeleton h="48px" /><Skeleton h="48px" /><Skeleton h="112px" />
+          <Skeleton h="48px" />
+          <Skeleton h="48px" />
+          <Skeleton h="112px" />
         </div>
       )}
       {!loading && err && (
@@ -424,7 +460,7 @@ export default function AllieviPage() {
         </>
       )}
 
-      {/* Modale */}
+      {/* Modale modifica/riprogramma */}
       <EditLessonModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -433,6 +469,7 @@ export default function AllieviPage() {
         mode={editMode}
       />
 
+      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   );
@@ -497,18 +534,11 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
       : "--:--";
 
-  const rawState = (l.stato || "svolta").toLowerCase();
-  const isAnnullata = rawState === "annullata";
-  // 👇 “riprogrammata” SOLO se esiste history
-  const isRiprogrammata = rawState === "rimandata" && toBool(l.riprogrammata) && hasHistory(l);
-  const showState = isAnnullata ? "annullata" : (isRiprogrammata ? "riprogrammata" : rawState);
-
-  const tone =
-    showState === "annullata" ? "red"
-    : showState === "riprogrammata" ? "purple"
-    : showState === "rimandata" ? "orange"
-    : showState === "svolta" ? "green"
-    : "blue";
+  const label = statoLabel(l);
+  const tone = badgeTone(label);
+  const raw = (l.stato || "svolta").toLowerCase();
+  const isRimandata = raw === "rimandata";
+  const isAnnullata = raw === "annullata";
 
   return (
     <div
@@ -522,10 +552,10 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
           <div className="text-sm font-medium truncate">
             {l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim() : "Allievo"}
           </div>
-          <Badge tone={tone}>{showState}</Badge>
+          <Badge tone={tone}>{label}</Badge>
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
-        {l.motivazione && rawState !== "svolta" && (
+        {l.motivazione && label !== "svolta" && (
           <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
         )}
       </div>
@@ -533,7 +563,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       {/* Azioni – per stato */}
       {!isAnnullata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {rawState === "rimandata" ? (
+          {isRimandata ? (
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"

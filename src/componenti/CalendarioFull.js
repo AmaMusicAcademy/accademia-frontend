@@ -1,244 +1,200 @@
-import React, { useEffect, useMemo, useState } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import itLocale from "@fullcalendar/core/locales/it";
-import "./calendario.css";
+import React, { useMemo, useState } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import './calendario.css';
 
-function toBool(v) {
-  if (typeof v === "boolean") return v;
-  if (typeof v === "number") return v === 1;
-  if (v == null) return false;
-  const s = String(v).trim().toLowerCase();
-  return s === "true" || s === "t" || s === "1" || s === "yes";
-}
-const hasHistory = (o) => Array.isArray(o?.old_schedules) && o.old_schedules.length > 0;
+// -- helpers per etichette stato/riprogramma --
+const parseHistory = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") {
+    try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; }
+  }
+  return [];
+};
+const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
+
+const statoLabel = (l) => {
+  const raw = (l?.stato || "svolta").toLowerCase();
+  if (raw === "rimandata" && l?.riprogrammata && hasHistory(l)) return "riprogrammata";
+  return raw;
+};
+const badgeTone = (label) => {
+  if (label === "annullata") return "red";
+  if (label === "riprogrammata") return "purple";
+  if (label === "rimandata") return "orange";
+  if (label === "svolta") return "green";
+  return "gray";
+};
+
+const colori = [
+  '#007bff', '#28a745', '#ffc107', '#17a2b8',
+  '#6610f2', '#e83e8c', '#fd7e14', '#20c997'
+];
 
 export default function CalendarioFull({
   lezioni = [],
-  height,
-  listMinPx = 260,
-  bottomNavPx = 72,
-  showActions = false,
-  onOpenEdit,
-  onRimanda,
-  onAnnulla,
+  onOpenEdit = () => {},
+  onRimanda = () => {},
+  onAnnulla = () => {},
 }) {
-  const todayYMD = useMemo(
-    () =>
-      new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 10),
-    []
-  );
-  const [dataSelezionata, setDataSelezionata] = useState(todayYMD);
+  const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
+  const [dataSelezionata, setDataSelezionata] = useState('');
 
-  const colori = [
-    "#007bff", "#28a745", "#ffc107", "#17a2b8",
-    "#6610f2", "#e83e8c", "#fd7e14", "#20c997",
-  ];
+  // Filtra eventi da mostrare nel calendario:
+  // - "svolta" SEMPRE
+  // - "rimandata" SOLO se riprogrammata === true (torna in calendario)
+  // - "annullata" MAI
+  const eventi = useMemo(() => {
+    const filtered = (Array.isArray(lezioni) ? lezioni : []).filter((l) => {
+      const raw = (l.stato || "svolta").toLowerCase();
+      if (raw === "annullata") return false;
+      if (raw === "rimandata") return Boolean(l.riprogrammata) && hasHistory(l);
+      return true; // "svolta" (o altri)
+    });
 
-  const [eventi, setEventi] = useState([]);
-  useEffect(() => {
-    const mapped = (Array.isArray(lezioni) ? lezioni : [])
-      .map((l, index) => {
-        const ripro = toBool(l.riprogrammata);
-        const displayState =
-          l.stato === "annullata" ? "annullata" :
-          (l.stato === "rimandata" && ripro && hasHistory(l)) ? "riprogrammata" :
-          l.stato || "";
-        return {
-          id: l.id,
-          title: "",
-          start: l.start,
-          end: l.end,
-          color: colori[index % colori.length],
-          extendedProps: {
-            displayState,
-            riprogrammata: ripro,
-            stato: l.stato,
-            oraInizio: l.ora_inizio,
-            oraFine: l.ora_fine,
-            nome: l.nome_allievo,
-            cognome: l.cognome_allievo,
-            aula: l.aula,
-            source: { ...l, riprogrammata: ripro },
-          },
-        };
-      });
-    setEventi(mapped);
+    return filtered.map((l, index) => ({
+      id: l.id,
+      title: '',
+      start: l.start ?? `${String(l.data).slice(0,10)}T${String(l.ora_inizio).slice(0,5)}`,
+      end: l.end ?? `${String(l.data).slice(0,10)}T${String(l.ora_fine).slice(0,5)}`,
+      color: colori[index % colori.length],
+      extendedProps: {
+        ...l, // porto dentro tutto: stato, nome/cognome, aula, riprogrammata, old_schedules, ecc.
+        oraInizio: l.ora_inizio,
+        oraFine: l.ora_fine,
+        nome: l.nome_allievo,
+        cognome: l.cognome_allievo,
+      }
+    }));
   }, [lezioni]);
 
-  const [autoHeightPx, setAutoHeightPx] = useState(360);
-  useEffect(() => {
-    if (height != null) return;
-    const calc = () => {
-      const vh = window.innerHeight || 700;
-      const outerPadding = 16 * 2;
-      const gap = 8;
-      const h = Math.max(260, vh - bottomNavPx - listMinPx - outerPadding - gap);
-      setAutoHeightPx(h);
-    };
-    calc();
-    window.addEventListener("resize", calc);
-    window.addEventListener("orientationchange", calc);
-    return () => {
-      window.removeEventListener("resize", calc);
-      window.removeEventListener("orientationchange", calc);
-    };
-  }, [height, bottomNavPx, listMinPx]);
+  const handleDateClick = (info) => {
+    const day = info.dateStr;
+    setDataSelezionata(day);
 
-  const calHeightProp = height ?? autoHeightPx;
-
-  const lezioniDelGiorno = useMemo(() => {
-    const day = dataSelezionata;
-    return eventi
-      .filter((ev) => String(ev.start).slice(0, 10) === day)
-      .sort((a, b) => {
-        const ta = a.extendedProps?.oraInizio || String(a.start).slice(11, 16) || "";
-        const tb = b.extendedProps?.oraInizio || String(b.start).slice(11, 16) || "";
-        return ta.localeCompare(tb);
-      });
-  }, [eventi, dataSelezionata]);
-
-  const handleDateClick = (info) => setDataSelezionata(info.dateStr.slice(0, 10));
-  const handleEventClick = (arg) => {
-    const ds = arg?.event?.startStr?.slice(0, 10);
-    if (ds) setDataSelezionata(ds);
-  };
-
-  const fmtIT = (ymd) => {
-    try {
-      const [y, m, d] = ymd.split("-").map(Number);
-      const dt = new Date(Date.UTC(y, m - 1, d));
-      return dt.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    } catch { return ymd; }
+    const items = eventi.filter(ev => (ev.start || "").slice(0, 10) === day);
+    // Ordina per orario
+    items.sort((a, b) => (a.extendedProps.oraInizio || "").localeCompare(b.extendedProps.oraInizio || ""));
+    setLezioniDelGiorno(items);
   };
 
   return (
-    <div className="calendario-container h-full flex flex-col overflow-hidden px-2 pt-2">
-      <div className="rounded-xl bg-white shadow calendario-sticky">
+    <div className="calendario-container">
+      <div className="calendario-sticky">
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
-          locale={itLocale}
-          firstDay={1}
           events={eventi}
-          height={calHeightProp}
-          expandRows={true}
-          dayMaxEvents={true}
-          moreLinkContent={null}
-          displayEventTime={false}
           dateClick={handleDateClick}
-          eventClick={handleEventClick}
+          displayEventTime={false}
           eventContent={renderCompactDot}
-          headerToolbar={{ left: "prev,next today", center: "title", right: "" }}
+          dayMaxEvents={5}
+          moreLinkContent={null}
         />
       </div>
 
-      <div className="bg-white mt-2 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni flex-1" style={{ minHeight: 260 }}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">
-            Appuntamenti del {fmtIT(dataSelezionata)}
+      {dataSelezionata && (
+        <div className="bg-white mt-4 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni">
+          <h2 className="text-lg font-semibold mb-3">
+            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString('it-IT', {
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            })}
           </h2>
-          <button
-            className="rounded-lg border px-2 py-1 text-xs text-gray-600"
-            onClick={() => setDataSelezionata(todayYMD)}
-          >
-            Oggi
-          </button>
-        </div>
 
-        {lezioniDelGiorno.length === 0 && (
-          <p className="text-gray-500 italic">Nessuna lezione</p>
-        )}
+          {lezioniDelGiorno.length === 0 && <p className="text-gray-500 italic">Nessuna lezione</p>}
 
-        {lezioniDelGiorno.map((ev, i) => {
-          const raw = ev.extendedProps?.source || {};
-          const titolo = `${ev.extendedProps?.nome || ""} ${ev.extendedProps?.cognome || ""}`.trim() || "Lezione";
-          const oraI = ev.extendedProps?.oraInizio || String(ev.start).slice(11, 16);
-          const oraF = ev.extendedProps?.oraFine || String(ev.end).slice(11, 16);
+          {lezioniDelGiorno.map((ev, i) => {
+            const l = ev.extendedProps || {};
+            const label = statoLabel(l);
+            const tone = badgeTone(label);
+            const raw = (l.stato || "svolta").toLowerCase();
+            const isRimandata = raw === "rimandata";
+            const isAnnullata = raw === "annullata";
+            const orario = `${String(l.oraInizio || '').slice(0,5)} - ${String(l.oraFine || '').slice(0,5)}`;
 
-          const ripro = toBool(ev.extendedProps?.riprogrammata);
-          const rawState = (ev.extendedProps?.stato || "svolta").toLowerCase();
-          const showState =
-            rawState === "annullata" ? "annullata" :
-            (rawState === "rimandata" && ripro && hasHistory(raw)) ? "riprogrammata" :
-            rawState;
-
-          const tone =
-            showState === "annullata" ? "text-red-600"
-            : showState === "riprogrammata" ? "text-purple-600"
-            : showState === "rimandata" ? "text-amber-600"
-            : showState === "svolta" ? "text-green-600"
-            : "text-gray-600";
-
-          const isAnnullata = rawState === "annullata";
-          const isRimandata = rawState === "rimandata";
-
-          return (
-            <div key={ev.id || i} className="border-b py-2">
-              <div className="flex items-start justify-between gap-3">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => onOpenEdit && onOpenEdit(raw, "edit")}
-                  title="Modifica lezione"
-                >
-                  <div className="font-semibold">{titolo}</div>
-                  <div className="text-sm text-gray-700">
-                    {oraI} - {oraF}{ev.extendedProps?.aula ? ` | ${ev.extendedProps.aula}` : ""}
-                  </div>
-                  <div className={`text-xs italic ${tone}`}>({showState})</div>
-                </div>
-
-                {showActions && !isAnnullata && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isRimandata ? (
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
-                          title="Riprogramma"
-                          onClick={() => onOpenEdit && onOpenEdit(raw, "reschedule")}
-                        >
-                          Riprogramma
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla && onAnnulla(raw)}
-                        >
-                          Annulla
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
-                          title="Rimanda"
-                          onClick={() => onRimanda && onRimanda(raw)}
-                        >
-                          Rimanda
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla && onAnnulla(raw)}
-                        >
-                          Annulla
-                        </button>
-                      </>
+            return (
+              <div
+                key={`${ev.id || "k"}-${i}`}
+                className="border-b py-2 cursor-pointer"
+                title="Modifica lezione"
+                onClick={() => onOpenEdit(l, "edit")}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">
+                      {l.nome || ""} {l.cognome || ""}
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      {orario} {l.aula ? `| Aula ${l.aula}` : ""}
+                    </div>
+                    {l.motivazione && label !== "svolta" && (
+                      <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
                     )}
+                    {/* badge stato */}
+                    <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full border ${
+                      tone === "red" ? "bg-red-100 text-red-700 border-red-200" :
+                      tone === "purple" ? "bg-purple-100 text-purple-700 border-purple-200" :
+                      tone === "orange" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                      tone === "green" ? "bg-green-100 text-green-700 border-green-200" :
+                      "bg-gray-100 text-gray-700 border-gray-200"
+                    }`}>
+                      {label}
+                    </span>
                   </div>
-                )}
+
+                  {/* Azioni (click fermato per non aprire edit) */}
+                  {!isAnnullata && (
+                    <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {isRimandata ? (
+                        <>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
+                            title="Riprogramma"
+                            onClick={() => onOpenEdit(l, "reschedule")}
+                          >
+                            Riprogramma
+                          </button>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                            title="Annulla"
+                            onClick={() => onAnnulla(l)}
+                          >
+                            Annulla
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
+                            title="Rimanda"
+                            onClick={() => onRimanda(l)}
+                          >
+                            Rimanda
+                          </button>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                            title="Annulla"
+                            onClick={() => onAnnulla(l)}
+                          >
+                            Annulla
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 function renderCompactDot(arg) {
-  return <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }} />;
+  return (
+    <div className="fc-event-dot" style={{ backgroundColor: arg.event.backgroundColor }}></div>
+  );
 }

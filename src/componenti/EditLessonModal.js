@@ -6,6 +6,14 @@ const API_BASE =
     process.env.REACT_APP_API_BASE) ||
   "https://app-docenti.onrender.com";
 
+const parseHistory = (v) => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } }
+  return [];
+};
+const onlyYMD = (d) => (d ? String(d).slice(0,10) : "");
+const onlyHHMM = (t) => (t ? String(t).slice(0,5) : "");
+
 export default function EditLessonModal({ open, onClose, onSaved, lesson, mode = "edit" }) {
   const token = useMemo(() => {
     try { return localStorage.getItem("token"); } catch { return null; }
@@ -22,15 +30,15 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
 
+  const history = parseHistory(lesson?.old_schedules);
+
   useEffect(() => {
-    if (!open) return;
-    if (!lesson) return;
+    if (!open || !lesson) return;
     setErrore(null);
-    const ymd = String(lesson.data || "").slice(0,10);
     setForm({
-      data: ymd,
-      ora_inizio: lesson.ora_inizio || "",
-      ora_fine: lesson.ora_fine || "",
+      data: onlyYMD(lesson.data),
+      ora_inizio: onlyHHMM(lesson.ora_inizio),
+      ora_fine: onlyHHMM(lesson.ora_fine),
       aula: lesson.aula || "",
       motivazione: lesson.motivazione || "",
       stato: (lesson.stato || "svolta").toLowerCase()
@@ -60,7 +68,6 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     setErrore(null);
     setLoading(true);
     try {
-      // Se sto RIPROGRAMMANDO: lo stato resta "rimandata" (il backend deciderà se marcarla riprogrammata in base al cambio orario/data/aula)
       const nextState = mode === "reschedule" ? "rimandata" : form.stato;
 
       const payload = {
@@ -71,9 +78,7 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
         ora_fine: form.ora_fine,
         aula: form.aula,
         stato: nextState,
-        motivazione: form.motivazione || "",
-        // NON inviamo più riprogrammata: il backend la ricalcola se scheduleChanged
-        // riprogrammata: nextState === "rimandata" ? true : false
+        motivazione: form.motivazione || ""
       };
 
       const res = await fetch(`${API_BASE}/api/lezioni/${lesson.id}`, {
@@ -107,6 +112,21 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
           </h2>
           <button onClick={onClose} className="text-gray-500 text-xl">✕</button>
         </div>
+
+        {/* Storia programmazioni */}
+        {history.length > 0 && (
+          <div className="mb-3 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded p-2">
+            <div className="font-medium mb-1">Programmazioni precedenti</div>
+            <ul className="list-disc ml-4 space-y-0.5">
+              {history.slice().reverse().map((h, i) => (
+                <li key={i}>
+                  {onlyYMD(h.data)} {onlyHHMM(h.ora_inizio)}–{onlyHHMM(h.ora_fine)}
+                  {h.aula ? ` | Aula ${h.aula}` : ""} <span className="text-[10px] text-gray-500">({h.changed_at?.slice(0,10)})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {errore && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">{errore}</div>}
 
@@ -160,5 +180,4 @@ export default function EditLessonModal({ open, onClose, onSaved, lesson, mode =
     </div>
   );
 }
-
 
