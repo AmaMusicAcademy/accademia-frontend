@@ -24,7 +24,7 @@ export default function CalendarioLezioni() {
 
   // modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
-  const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
+  const [editMode, setEditMode] = useState("edit");
   const [editLesson, setEditLesson] = useState(null);
 
   const token = localStorage.getItem("token");
@@ -33,7 +33,6 @@ export default function CalendarioLezioni() {
     try {
       setErrore(null);
       setLoading(true);
-
       if (!BASE_URL) throw new Error("Config mancante: REACT_APP_API_URL non impostata");
       if (!token) throw new Error("Token mancante");
 
@@ -59,17 +58,19 @@ export default function CalendarioLezioni() {
 
       const lez = await res.json();
 
-      // 👇 mostra SOLO: "svolta" oppure "rimandata" con riprogrammata=true
+      // MOSTRA in calendario:
+      // - svolta
+      // - rimandata + riprogrammata TRUE + history presente
       const filtrate = (Array.isArray(lez) ? lez : [])
-        .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // 👈 normalizza
-        .filter(
-          (l) =>
-            (l.stato === "svolta" ||
-              (l.stato === "rimandata" && l.riprogrammata === true)) &&
-            safeDateStr(l.data) &&
-            l.ora_inizio &&
-            l.ora_fine
-        )
+        .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) }))
+        .filter((l) => {
+          const dateStr = safeDateStr(l.data);
+          const okBase = dateStr && l.ora_inizio && l.ora_fine;
+          if (!okBase) return false;
+          if (l.stato === "svolta") return true;
+          if (l.stato === "rimandata" && l.riprogrammata && Array.isArray(l.old_schedules) && l.old_schedules.length > 0) return true;
+          return false;
+        })
         .map((l) => {
           const dateStr = safeDateStr(l.data);
           return {
@@ -96,7 +97,7 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
-  // --- azioni dal calendario (lista giornaliera) ---
+  // --- azioni dalla lista del calendario ---
 
   const resolveLessonId = async (src) => {
     if (src?.id != null) {
@@ -153,7 +154,7 @@ export default function CalendarioLezioni() {
 
   const handleRimanda = async (lesson) => {
     try {
-      // nel calendario: sparisce subito
+      // nel calendario deve sparire subito
       setLezioni((prev) => prev.filter((e) => (e.id || e.start) !== (lesson.id || lesson.start)));
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
@@ -209,4 +210,4 @@ export default function CalendarioLezioni() {
       />
     </>
   );
-}
+} 

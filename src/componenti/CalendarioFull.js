@@ -12,6 +12,7 @@ function toBool(v) {
   const s = String(v).trim().toLowerCase();
   return s === "true" || s === "t" || s === "1" || s === "yes";
 }
+const hasHistory = (o) => Array.isArray(o?.old_schedules) && o.old_schedules.length > 0;
 
 export default function CalendarioFull({
   lezioni = [],
@@ -41,7 +42,11 @@ export default function CalendarioFull({
   useEffect(() => {
     const mapped = (Array.isArray(lezioni) ? lezioni : [])
       .map((l, index) => {
-        const ripro = toBool(l.riprogrammata); // 👈 normalizza
+        const ripro = toBool(l.riprogrammata);
+        const displayState =
+          l.stato === "annullata" ? "annullata" :
+          (l.stato === "rimandata" && ripro && hasHistory(l)) ? "riprogrammata" :
+          l.stato || "";
         return {
           id: l.id,
           title: "",
@@ -49,7 +54,7 @@ export default function CalendarioFull({
           end: l.end,
           color: colori[index % colori.length],
           extendedProps: {
-            displayState: ripro ? "riprogrammata" : (l.stato || ""),
+            displayState,
             riprogrammata: ripro,
             stato: l.stato,
             oraInizio: l.ora_inizio,
@@ -156,7 +161,10 @@ export default function CalendarioFull({
 
           const ripro = toBool(ev.extendedProps?.riprogrammata);
           const rawState = (ev.extendedProps?.stato || "svolta").toLowerCase();
-          const showState = rawState === "annullata" ? "annullata" : (ripro ? "riprogrammata" : rawState);
+          const showState =
+            rawState === "annullata" ? "annullata" :
+            (rawState === "rimandata" && ripro && hasHistory(raw)) ? "riprogrammata" :
+            rawState;
 
           const tone =
             showState === "annullata" ? "text-red-600"
@@ -166,7 +174,7 @@ export default function CalendarioFull({
             : "text-gray-600";
 
           const isAnnullata = rawState === "annullata";
-          const isRimandataOrRiprogrammata = rawState === "rimandata";
+          const isRimandata = rawState === "rimandata";
 
           return (
             <div key={ev.id || i} className="border-b py-2">
@@ -185,7 +193,7 @@ export default function CalendarioFull({
 
                 {showActions && !isAnnullata && (
                   <div className="flex items-center gap-2 shrink-0">
-                    {isRimandataOrRiprogrammata ? (
+                    {isRimandata ? (
                       <>
                         <button
                           className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"

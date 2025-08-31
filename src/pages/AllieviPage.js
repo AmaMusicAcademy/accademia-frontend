@@ -4,27 +4,18 @@ import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
 import EditLessonModal from "../componenti/EditLessonModal";
 
-// Config base API (CRA usa process.env.REACT_APP_*)
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     process.env.REACT_APP_API_BASE) ||
-  "https://app-docenti.onrender.com"; // 👈 fallback
+  "https://app-docenti.onrender.com";
 
 // --- utils ---
 function getToken() {
-  try {
-    return localStorage.getItem("token") || null;
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem("token") || null; } catch { return null; }
 }
 function jwtPayload(token) {
-  try {
-    return JSON.parse(atob(token.split(".")[1] || ""));
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(atob(token.split(".")[1] || "")); } catch { return null; }
 }
 async function fetchJSON(url, token, opts = {}) {
   const res = await fetch(url, {
@@ -44,12 +35,11 @@ async function fetchJSON(url, token, opts = {}) {
   }
   return res.json();
 }
-/** Ottieni l'id dell'insegnante: 1) /api/insegnante/me  2) fallback: username nel JWT -> match in /api/insegnanti */
 async function resolveTeacherId(token) {
   try {
     const me = await fetchJSON(`${API_BASE}/api/insegnante/me`, token);
     if (me?.id) return { id: String(me.id), profile: me };
-  } catch { /* fallback */ }
+  } catch {}
   const payload = jwtPayload(token);
   const username = payload?.username;
   if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
@@ -68,12 +58,13 @@ function toBool(v) {
   const s = String(v).trim().toLowerCase();
   return s === "true" || s === "t" || s === "1" || s === "yes";
 }
-
-function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
+function hasHistory(o) {
+  return Array.isArray(o?.old_schedules) && o.old_schedules.length > 0;
+}
+function ymd(dateLike) { return String(dateLike || "").slice(0, 10); }
 function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
 function isFromTodayOnward(lez) {
-  const ymdStr = ymd(lez.data);
-  if (!ymdStr) return false;
+  const ymdStr = ymd(lez.data); if (!ymdStr) return false;
   const lessonDay = new Date(`${ymdStr}T00:00:00`);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   return lessonDay.getTime() >= today.getTime();
@@ -104,35 +95,31 @@ export default function AllieviPage() {
   const [teacherId, setTeacherId] = useState(null);
 
   const [students, setStudents] = useState([]);
-  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // oggi → futuro (tutti gli stati)
+  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // Modale modifica/riprogramma
+  // Modale
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  // UI state
+  // UI
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
-  const [dateTo,   setDateTo]   = useState(""); // "YYYY-MM-DD"
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo,   setDateTo]   = useState("");
 
-  // primo caricamento
+  // primo load
   useEffect(() => {
     let cancel = false;
     (async () => {
       try {
-        setLoading(true);
-        setErr(null);
-
+        setLoading(true); setErr(null);
         if (!token) throw new Error("Token non presente. Esegui il login.");
         const { id } = await resolveTeacherId(token);
         if (cancel) return;
-
         setTeacherId(id);
 
-        // allievi assegnati
         const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, null);
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
@@ -147,37 +134,35 @@ export default function AllieviPage() {
     return () => { cancel = true; };
   }, [token]);
 
-  // Refetch lezioni (oggi → futuro, TUTTI gli stati)
+  // Refetch lezioni (oggi → futuro)
   const refetchLessons = async (id = teacherId) => {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
     const base = (Array.isArray(lezioni) ? lezioni : [])
-      .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // 👈 normalizza
+      .map((l) => ({ ...l, riprogrammata: toBool(l.riprogrammata) })) // normalizza
       .filter(isFromTodayOnward);
     setAllLessonsFromToday(base);
   };
 
-  // Filtro studenti (ricerca)
+  // Filtro studenti
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // Filtro lezioni per intervallo date + ricerca su allievo
+  // Filtro lezioni
   const filteredLessons = useMemo(() => {
     let list = allLessonsFromToday;
     if (dateFrom || dateTo) list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
     const q = search.trim().toLowerCase();
-    if (q) {
-      list = list.filter((l) =>
-        `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
-      );
-    }
+    if (q) list = list.filter((l) =>
+      `${l.nome_allievo || ""} ${l.cognome_allievo || ""}`.toLowerCase().includes(q)
+    );
     return list;
   }, [allLessonsFromToday, dateFrom, dateTo, search]);
 
-  // Raggruppa lezioni per giorno
+  // Raggruppo
   const lessonsByDay = useMemo(() => {
     const map = new Map();
     for (const l of filteredLessons) {
@@ -196,12 +181,10 @@ export default function AllieviPage() {
     return null;
   }, [dateFrom, dateTo]);
 
-  // --- azioni (Rimanda / Riprogramma / Annulla / Modifica) ---
+  // --- azioni ---
 
-  // verifica ID sul server, altrimenti risolvi per “chiave naturale”
   const resolveLessonId = async (src) => {
     if (!token) throw new Error("Token non presente");
-    // GET diretta
     if (src?.id != null) {
       const r = await fetch(`${API_BASE}/api/lezioni/${src.id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -212,7 +195,6 @@ export default function AllieviPage() {
         throw new Error(t || `Errore lettura lezione (${r.status})`);
       }
     }
-    // fallback: elenco lezioni dell'insegnante
     const res = await fetch(`${API_BASE}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -260,7 +242,6 @@ export default function AllieviPage() {
     return res.json().catch(() => null);
   };
 
-  // update ottimistico locale — preferisci match per id, fallback “chiave naturale”
   const patchLocal = (target, patch) => {
     setAllLessonsFromToday((prev) =>
       prev.map((e) => {
@@ -275,7 +256,7 @@ export default function AllieviPage() {
 
   const handleRimanda = async (lesson) => {
     try {
-      // 👇 assicurati che NON risulti “riprogrammata”
+      // stato rimandata, MA non riprogrammata
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
       const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
@@ -311,7 +292,7 @@ export default function AllieviPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
+    <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-xl mx-auto px-4 py-3">
@@ -371,19 +352,13 @@ export default function AllieviPage() {
             Pulisci filtro
           </button>
         </div>
-        {rangeError && (
-          <div className="mt-2 text-xs text-red-600">
-            {rangeError}
-          </div>
-        )}
+        {rangeError && <div className="mt-2 text-xs text-red-600">{rangeError}</div>}
       </div>
 
       {/* Loading / Errore */}
       {loading && (
         <div className="max-w-xl mx-auto px-4 space-y-3">
-          <Skeleton h="48px" />
-          <Skeleton h="48px" />
-          <Skeleton h="112px" />
+          <Skeleton h="48px" /><Skeleton h="48px" /><Skeleton h="112px" />
         </div>
       )}
       {!loading && err && (
@@ -436,13 +411,7 @@ export default function AllieviPage() {
                           key={`${l.id || "k"}-${i}`}
                           l={l}
                           last={i === items.length - 1}
-                          onOpenEdit={(mode) => {
-                            // passa una lezione con riprogrammata normalizzata
-                            const norm = { ...l, riprogrammata: toBool(l.riprogrammata) };
-                            setEditLesson(norm);
-                            setEditMode(mode || "edit");
-                            setEditOpen(true);
-                          }}
+                          onOpenEdit={(mode) => openEdit(l, mode || "edit")}
                           onRimanda={() => handleRimanda(l)}
                           onAnnulla={() => handleAnnulla(l)}
                         />
@@ -455,7 +424,7 @@ export default function AllieviPage() {
         </>
       )}
 
-      {/* Modale modifica/riprogramma */}
+      {/* Modale */}
       <EditLessonModal
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -464,7 +433,6 @@ export default function AllieviPage() {
         mode={editMode}
       />
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   );
@@ -531,11 +499,9 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
 
   const rawState = (l.stato || "svolta").toLowerCase();
   const isAnnullata = rawState === "annullata";
-
-  // 👇 usa riprogrammata normalizzata (toBool)
-  const isRiprogrammata = toBool(l.riprogrammata);
+  // 👇 “riprogrammata” SOLO se esiste history
+  const isRiprogrammata = rawState === "rimandata" && toBool(l.riprogrammata) && hasHistory(l);
   const showState = isAnnullata ? "annullata" : (isRiprogrammata ? "riprogrammata" : rawState);
-  const isRimandataOrRiprogrammata = rawState === "rimandata"; // pulsanti: Riprogramma/Annulla quando rimandata
 
   const tone =
     showState === "annullata" ? "red"
@@ -567,7 +533,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       {/* Azioni – per stato */}
       {!isAnnullata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-          {isRimandataOrRiprogrammata ? (
+          {rawState === "rimandata" ? (
             <>
               <button
                 className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
@@ -611,4 +577,3 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
 function Skeleton({ h = "48px" }) {
   return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }
-
