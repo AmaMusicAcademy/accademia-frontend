@@ -116,7 +116,6 @@ export default function CalendarioFull({ lezioni }) {
 
     setEventi(mapped);
 
-    // se avevi già una data selezionata, aggiorna la lista
     if (dataSelezionata) {
       const delGiorno = mapped.filter(
         (ev) => (typeof ev.start === "string" ? ev.start.slice(0,10) : "") === dataSelezionata
@@ -147,7 +146,7 @@ export default function CalendarioFull({ lezioni }) {
         const merged = { ...ev, extendedProps: ext };
         return merged;
       }).filter(visibleInCalendar); // filtra secondo visibilità aggiornata
-      // aggiorna anche lista del giorno
+
       if (dataSelezionata) {
         const delGiorno = next.filter(
           (ev) => (typeof ev.start === "string" ? ev.start.slice(0,10) : "") === dataSelezionata
@@ -166,7 +165,6 @@ export default function CalendarioFull({ lezioni }) {
         ev.extendedProps?.motivazione || ""
       );
       if (motivo === null) return;
-      // update ottimistico
       patchLocalEvent(ev, { stato: "rimandata", riprogrammata: false, motivazione: motivo });
       const realId = ev.id ?? ev.extendedProps?.id;
       if (!realId) throw new Error("ID lezione non disponibile");
@@ -193,30 +191,18 @@ export default function CalendarioFull({ lezioni }) {
   };
 
   const openEdit = (ev, mode = "edit") => {
-    // passa alla modale un “lesson-like” (quello che si aspetta il backend)
-    const l = {
-      ...(ev.extendedProps || {}),
-      start: ev.start, end: ev.end,
-    };
+    const l = { ...(ev.extendedProps || {}), start: ev.start, end: ev.end };
     setEditLesson(l);
     setEditMode(mode);
     setEditOpen(true);
   };
-  const closeEdit = () => setEditOpen(false);
-
-  // dopo salvataggio: non abbiamo il refetch qui; proviamo a riallineare alla buona
-  // Se la modale emette l’oggetto aggiornato come argomento, puoi usarlo per update locale.
   const handleSaved = (updated) => {
     setEditOpen(false);
     if (!updated) return;
-    // Applicazione locale: se da rimandata → riprogrammata, torna visibile
     setEventi((prev) => {
-      // costruisci l'evento dal dato aggiornato
       const d = ymd(updated.data);
       const start = `${d}T${hhmm(updated.ora_inizio)}`;
       const end   = `${d}T${hhmm(updated.ora_fine)}`;
-      const toLabel = statoLabel(updated);
-      // se non visibile, lo elimino; se visibile, lo (ri)aggiungo/sostituisco
       const filtered = prev.filter(e => (e.id ?? e.extendedProps?.id) !== updated.id);
       const visibile = visibleInCalendar(updated);
       if (!visibile) return filtered;
@@ -233,7 +219,6 @@ export default function CalendarioFull({ lezioni }) {
         },
       };
       const next = [...filtered, nuovo];
-      // aggiorna lista del giorno se serve
       if (dataSelezionata) {
         const delGiorno = next.filter(
           (ev) => (typeof ev.start === "string" ? ev.start.slice(0,10) : "") === dataSelezionata
@@ -244,7 +229,6 @@ export default function CalendarioFull({ lezioni }) {
     });
   };
 
-  // render helper per lista
   const renderLabelAndTone = (ev) => {
     const label = statoLabel({
       stato: ev.extendedProps?.stato,
@@ -269,120 +253,121 @@ export default function CalendarioFull({ lezioni }) {
 
   return (
     <div className="calendario-container">
-      <div className="calendario-sticky">
-        <FullCalendar
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          events={eventi}
-          dateClick={handleDateClick}
-          displayEventTime={false}
-          eventContent={renderCompactDot}
-          dayMaxEvents={5}
-          moreLinkContent={null}
-            height="auto"
-  contentHeight="auto"
-  expandRows={true}
-  fixedWeekCount={false}
-  handleWindowResize={true}
-        />
-      </div>
+      {/* 👇 gutter ai lati per calendario + lista */}
+      <div className="cal-gutters">
+        <div className="calendario-sticky calendario-compact">
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={eventi}
+            dateClick={handleDateClick}
+            displayEventTime={false}
+            eventContent={renderCompactDot}
+            dayMaxEvents={5}
+            moreLinkContent={null}
 
-      {dataSelezionata && (
-        <div className="bg-white mt-4 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni">
-          <h2 className="text-lg font-semibold mb-3">
-            Appuntamenti del {new Date(dataSelezionata).toLocaleDateString("it-IT", {
-              weekday: "long", day: "numeric", month: "long", year: "numeric",
-            })}
-          </h2>
+            /* calendario leggermente più basso ma con tutte le settimane */
+            aspectRatio={2.0}
+            expandRows={true}
+            fixedWeekCount={false}
+            handleWindowResize={true}
+          />
+        </div>
 
-          {eventiDelGiornoOrdinati.length === 0 && (
-            <p className="text-gray-500 italic">Nessuna lezione</p>
-          )}
+        {dataSelezionata && (
+          <div className="bg-white mt-4 p-4 rounded-xl shadow overflow-y-auto elenco-lezioni">
+            <h2 className="text-lg font-semibold mb-3">
+              Appuntamenti del {new Date(dataSelezionata).toLocaleDateString("it-IT", {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+              })}
+            </h2>
 
-          {eventiDelGiornoOrdinati.map((ev, i) => {
-            const ep = ev.extendedProps || {};
-            const orario = `${ep.oraInizio || hhmm(ep.ora_inizio)} – ${ep.oraFine || hhmm(ep.ora_fine)}`;
-            const { label, toneClass } = renderLabelAndTone(ev);
-            const isRimandata = label === "rimandata";
-            const isAnnullata = label === "annullata";
-            const isRiprogrammata = label === "riprogrammata";
+            {eventiDelGiornoOrdinati.length === 0 && (
+              <p className="text-gray-500 italic">Nessuna lezione</p>
+            )}
 
-            return (
-              <div
-                key={`${ev.id || "k"}-${i}`}
-                className={`flex items-center gap-3 px-3 py-2 ${i === eventiDelGiornoOrdinati.length - 1 ? "" : "border-b"} cursor-pointer`}
-                onClick={() => openEdit(ev, "edit")}
-                title="Modifica lezione"
-              >
-                <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="text-sm font-medium truncate">
-                      {(ep.nome_allievo && ep.cognome_allievo)
-                        ? `${ep.nome_allievo} ${ep.cognome_allievo}`
-                        : "Allievo"}
-                    </div>
-                    <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${toneClass}`}>
-                      {label}
-                    </span>
-                    {ep.aula ? (
-                      <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border bg-gray-100 text-gray-700 border-gray-200">
-                        Aula {ep.aula}
+            {eventiDelGiornoOrdinati.map((ev, i) => {
+              const ep = ev.extendedProps || {};
+              const orario = `${ep.oraInizio || hhmm(ep.ora_inizio)} – ${ep.oraFine || hhmm(ep.ora_fine)}`;
+              const { label, toneClass } = renderLabelAndTone(ev);
+              const isRimandata = label === "rimandata";
+              const isAnnullata = label === "annullata";
+
+              return (
+                <div
+                  key={`${ev.id || "k"}-${i}`}
+                  className={`flex items-center gap-3 px-3 py-2 ${i === eventiDelGiornoOrdinati.length - 1 ? "" : "border-b"} cursor-pointer`}
+                  onClick={() => openEdit(ev, "edit")}
+                  title="Modifica lezione"
+                >
+                  <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="text-sm font-medium truncate">
+                        {(ep.nome_allievo && ep.cognome_allievo)
+                          ? `${ep.nome_allievo} ${ep.cognome_allievo}`
+                          : "Allievo"}
+                      </div>
+                      <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${toneClass}`}>
+                        {label}
                       </span>
-                    ) : null}
-                  </div>
-                  {ep.motivazione && label !== "svolta" && (
-                    <div className="text-xs text-gray-500 mt-0.5">Motivo: {ep.motivazione}</div>
-                  )}
-                </div>
-
-                {/* Azioni a destra */}
-                {!isAnnullata && (
-                  <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {isRimandata ? (
-                      // RIMANDATA (non riprogrammata): Riprogramma + Annulla
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
-                          title="Riprogramma"
-                          onClick={() => openEdit(ev, "reschedule")}
-                        >
-                          Riprogramma
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla(ev)}
-                        >
-                          Annulla
-                        </button>
-                      </>
-                    ) : (
-                      // Tutti gli altri (svolta, riprogrammata, ecc.): Rimanda + Annulla
-                      <>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
-                          title="Rimanda"
-                          onClick={() => onRimanda(ev)}
-                        >
-                          Rimanda
-                        </button>
-                        <button
-                          className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                          title="Annulla"
-                          onClick={() => onAnnulla(ev)}
-                        >
-                          Annulla
-                        </button>
-                      </>
+                      {ep.aula ? (
+                        <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border bg-gray-100 text-gray-700 border-gray-200">
+                          Aula {ep.aula}
+                        </span>
+                      ) : null}
+                    </div>
+                    {ep.motivazione && label !== "svolta" && (
+                      <div className="text-xs text-gray-500 mt-0.5">Motivo: {ep.motivazione}</div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+
+                  {/* Azioni a destra */}
+                  {!isAnnullata && (
+                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {isRimandata ? (
+                        <>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
+                            title="Riprogramma"
+                            onClick={() => openEdit(ev, "reschedule")}
+                          >
+                            Riprogramma
+                          </button>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                            title="Annulla"
+                            onClick={() => onAnnulla(ev)}
+                          >
+                            Annulla
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
+                            title="Rimanda"
+                            onClick={() => onRimanda(ev)}
+                          >
+                            Rimanda
+                          </button>
+                          <button
+                            className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
+                            title="Annulla"
+                            onClick={() => onAnnulla(ev)}
+                          >
+                            Annulla
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Modale Modifica/Riprogramma */}
       <EditLessonModal

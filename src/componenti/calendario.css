@@ -3,7 +3,6 @@
   --fc-daygrid-event-dot-height: 6px;
 }
 
-
 .fc-daygrid-event-harness {
   display: inline-block;
   margin: 0 1px;
@@ -19,80 +18,81 @@
   margin: 0 1px;
 }
 
+/* -------- layout base -------- */
 .calendario-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  padding-bottom: 80px; /* spazio per BottomNav */
 }
 
+/* gutter laterali per calendario + lista */
+.cal-gutters {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+@media (min-width: 640px) {
+  .cal-gutters {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* la sezione calendario in alto */
 .calendario-sticky {
+  position: relative; /* niente height fisse, niente overflow nascosti */
+  z-index: 1;
+  background: white;
   flex-shrink: 0;
 }
 
+/* lista del giorno sotto */
 .elenco-lezioni {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 80px; /* spazio per la BottomNav */
+  max-height: 36vh; /* regola per dare più/meno spazio alla lista */
 }
 
-.bottom-nav {
-  position: sticky;
-  bottom: 0;
-  background-color: white;
-  border-top: 1px solid #ccc;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 1.2rem;
-}
-
-.bottom-nav ul {
-  display: flex;
-  justify-content: space-around;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 400px;
-}
+/* -------- FullCalendar tuning -------- */
 
 /* Il calendario cresce in altezza (niente scroller interni) */
 .fc .fc-scroller {
   overflow: visible !important;
 }
 
-/* Spazio per la bottom nav */
-.calendario-container {
-  padding-bottom: 80px;
+/* Variante “compact” per header e celle, così il calendario è un filo più basso */
+.calendario-compact .fc .fc-toolbar {
+  padding: 4px 8px;
+}
+.calendario-compact .fc .fc-toolbar-title {
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+.calendario-compact .fc .fc-button {
+  padding: 2px 8px;
+  font-size: 12px;
+  height: 28px;
+  line-height: 24px;
+}
+.calendario-compact .fc .fc-col-header-cell-cushion {
+  padding: 4px 0;
+  font-size: 12px;
+}
+.calendario-compact .fc .fc-daygrid-day-number {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+.calendario-compact .fc .fc-daygrid-day-frame {
+  padding: 2px;
+}
+.calendario-compact .fc .fc-daygrid-day-events {
+  margin-top: 0;
 }
 
-/* Se vuoi mantenere la parte alta “ferma” mentre scorri la pagina: */
-.calendario-sticky {
-  position: relative; /* niente height fisse, niente overflow nascosti */
-  z-index: 1;
-  background: white;
-}
+/* (classi legacy: tienile se usate altrove) */
+.bottom-nav { position: sticky; bottom: 0; background-color: white; border-top: 1px solid #ccc; padding: 10px 0; text-align: center; font-size: 1.2rem; }
+.bottom-nav ul { display: flex; justify-content: space-around; margin: 0; padding: 0; list-style: none; }
 
-/* La lista sotto il calendario può scorrere ma senza occupare tutto */
-.elenco-lezioni {
-  max-height: 36vh; /* regola questo valore se vuoi più/meno spazio */
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { background: white; padding: 20px; border-radius: 1rem; width: 90%; max-width: 400px; }
