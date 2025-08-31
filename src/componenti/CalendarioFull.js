@@ -4,16 +4,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import './calendario.css';
 
-// -- helpers per etichette stato/riprogramma --
+// helpers etichette…
 const parseHistory = (v) => {
   if (Array.isArray(v)) return v;
-  if (typeof v === "string") {
-    try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; }
-  }
+  if (typeof v === "string") { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } }
   return [];
 };
 const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
-
 const statoLabel = (l) => {
   const raw = (l?.stato || "svolta").toLowerCase();
   if (raw === "rimandata" && l?.riprogrammata && hasHistory(l)) return "riprogrammata";
@@ -41,16 +38,13 @@ export default function CalendarioFull({
   const [lezioniDelGiorno, setLezioniDelGiorno] = useState([]);
   const [dataSelezionata, setDataSelezionata] = useState('');
 
-  // Filtra eventi da mostrare nel calendario:
-  // - "svolta" SEMPRE
-  // - "rimandata" SOLO se riprogrammata === true (torna in calendario)
-  // - "annullata" MAI
+  // Solo “svolta” o “rimandata riprogrammata” nel calendario
   const eventi = useMemo(() => {
     const filtered = (Array.isArray(lezioni) ? lezioni : []).filter((l) => {
       const raw = (l.stato || "svolta").toLowerCase();
       if (raw === "annullata") return false;
       if (raw === "rimandata") return Boolean(l.riprogrammata) && hasHistory(l);
-      return true; // "svolta" (o altri)
+      return true;
     });
 
     return filtered.map((l, index) => ({
@@ -60,7 +54,7 @@ export default function CalendarioFull({
       end: l.end ?? `${String(l.data).slice(0,10)}T${String(l.ora_fine).slice(0,5)}`,
       color: colori[index % colori.length],
       extendedProps: {
-        ...l, // porto dentro tutto: stato, nome/cognome, aula, riprogrammata, old_schedules, ecc.
+        ...l,
         oraInizio: l.ora_inizio,
         oraFine: l.ora_fine,
         nome: l.nome_allievo,
@@ -72,9 +66,7 @@ export default function CalendarioFull({
   const handleDateClick = (info) => {
     const day = info.dateStr;
     setDataSelezionata(day);
-
     const items = eventi.filter(ev => (ev.start || "").slice(0, 10) === day);
-    // Ordina per orario
     items.sort((a, b) => (a.extendedProps.oraInizio || "").localeCompare(b.extendedProps.oraInizio || ""));
     setLezioniDelGiorno(items);
   };
@@ -91,6 +83,11 @@ export default function CalendarioFull({
           eventContent={renderCompactDot}
           dayMaxEvents={5}
           moreLinkContent={null}
+          /* 👇 niente scroll interni, il calendario cresce in altezza */
+          height="auto"
+          contentHeight="auto"
+          handleWindowResize={true}
+          expandRows={true}
         />
       </div>
 
@@ -131,7 +128,6 @@ export default function CalendarioFull({
                     {l.motivazione && label !== "svolta" && (
                       <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
                     )}
-                    {/* badge stato */}
                     <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full border ${
                       tone === "red" ? "bg-red-100 text-red-700 border-red-200" :
                       tone === "purple" ? "bg-purple-100 text-purple-700 border-purple-200" :
@@ -143,7 +139,6 @@ export default function CalendarioFull({
                     </span>
                   </div>
 
-                  {/* Azioni (click fermato per non aprire edit) */}
                   {!isAnnullata && (
                     <div className="shrink-0 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {isRimandata ? (

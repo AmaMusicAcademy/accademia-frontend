@@ -6,7 +6,6 @@ import EditLessonModal from "./componenti/EditLessonModal";
 
 const BASE_URL = process.env.REACT_APP_API_URL || "https://app-docenti.onrender.com";
 
-// helpers
 const ymd = (d) => (d ? String(d).slice(0, 10) : "");
 const sameKey = (o) =>
   [
@@ -32,7 +31,6 @@ export default function CalendarioLezioni() {
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  // --- auth bootstrap
   useEffect(() => {
     try {
       const t = localStorage.getItem("token");
@@ -54,7 +52,6 @@ export default function CalendarioLezioni() {
     }
   }, []);
 
-  // --- fetch lezioni
   const refetchLessons = useCallback(async () => {
     if (!teacherId || !token) return;
     try {
@@ -87,7 +84,6 @@ export default function CalendarioLezioni() {
     navigate("/login");
   }
 
-  // --- risoluzione ID robusta (se mai servisse)
   const resolveLessonId = async (src) => {
     if (!token) throw new Error("Token non presente");
     if (src?.id != null) {
@@ -95,10 +91,6 @@ export default function CalendarioLezioni() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (r.ok) return src.id;
-      if (r.status !== 404) {
-        const t = await r.text().catch(() => "");
-        throw new Error(t || `Errore lettura lezione (${r.status})`);
-      }
     }
     // fallback: cerca per “chiave naturale”
     const res = await fetch(`${BASE_URL}/api/insegnanti/${teacherId}/lezioni?t=${Date.now()}`, {
@@ -123,46 +115,42 @@ export default function CalendarioLezioni() {
     return found.id;
   };
 
-  const buildPutBody = (src, overrides = {}) => ({
-    id_insegnante: Number(src.id_insegnante),
-    id_allievo: Number(src.id_allievo),
-    data: ymd(src.data) || ymd(src.start),
-    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
-    ora_fine: src.ora_fine || (typeof src.end === "string" ? src.end.slice(11, 16) : ""),
-    aula: src.aula || "",
-    stato: src.stato || "svolta",
-    motivazione: src.motivazione || "",
-    riprogrammata: Boolean(src.riprogrammata) || false,
-    old_schedules: src.old_schedules,
-    ...overrides,
-  });
-
-  const putLesson = async (lessonId, payload) => {
-    const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}`, {
-      method: "PUT",
+  // --- nuove chiamate ai PATCH dedicati ---
+  const patchRimanda = async (lessonId, motivazione = "") => {
+    const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}/rimanda`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ motivazione }),
     });
     if (!res.ok) {
       const t = await res.text().catch(() => "");
-      throw new Error(t || `Errore aggiornamento (${res.status})`);
+      throw new Error(t || `Errore rimanda (${res.status})`);
     }
-    return res.json().catch(() => null);
+    return res.json();
+  };
+  const patchAnnulla = async (lessonId, motivazione = "") => {
+    const res = await fetch(`${BASE_URL}/api/lezioni/${lessonId}/annulla`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ motivazione }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore annulla (${res.status})`);
+    }
+    return res.json();
   };
 
-  // update ottimistico locale (mappa per “chiave naturale”)
+  // update ottimistico locale
   const patchLocal = (target, patch) => {
     setLezioni((prev) => prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e)));
   };
 
-  // --- azioni invocate da CalendarioFull (lista sotto al calendario)
   const handleRimanda = async (lesson) => {
     try {
-      // nel calendario scompare (perché non riprogrammata) ma resta nella lista della pagina Allievi
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
-      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
-      await putLesson(realId, payload);
+      await patchRimanda(realId, lesson.motivazione || "");
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
@@ -174,8 +162,7 @@ export default function CalendarioLezioni() {
     try {
       patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
-      const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
-      await putLesson(realId, payload);
+      await patchAnnulla(realId, lesson.motivazione || "");
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
@@ -183,16 +170,14 @@ export default function CalendarioLezioni() {
     }
   };
 
-  // apertura modale da: click sulla card (edit) o tasto “Riprogramma”
+  // modale
   const openEdit = (lesson, mode = "edit") => {
     setEditLesson(lesson);
     setEditMode(mode);
     setEditOpen(true);
   };
   const closeEdit = () => setEditOpen(false);
-
   const handleSaved = async () => {
-    // dopo salvataggio del modale, riallinea tutto
     closeEdit();
     await refetchLessons();
   };

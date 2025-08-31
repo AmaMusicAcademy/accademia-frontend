@@ -4,12 +4,12 @@ import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
 import EditLessonModal from "../componenti/EditLessonModal";
 
-// Config base API (CRA usa process.env.REACT_APP_*)
+// Base API: compatibile con entrambe le variabili d'ambiente usate nel progetto
 const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
-    process.env.REACT_APP_API_BASE) ||
-  "https://app-docenti.onrender.com"; // 👈 fallback
+    (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
+  "https://app-docenti.onrender.com";
 
 // --- utils ---
 function getToken() {
@@ -63,6 +63,11 @@ async function resolveTeacherId(token) {
 
 function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
 function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
+function isoFromDateTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+  const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+  return `${dateStr}T${t}`;
+}
 function isFromTodayOnward(lez) {
   const ymdStr = ymd(lez.data);
   if (!ymdStr) return false;
@@ -77,41 +82,26 @@ function inRangeInclusive(lez, startYMD, endYMD) {
   if (endYMD && day > endYMD) return false;
   return true;
 }
-function isoFromDateTime(dateStr, timeStr) {
-  if (!dateStr || !timeStr) return null;
-  const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
-  return `${dateStr}T${t}`;
-}
 const sameKey = (o) =>
-  [ymd(o.data) || ymd(o.start),
-   o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11,16) : ""),
-   o.ora_fine   || (typeof o.end   === "string" ? o.end.slice(11,16)   : ""),
-   String(o.id_allievo || ""),
-   String(o.aula || "")]
-  .join("|");
+  [
+    ymd(o.data) || ymd(o.start),
+    o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11,16) : ""),
+    o.ora_fine   || (typeof o.end   === "string" ? o.end.slice(11,16)   : ""),
+    String(o.id_allievo || ""),
+    String(o.aula || "")
+  ].join("|");
 
-// -- helpers per etichette stato/riprogramma --
+// history helpers per etichetta “riprogrammata”
 const parseHistory = (v) => {
   if (Array.isArray(v)) return v;
-  if (typeof v === "string") {
-    try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; }
-  }
+  if (typeof v === "string") { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } }
   return [];
 };
 const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
-
 const statoLabel = (l) => {
   const raw = (l?.stato || "svolta").toLowerCase();
-  // "riprogrammata" è una label di comodo quando la lezione è stata rimandata e poi riprogrammata (con history)
   if (raw === "rimandata" && l?.riprogrammata && hasHistory(l)) return "riprogrammata";
-  return raw; // svolta | rimandata | annullata
-};
-const badgeTone = (label) => {
-  if (label === "annullata") return "red";
-  if (label === "riprogrammata") return "purple";
-  if (label === "rimandata") return "orange";
-  if (label === "svolta") return "green";
-  return "gray";
+  return raw;
 };
 
 // --- component ---
@@ -249,31 +239,30 @@ export default function AllieviPage() {
     return found.id;
   };
 
-  const buildPutBody = (src, overrides = {}) => ({
-    id_insegnante: Number(src.id_insegnante),
-    id_allievo: Number(src.id_allievo),
-    data: ymd(src.data) || ymd(src.start),
-    ora_inizio: src.ora_inizio || (typeof src.start === "string" ? src.start.slice(11,16) : ""),
-    ora_fine:   src.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11,16)   : ""),
-    aula: src.aula || "",
-    stato: src.stato || "svolta",
-    motivazione: src.motivazione || "",
-    riprogrammata: Boolean(src.riprogrammata) || false,
-    old_schedules: src.old_schedules,
-    ...overrides,
-  });
-
-  const putLesson = async (lessonId, payload) => {
-    const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}`, {
-      method: "PUT",
+  // PATCH dedicati: non toccano data/ora/aula
+  const patchRimanda = async (lessonId, motivazione = "") => {
+    const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}/rimanda`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ motivazione }),
     });
     if (!res.ok) {
       const t = await res.text().catch(() => "");
-      throw new Error(t || `Errore aggiornamento (${res.status})`);
+      throw new Error(t || `Errore rimanda (${res.status})`);
     }
-    return res.json().catch(() => null);
+    return res.json();
+  };
+  const patchAnnulla = async (lessonId, motivazione = "") => {
+    const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}/annulla`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ motivazione }),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(t || `Errore annulla (${res.status})`);
+    }
+    return res.json();
   };
 
   // update ottimistico locale
@@ -285,11 +274,10 @@ export default function AllieviPage() {
 
   const handleRimanda = async (lesson) => {
     try {
-      // non rimuovere dalla lista (in Allievi rimangono): aggiorna stato localmente
+      // NON togliere dalla lista Allievi; cambia solo stato localmente
       patchLocal(lesson, { stato: "rimandata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
-      const payload = buildPutBody(lesson, { stato: "rimandata", riprogrammata: false });
-      await putLesson(realId, payload);
+      await patchRimanda(realId, lesson.motivazione || "");
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nel rimandare la lezione");
@@ -301,8 +289,7 @@ export default function AllieviPage() {
     try {
       patchLocal(lesson, { stato: "annullata", riprogrammata: false });
       const realId = await resolveLessonId(lesson);
-      const payload = buildPutBody(lesson, { stato: "annullata", riprogrammata: false });
-      await putLesson(realId, payload);
+      await patchAnnulla(realId, lesson.motivazione || "");
       await refetchLessons();
     } catch (e) {
       alert(e.message || "Errore nell'annullare la lezione");
@@ -525,20 +512,24 @@ function Badge({ children, tone = "gray" }) {
     </span>
   );
 }
-
 function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
   const startISO = isoFromDateTime(ymd(l.data), l.ora_inizio);
   const endISO = isoFromDateTime(ymd(l.data), l.ora_fine);
   const orario =
     startISO && endISO
       ? `${format(new Date(startISO), "HH:mm")} – ${format(new Date(endISO), "HH:mm")}`
-      : "--:--";
+      : `${hhmm(l.ora_inizio)} – ${hhmm(l.ora_fine)}`;
 
   const label = statoLabel(l);
-  const tone = badgeTone(label);
-  const raw = (l.stato || "svolta").toLowerCase();
-  const isRimandata = raw === "rimandata";
-  const isAnnullata = raw === "annullata";
+  const isRimandata = label === "rimandata";
+  const isAnnullata = label === "annullata";
+  const isRiprogrammata = label === "riprogrammata";
+
+  const tone =
+    isAnnullata ? "red"
+    : isRiprogrammata ? "purple"
+    : isRimandata ? "orange"
+    : (label === "svolta" ? "green" : "blue");
 
   return (
     <div
@@ -561,7 +552,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
       </div>
 
       {/* Azioni – per stato */}
-      {!isAnnullata && (
+      {!isAnnullata && !isRiprogrammata && (
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
           {isRimandata ? (
             <>
@@ -603,7 +594,6 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla }) {
     </div>
   );
 }
-
 function Skeleton({ h = "48px" }) {
   return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }

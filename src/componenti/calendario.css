@@ -74,3 +74,25 @@
   width: 90%;
   max-width: 400px;
 }
+
+/* Il calendario cresce in altezza (niente scroller interni) */
+.fc .fc-scroller {
+  overflow: visible !important;
+}
+
+/* Spazio per la bottom nav */
+.calendario-container {
+  padding-bottom: 80px;
+}
+
+/* Se vuoi mantenere la parte alta “ferma” mentre scorri la pagina: */
+.calendario-sticky {
+  position: relative; /* niente height fisse, niente overflow nascosti */
+  z-index: 1;
+  background: white;
+}
+
+/* La lista sotto il calendario può scorrere ma senza occupare tutto */
+.elenco-lezioni {
+  max-height: 36vh; /* regola questo valore se vuoi più/meno spazio */
+}
