@@ -57,33 +57,42 @@ const ProfiloAdmin = () => {
         </div>
 
         {/* Sezione Gestione */}
-<div>
-  <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Gestione</h3>
-  <div className="bg-white rounded-xl shadow-sm divide-y">
-    <button
-      onClick={() => navigate('/admin/insegnanti')}
-      className="w-full text-left p-4 flex items-center justify-between"
-    >
-      <span>👨‍🏫 Insegnanti</span>
-      <span className="text-gray-400">›</span>
-    </button>
-    <button
-      onClick={() => navigate('/admin/allievi')}
-      className="w-full text-left p-4 flex items-center justify-between"
-    >
-      <span>🎓 Allievi</span>
-      <span className="text-gray-400">›</span>
-    </button>
-    <button
-      onClick={() => navigate('/admin/aule')}
-      className="w-full text-left p-4 flex items-center justify-between"
-    >
-      <span>🏫 Aule</span>
-      <span className="text-gray-400">›</span>
-    </button>
-   </div>
-  </div>
- </div>
+        <div>
+          <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Gestione</h3>
+          <div className="bg-white rounded-xl shadow-sm divide-y">
+            <button
+              onClick={() => navigate('/admin/insegnanti')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>👨‍🏫 Insegnanti</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/allievi')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>🎓 Allievi</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            <button
+              onClick={() => navigate('/admin/aule')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>🏫 Aule</span>
+              <span className="text-gray-400">›</span>
+            </button>
+            {/* 👇 NUOVA VOCE */}
+            <button
+              onClick={() => navigate('/admin/pagamenti')}
+              className="w-full text-left p-4 flex items-center justify-between"
+            >
+              <span>💶 Pagamenti</span>
+              <span className="text-gray-400">›</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Bottom nav */}
       <BottomNavAdmin />
     </div>
