@@ -62,8 +62,8 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
         onClick={() => navigate('/admin/pagamenti')}
         className={`text-center ${isActive('/admin/pagamenti') ? 'text-blue-600' : 'text-gray-500'}`}
       >
-        <div>💰</div>
-        <div className="text-xs">Pagamenti</div>
+        <div className="text-xl">🎓</div>
+        <div className="text-xs">Allievi</div>
       </button>
     </div>
   );

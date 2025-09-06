@@ -15,7 +15,8 @@ import CambiaAvatar from './pages/CambiaAvatar';
 import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
-import AdminAllievi from './pages/AdminAllievi';
+import AdminAllievi from './pages/AllieviAdminPage';
+import AdminAllieviInfo from './pages/AdminAllievi';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
@@ -101,11 +102,14 @@ function App() {
   <Route path="/admin" element={
     <ProtectedRoute element={<ProfiloAdmin />} allowedRoles={['admin']} />
   } />
+  <Route path="/admin/allievi_info" element={
+    <ProtectedRoute element={<AdminAllieviInfo />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/allievi_info/:id" element={
+    <ProtectedRoute element={<DettaglioAllievo />} allowedRoles={['admin']} />
+  } />
   <Route path="/admin/allievi" element={
     <ProtectedRoute element={<AdminAllievi />} allowedRoles={['admin']} />
-  } />
-  <Route path="/admin/allievi/:id" element={
-    <ProtectedRoute element={<DettaglioAllievo />} allowedRoles={['admin']} />
   } />
   <Route path="/admin/insegnanti" element={
     <ProtectedRoute element={<AdminInsegnanti />} allowedRoles={['admin']} />
