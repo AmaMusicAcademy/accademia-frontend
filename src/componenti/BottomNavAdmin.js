@@ -57,10 +57,10 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
         </button>
       )}
 
-      {/* Pagamenti */}
+      {/* Lista Lezioni */}
       <button
-        onClick={() => navigate('/admin/pagamenti')}
-        className={`text-center ${isActive('/admin/pagamenti') ? 'text-blue-600' : 'text-gray-500'}`}
+        onClick={() => navigate('/admin/allievi_lesson')}
+        className={`text-center ${isActive('/admin/allievi_lesson') ? 'text-blue-600' : 'text-gray-500'}`}
       >
         <div className="text-xl">🎓</div>
         <div className="text-xs">Allievi</div>
