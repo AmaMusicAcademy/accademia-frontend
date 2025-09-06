@@ -16,7 +16,7 @@ import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
-import AdminLessonTotal from '.pages/AllieviAdminPages.js';
+import AdminLessonTotal from './pages/AllieviAdminPages.js';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
