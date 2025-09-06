@@ -172,8 +172,12 @@ export default function AllieviPage() {
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // Filtro lezioni per intervallo date + ricerca + stato
-  const filteredLessons = useMemo(() => {
+  // ─────────────────────────────────────────────────────────
+  // NUOVO: baseFiltered + statusCounts + filteredLessons
+  // ─────────────────────────────────────────────────────────
+
+  // 1) Base filtrata da date + ricerca (NO filtro stato qui)
+  const baseFiltered = useMemo(() => {
     let list = allLessonsFromToday;
 
     // filtro intervallo date
@@ -187,16 +191,29 @@ export default function AllieviPage() {
       );
     }
 
-    // filtro per stato (se uno o più checkbox selezionati)
+    return list;
+  }, [allLessonsFromToday, dateFrom, dateTo, search]);
+
+  // 2) Contatori per stato (pre-filtro-stato)
+  const statusCounts = useMemo(() => {
+    const counts = { svolta: 0, annullata: 0, riprogrammata: 0, rimandata: 0 };
+    for (const l of baseFiltered) {
+      const s = statoLabel(l);
+      if (counts[s] != null) counts[s] += 1;
+      else counts[s] = 1; // salvaguardia
+    }
+    return counts;
+  }, [baseFiltered]);
+
+  // 3) Lista finale applicando i checkbox stato
+  const filteredLessons = useMemo(() => {
     const activeStates = Object.entries(statusOnly)
       .filter(([, v]) => v)
       .map(([k]) => k);
-    if (activeStates.length > 0) {
-      list = list.filter((l) => activeStates.includes(statoLabel(l)));
-    }
 
-    return list;
-  }, [allLessonsFromToday, dateFrom, dateTo, search, statusOnly]);
+    if (activeStates.length === 0) return baseFiltered;
+    return baseFiltered.filter((l) => activeStates.includes(statoLabel(l)));
+  }, [baseFiltered, statusOnly]);
 
   // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
@@ -399,7 +416,7 @@ export default function AllieviPage() {
           </button>
         </div>
 
-        {/* ⚡ Filtro STATO */}
+        {/* ⚡ Filtro STATO con contatori */}
         <div className="mt-3">
           <div className="text-xs font-medium text-gray-600 mb-1">Mostra solo:</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -409,7 +426,7 @@ export default function AllieviPage() {
                 checked={statusOnly.svolta}
                 onChange={() => toggleStatus("svolta")}
               />
-              <span>Svolte</span>
+              <span>Svolte ({statusCounts.svolta || 0})</span>
             </label>
             <label className="flex items-center gap-2 text-xs">
               <input
@@ -417,7 +434,7 @@ export default function AllieviPage() {
                 checked={statusOnly.annullata}
                 onChange={() => toggleStatus("annullata")}
               />
-              <span>Annullate</span>
+              <span>Annullate ({statusCounts.annullata || 0})</span>
             </label>
             <label className="flex items-center gap-2 text-xs">
               <input
@@ -425,7 +442,7 @@ export default function AllieviPage() {
                 checked={statusOnly.riprogrammata}
                 onChange={() => toggleStatus("riprogrammata")}
               />
-              <span>Riprogrammate</span>
+              <span>Riprogrammate ({statusCounts.riprogrammata || 0})</span>
             </label>
             <label className="flex items-center gap-2 text-xs">
               <input
@@ -433,7 +450,7 @@ export default function AllieviPage() {
                 checked={statusOnly.rimandata}
                 onChange={() => toggleStatus("rimandata")}
               />
-              <span>Rimandate</span>
+              <span>Rimandate ({statusCounts.rimandata || 0})</span>
             </label>
           </div>
           <div className="mt-2">
