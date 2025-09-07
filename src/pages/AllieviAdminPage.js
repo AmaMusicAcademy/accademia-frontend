@@ -72,7 +72,7 @@ const parseHistory = (v) => {
 const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
 const statoLabel = (l) => {
   const raw = (l?.stato || "svolta").toLowerCase();
-  if (raw === "rimandata" && l?.riprogrammata && hasHistory(l)) return "riprogrammata";
+  if (raw === "rimandata" && l?.riprogrammata === true) return "riprogrammata";
   return raw;
 };
 
