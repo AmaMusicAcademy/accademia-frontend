@@ -22,6 +22,7 @@ import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
 import CalendarioAdmin from './pages/CalendarioAdmin';
 import AdminPagamenti from './pages/AdminPagamenti';
+import AllieviEdit from './pages/AllievoEditPage';
 import { Navigate } from 'react-router-dom';
 
 function ProtectedRoute({ element, allowedRoles }) {
@@ -122,6 +123,9 @@ function App() {
   } />
   <Route path="/admin/pagamenti" element={
     <ProtectedRoute element={<AdminPagamenti />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/allievi/:id/modifica" element={
+    <ProtectedRoute element={<AllieviEdit />} allowedRoles={['admin']} />
   } />
 </Routes>
 
