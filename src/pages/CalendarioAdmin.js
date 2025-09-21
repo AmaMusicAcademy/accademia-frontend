@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import CalendarioLezioni from "../CalendarioLezioni";
 import BottomNavAdmin from "../componenti/BottomNavAdmin";
-import AddLezioneModalAdmin from "../componenti/AddLezioneModalAdmin";
+import EditLessonModal from "../componenti/EditLessonModal"; // ✅ stessa modale del docente
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
@@ -10,7 +10,11 @@ export default function CalendarioAdmin() {
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
-  const [showAdd, setShowAdd] = useState(false);
+
+  // ✅ stato modale unificata
+  const [editOpen, setEditOpen] = useState(false);
+  const [editMode, setEditMode] = useState("create"); // "create" | "edit" | "reschedule"
+  const [editLesson, setEditLesson] = useState(null);  // null => creazione
 
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
@@ -58,6 +62,18 @@ export default function CalendarioAdmin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // ✅ handler per "+" (nuova lezione)
+  const openAddLesson = () => {
+    setEditLesson(null);
+    setEditMode("create");
+    setEditOpen(true);
+  };
+  const closeModal = () => setEditOpen(false);
+  const handleSaved = async () => {
+    setEditOpen(false);
+    await refetch();
+  };
+
   return (
     <>
       <CalendarioLezioni
@@ -69,19 +85,19 @@ export default function CalendarioAdmin() {
         mostraInsegnante={true}
       />
 
-      {/* Modale nuova lezione */}
-      {showAdd && (
-        <AddLezioneModalAdmin
-          onClose={() => setShowAdd(false)}
-          onCreated={() => {
-            setShowAdd(false);
-            refetch();
-          }}
-        />
-      )}
+      {/* ✅ Modale unificata (aule select + lezioni ricorrenti) */}
+      <EditLessonModal
+        open={editOpen}
+        onClose={closeModal}
+        onSaved={handleSaved}
+        lesson={editLesson}      // null => creazione
+        mode={editMode}
+        allowRecurring={true}    // 👈 abilita lezioni ricorrenti
+        showTeacherSelect={true} // 👈 select insegnante obbligatoria lato admin
+      />
 
-      {/* Bottom bar con "+" quando sei su /admin/calendario */}
-      <BottomNavAdmin onAdd={() => setShowAdd(true)} />
+      {/* Bottom bar con "+" su /admin/calendario */}
+      <BottomNavAdmin onAdd={openAddLesson} />
     </>
   );
 }
