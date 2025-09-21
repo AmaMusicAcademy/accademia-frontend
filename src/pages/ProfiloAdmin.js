@@ -89,6 +89,19 @@ const ProfiloAdmin = () => {
               <span>💶 Pagamenti</span>
               <span className="text-gray-400">›</span>
             </button>
+            <button
+  className="bg-red-600 text-white px-4 py-2 rounded"
+  onClick={async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("https://app-docenti.onrender.com/api/reset-beta", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+  }}
+>
+  🔴 Reset Beta
+</button>
           </div>
         </div>
       </div>
