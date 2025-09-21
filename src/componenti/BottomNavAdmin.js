@@ -12,10 +12,12 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
   const isAllievoDettaglio = /^\/admin\/allievi\/\d+$/.test(location.pathname);
   const isInsegnanteDettaglio = /^\/admin\/insegnanti\/\d+$/.test(location.pathname);
   const isCalendario = location.pathname.startsWith('/admin/calendario');
+  const isAuleList = location.pathname === '/admin/aule';
 
-  const showAddCentral = isAllieviList || isInsegnantiList || isCalendario;
+  // mostriamo il pallino centrale "+" anche su aule
+  const showAddCentral = isAllieviList || isInsegnantiList || isCalendario || isAuleList;
 
-  // 👇 fallback: se sei su /admin/allievi/:id e non passi onEdit,
+  // fallback: se sei su /admin/allievi/:id e non passi onEdit,
   // ricava l'id e naviga a /admin/allievi/:id/modifica
   const handleEdit = () => {
     if (typeof onEdit === 'function') {
@@ -27,7 +29,9 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
       const id = match?.[1];
       if (id) navigate(`/admin/allievi/${id}/modifica`);
     } else if (isInsegnanteDettaglio) {
-      // qui volendo puoi gestire anche il dettaglio insegnante
+      const match = location.pathname.match(/^\/admin\/insegnanti\/(\d+)$/);
+      const id = match?.[1];
+      if (id) navigate(`/admin/insegnanti/${id}/modifica`);
     }
   };
 
@@ -36,7 +40,15 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
       {/* Profilo */}
       <button
         onClick={() => navigate('/admin')}
-        className={`text-center ${isActive('/admin') && !isAllieviList && !isAllievoDettaglio && !isCalendario ? 'text-blue-600' : 'text-gray-500'}`}
+        className={`text-center ${
+          isActive('/admin') &&
+          !isAllieviList &&
+          !isAllievoDettaglio &&
+          !isCalendario &&
+          !isAuleList
+            ? 'text-blue-600'
+            : 'text-gray-500'
+        }`}
       >
         <div>👤</div>
         <div className="text-xs">Profilo</div>
@@ -48,11 +60,11 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
           onClick={onAdd}
           className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10"
           aria-label="Aggiungi"
-          title="Nuova lezione"
+          title="Aggiungi"
         >
           +
         </button>
-      ) : (isAllievoDettaglio || isInsegnanteDettaglio) ? (
+      ) : isAllievoDettaglio || isInsegnanteDettaglio ? (
         <button
           onClick={handleEdit}
           className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10"
@@ -72,7 +84,7 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
         </button>
       )}
 
-      {/* Lista Lezioni */}
+      {/* Lista Allievi */}
       <button
         onClick={() => navigate('/admin/allievi_lesson')}
         className={`text-center ${isActive('/admin/allievi_lesson') ? 'text-blue-600' : 'text-gray-500'}`}
