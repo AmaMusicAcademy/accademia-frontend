@@ -8,6 +8,8 @@ const API_BASE =
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
   "https://app-docenti.onrender.com";
 
+const YEAR_NOW = new Date().getFullYear();
+
 function getToken() {
   try { return localStorage.getItem("token") || null; } catch { return null; }
 }
@@ -62,7 +64,11 @@ export default function AllievoEditPage() {
     data_iscrizione: "",    // YYYY-MM-DD
   });
 
-  // carica dati allievo
+  // 👇 Stato quota associativa anno corrente
+  const [qaPagata, setQaPagata] = useState(false);
+  const [qaData, setQaData] = useState(null); // stringa ISO o null
+
+  // carica dati allievo + quota associativa anno corrente
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -71,6 +77,7 @@ export default function AllievoEditPage() {
         setLoading(true);
         setErr(null);
 
+        // 1) Anagrafica
         const data = await fetchJSON(`${API_BASE}/api/allievi/${id}`, token);
         if (cancel) return;
 
@@ -82,6 +89,19 @@ export default function AllievoEditPage() {
           quota_mensile: data?.quota_mensile != null ? String(data.quota_mensile) : "",
           data_iscrizione: (data?.data_iscrizione || "").slice(0,10),
         });
+
+        // 2) Quota associativa - anno corrente
+        try {
+          const list = await fetchJSON(`${API_BASE}/api/allievi/${id}/quote-associative`, token);
+          if (cancel) return;
+          const cur = Array.isArray(list) ? list.find(r => Number(r.anno) === YEAR_NOW) : null;
+          setQaPagata(!!cur?.pagata);
+          setQaData(cur?.data_pagamento || null);
+        } catch {
+          // se endpoint non disponibile o vuoto, lascia default
+          setQaPagata(false);
+          setQaData(null);
+        }
       } catch (e) {
         if (!cancel) setErr(e.message || "Errore di caricamento.");
       } finally {
@@ -128,10 +148,25 @@ export default function AllievoEditPage() {
         data_iscrizione: form.data_iscrizione || null,
       };
 
+      // 1) Salva anagrafica
       await fetchJSON(`${API_BASE}/api/allievi/${id}`, token, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
+
+      // 2) Upsert quota associativa anno corrente
+      try {
+        await fetchJSON(`${API_BASE}/api/allievi/${id}/quota-associativa`, token, {
+          method: "POST",
+          body: JSON.stringify({
+            anno: YEAR_NOW,
+            pagata: !!qaPagata
+          }),
+        });
+      } catch (e) {
+        // non bloccare il flusso principale ma segnala l’errore
+        console.warn("Errore quota associativa:", e?.message || e);
+      }
 
       setOkMsg("Dati salvati con successo.");
       // torna alla scheda allievo
@@ -237,6 +272,25 @@ export default function AllievoEditPage() {
                 className="w-full rounded-xl border px-3 py-2 text-sm"
               />
             </Field>
+
+            {/* 👇 Blocco QUOTA ASSOCIATIVA */}
+            <div className="p-3 rounded-xl border bg-white">
+              <div className="text-sm font-medium mb-2">Quota associativa {YEAR_NOW}</div>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={qaPagata}
+                  onChange={(e) => setQaPagata(e.target.checked)}
+                />
+                <span>
+                  {qaPagata ? <b>Saldata</b> : <b>Da saldare</b>}
+                  {qaData ? ` · pagamento del ${(qaData || '').slice(0,10)}` : ''}
+                </span>
+              </label>
+              <div className="text-xs text-gray-500 mt-1">
+                Il salvataggio aggiorna/crea il record della quota per l’anno corrente.
+              </div>
+            </div>
 
             <div className="pt-2 flex gap-2">
               <button
