@@ -89,7 +89,7 @@ const ProfiloAdmin = () => {
               <span>💶 Pagamenti</span>
               <span className="text-gray-400">›</span>
             </button>
-            <button onclick="https://app-docenti.onrender.com/api/admin/align-insegnanti-utenti?normalize=true&apply=true">RESET</button>
+            <button onclick="location.href='https://app-docenti.onrender.com/api/admin/align-insegnanti-utenti?normalize=true&apply=true'">RESET</button>
 
           </div>
         </div>
