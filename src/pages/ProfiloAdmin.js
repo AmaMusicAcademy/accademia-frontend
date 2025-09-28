@@ -89,7 +89,44 @@ const ProfiloAdmin = () => {
               <span>💶 Pagamenti</span>
               <span className="text-gray-400">›</span>
             </button>
-            <input type="button" value="My Button" onclick="location.href = 'https://app-docenti.onrender.com/api/admin/align-insegnanti-utenti?normalize=true&apply=true'" />
+            {/* 🔧 Bottone allineamento insegnanti ↔ utenti */}
+<li
+  className="bg-white px-4 py-3 text-red-600 font-semibold rounded-lg shadow cursor-pointer"
+  onClick={async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("⚠️ Nessun token trovato, rifai login come admin.");
+        return;
+      }
+
+      const res = await fetch(
+        "https://app-docenti.onrender.com/api/admin/align-insegnanti-utenti?normalize=true&apply=true",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Errore ${res.status}: ${text}`);
+      }
+
+      const data = await res.json();
+      console.log("Allineamento completato:", data);
+      alert("✅ Allineamento completato!\nControlla la console per i dettagli.");
+    } catch (err) {
+      console.error("Errore allineamento:", err);
+      alert("❌ Errore durante l'allineamento, guarda la console.");
+    }
+  }}
+>
+  Allinea insegnanti ↔ utenti
+</li>
 
           </div>
         </div>
