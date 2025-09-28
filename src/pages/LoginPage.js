@@ -11,12 +11,12 @@ function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberCreds, setRememberCreds] = useState(false);
-  const [staySignedIn, setStaySignedIn] = useState(true); // già effettivo con localStorage
+  const [staySignedIn, setStaySignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState('');
   const navigate = useNavigate();
 
-  // Prefill da credenziali salvate + autologin se token presente
+  // Prefill + autologin se token presente
   useEffect(() => {
     try {
       const savedU = localStorage.getItem('savedUsername') || '';
@@ -30,7 +30,6 @@ function LoginPage() {
       const token = localStorage.getItem('token');
       const ruolo = localStorage.getItem('ruolo');
       if (token && ruolo) {
-        // autologin immediato
         if (ruolo === 'admin') navigate('/admin');
         else navigate('/insegnante/profilo');
       }
@@ -44,7 +43,7 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      // username insensibile a maiuscole/minuscole
+      // username case-insensitive
       const normalizedUsername = (username || '').trim().toLowerCase();
 
       const res = await fetch(`${API_BASE}/api/login`, {
@@ -56,29 +55,38 @@ function LoginPage() {
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      // Provo a leggere JSON, fallback testo grezzo per errori non-json
+      let data = {};
+      try { data = await res.json(); } catch { data = {}; }
 
       if (!res.ok) {
-        setErrore(data.message || 'Credenziali non valide');
+        const msg = data?.message || 'Credenziali non valide';
+        setErrore(msg);
+        // se c'è un token vecchio sporco lo rimuovo
+        localStorage.removeItem('token');
+        localStorage.removeItem('ruolo');
+        localStorage.removeItem('username');
+        localStorage.removeItem('utente');
         return;
       }
 
-      // Oggetto utente (alcuni campi potrebbero non arrivare dal backend: ok)
+      // Dal backend arrivano: token, ruolo, username, (opzionale) insegnanteId
       const utente = {
         username: data.username || normalizedUsername,
         ruolo: data.ruolo,
-        id: data.id || null,
+        // niente "id": è l'id UTENTE, non serve al frontend
+        insegnanteId: data.insegnanteId ?? null, // <-- importane!
         nome: data.nome || '',
         cognome: data.cognome || ''
       };
 
-      // 🔑 persistiamo la sessione in localStorage (così non si riloggano ad ogni accesso)
+      // Persisto sessione
       localStorage.setItem('token', data.token);
       localStorage.setItem('ruolo', data.ruolo);
       localStorage.setItem('username', utente.username);
       localStorage.setItem('utente', JSON.stringify(utente));
 
-      // opzionale: salvataggio credenziali per prefill
+      // Opzionale: salvataggio credenziali per prefill
       if (rememberCreds) {
         localStorage.setItem('savedUsername', normalizedUsername);
         localStorage.setItem('savedPassword', password);
@@ -87,13 +95,14 @@ function LoginPage() {
         localStorage.removeItem('savedPassword');
       }
 
-      // (staySignedIn è già effettivo perché usiamo localStorage; lo mantengo per futura gestione sessionStorage se servisse)
+      // Rimani connesso: usiamo localStorage, quindi è già “persistente”
       localStorage.setItem('staySignedIn', staySignedIn ? '1' : '0');
 
       // Redirect in base al ruolo
       if (data.ruolo === 'admin') {
         navigate('/admin');
       } else {
+        // Suggerimento: usa /api/insegnante/me nel componente profilo e NON /api/insegnanti/:id
         navigate('/insegnante/profilo');
       }
     } catch (err) {
@@ -162,7 +171,6 @@ function LoginPage() {
           {loading ? 'Accesso in corso…' : 'Accedi'}
         </button>
 
-        {/* Nota su case-insensitive */}
         <p className="text-xs text-gray-500 mt-3">
           Suggerimento: il nome utente non distingue tra maiuscole e minuscole.
         </p>
