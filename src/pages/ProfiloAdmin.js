@@ -83,7 +83,7 @@ const ProfiloAdmin = () => {
             </button>
             {/* 👇 NUOVA VOCE */}
             <button
-              onClick={() => navigate('/admin/pagamenti')}
+              onClick={() => navigate('https://app-docenti.onrender.com/api/admin/align-insegnanti-utenti?normalize=true&apply=true')}
               className="w-full text-left p-4 flex items-center justify-between"
             >
               <span>💶 Pagamenti</span>
