@@ -1,11 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import CalendarioLezioni from "../CalendarioLezioni";
 import BottomNav from "../componenti/BottomNav";
-
-// ✅ URL backend da .env (es: REACT_APP_API_URL=https://app-docenti.onrender.com)
-const BASE_URL = process.env.REACT_APP_API_URL;
+import { apiFetch, getInsegnanteId } from "../utils/api"; // 👈 wrapper + id dal token
 
 // Helpers
 const safeDateStr = (d) => {
@@ -27,64 +24,33 @@ export default function CalendarioPersonale() {
   const [cognome, setCognome] = useState("");
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
-  const [calendarKey, setCalendarKey] = useState(0); // 👈 forza il remount del calendario
+  const [calendarKey, setCalendarKey] = useState(0); // forza remount calendario
 
-  const fetchNoStore = (url, options = {}) =>
-    fetch(url, {
-      ...options,
-      cache: "no-store",
-      headers: {
-        ...(options.headers || {}),
-      },
-    });
+  const doLogout = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("utente");
+    navigate("/login");
+  }, [navigate]);
 
-  const fetchDati = async () => {
+  const fetchDati = useCallback(async () => {
     try {
       setErrore(null);
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token non trovato");
 
-      // Decodifica id dal JWT
-      let id;
-      try {
-        const decoded = jwtDecode(token);
-        id = decoded.id || decoded.userId;
-      } catch {
+      const id = getInsegnanteId(); // 👈 ID DOCENTE dal JWT
+      if (!id) {
         doLogout();
         return;
       }
-      if (!id) throw new Error("ID utente non presente nel token");
 
-      // Chiamate parallele
-      const [infoRes, lezRes] = await Promise.all([
-        fetchNoStore(`${BASE_URL}/api/insegnanti/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetchNoStore(`${BASE_URL}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+      // richieste parallele, entrambe con Authorization (grazie ad apiFetch)
+      const [info, lezRaw] = await Promise.all([
+        apiFetch(`/api/insegnanti/${id}`),
+        apiFetch(`/api/insegnanti/${id}/lezioni?t=${Date.now()}`)
       ]);
 
-      // Gestione 401/403 → logout soft e redirect
-      if (
-        infoRes.status === 401 ||
-        infoRes.status === 403 ||
-        lezRes.status === 401 ||
-        lezRes.status === 403
-      ) {
-        doLogout();
-        return;
-      }
-      if (!infoRes.ok || !lezRes.ok) {
-        throw new Error("Errore nel recupero dati dal server");
-      }
-
-      const info = await infoRes.json();
-      const lezRaw = await lezRes.json();
-
-      setNome(info.nome || "");
-      setCognome(info.cognome || "");
+      setNome(info?.nome || "");
+      setCognome(info?.cognome || "");
 
       const enriched = (Array.isArray(lezRaw) ? lezRaw : [])
         .filter((l) => {
@@ -98,26 +64,24 @@ export default function CalendarioPersonale() {
         .filter(Boolean);
 
       setLezioni(enriched);
-      setCalendarKey((k) => k + 1); // 👈 forza re-render del calendario con i dati server
+      setCalendarKey((k) => k + 1); // re-render calendario con i dati
     } catch (err) {
-      setErrore(err.message || "Errore inatteso");
+      // 401/403 arrivano come Error() da apiFetch
+      if (err?.status === 401 || err?.status === 403) {
+        doLogout();
+        return;
+      }
+      setErrore(err.message || "Errore nel recupero dati dal server");
     } finally {
       setLoading(false);
     }
-  };
+  }, [doLogout]);
 
   useEffect(() => {
     fetchDati();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchDati]);
 
-  function doLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("utente");
-    navigate("/login");
-  }
-
-  // 👇 chiamata subito dopo la creazione: aggiunge localmente e forza re-render, poi fa fetch e re-forza
+  // chiamata subito dopo la creazione: aggiunge localmente e forza re-render, poi riallinea dal server
   const handleLessonCreated = async (created) => {
     const arr = Array.isArray(created) ? created : created ? [created] : [];
     if (arr.length) {
@@ -132,10 +96,9 @@ export default function CalendarioPersonale() {
         }
         return Array.from(byKey.values());
       });
-      setCalendarKey((k) => k + 1); // 👈 re-render immediato del calendario
+      setCalendarKey((k) => k + 1);
     }
 
-    // riallinea dal server e re-render di sicurezza
     await fetchDati();
     setCalendarKey((k) => k + 1);
   };
@@ -143,7 +106,7 @@ export default function CalendarioPersonale() {
   return (
     <div className="min-h-screen bg-gray-100 pb-24">
       <CalendarioLezioni
-        key={calendarKey}            /* 👈 remount forzato, il calendario rilegge gli eventi */
+        key={calendarKey}     /* remount forzato, il calendario rilegge gli eventi */
         lezioni={lezioni}
         nome={nome}
         cognome={cognome}
