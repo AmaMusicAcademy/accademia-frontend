@@ -161,7 +161,7 @@ export default function AllieviPage() {
   const refetchLessons = async (id = teacherId) => {
     if (!id || !token) return;
     const lezioni = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/lezioni?t=${Date.now()}`, token);
-    const base = (Array.isArray(lezioni) ? lezioni : []).filter(isFromTodayOnward);
+    const base = Array.isArray(lezioni) ? lezioni : [];
     setAllLessonsFromToday(base);
   };
 
