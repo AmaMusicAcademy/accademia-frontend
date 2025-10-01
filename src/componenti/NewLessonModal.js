@@ -1,11 +1,30 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { apiFetch, getInsegnanteId } from "../utils/api";
 
-const BASE_URL = process.env.REACT_APP_API_URL;
 const AULE_PREDEFINITE = ["Aula 1", "Aula 2", "Aula 3"];
+
+// util date (YYYY-MM-DD)
+const addDays = (ymd, days) => {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+};
+const dateGte = (a, b) => a >= b; // string compare
+function* weeklyGenerator(startYmd, endYmd) {
+  let cur = startYmd;
+  while (dateGte(endYmd, cur)) {
+    yield cur;
+    cur = addDays(cur, 7);
+  }
+}
 
 export default function NewLessonModal({ open, onClose, onCreated }) {
   const [allievi, setAllievi] = useState([]);
+  const [aule, setAule] = useState(AULE_PREDEFINITE);
   const [form, setForm] = useState({
     data: "",
     ora_inizio: "",
@@ -23,36 +42,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState(null);
 
-  const token = useMemo(() => localStorage.getItem("token"), []);
-  const insegnanteId = useMemo(() => {
-    try {
-      const decoded = token ? jwtDecode(token) : null;
-      return decoded?.id || decoded?.userId || null;
-    } catch {
-      return null;
-    }
-  }, [token]);
-
-  // ---- util date safe (YYYY-MM-DD) ----
-  const addDays = (ymd, days) => {
-    const [y, m, d] = ymd.split("-").map(Number);
-    const dt = new Date(Date.UTC(y, m - 1, d));
-    dt.setUTCDate(dt.getUTCDate() + days);
-    const yy = dt.getUTCFullYear();
-    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(dt.getUTCDate()).padStart(2, "0");
-    return `${yy}-${mm}-${dd}`;
-  };
-  const dateGte = (a, b) => a >= b; // string compare su YYYY-MM-DD
-
-  function* weeklyGenerator(startYmd, endYmd) {
-    // entrambe inclusive (end incluso)
-    let cur = startYmd;
-    while (dateGte(endYmd, cur)) {
-      yield cur;
-      cur = addDays(cur, 7);
-    }
-  }
+  const insegnanteId = useMemo(() => getInsegnanteId(), []);
 
   // Preview occorrenze per UI
   useEffect(() => {
@@ -69,25 +59,41 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     setOccurrences(count);
   }, [isRecurring, form.data, untilDate]);
 
-  // Carica allievi assegnati
+  const loadAllievi = useCallback(async () => {
+    if (!open || !insegnanteId) return;
+    setErrore(null);
+    try {
+      const data = await apiFetch(`/api/insegnanti/${insegnanteId}/allievi`);
+      setAllievi(Array.isArray(data) ? data : []);
+    } catch (err) {
+      // se 401/403 probabilmente token scaduto: qui NON forziamo logout (lo farà il parent)
+      setErrore(err.message || "Errore nel recupero allievi assegnati");
+      setAllievi([]);
+    }
+  }, [open, insegnanteId]);
+
+  const loadAule = useCallback(async () => {
+    if (!open) return;
+    try {
+      const rows = await apiFetch(`/api/aule`);
+      const list = Array.isArray(rows) ? rows.map(r => r?.nome).filter(Boolean) : [];
+      const uniq = Array.from(new Set([...list, ...AULE_PREDEFINITE])); // merge + dedup con predefinite
+      setAule(uniq);
+      // se l'aula selezionata non esiste più, scegli la prima disponibile
+      setForm(f => ({ ...f, aula: uniq.includes(f.aula) ? f.aula : (uniq[0] || "") }));
+    } catch (err) {
+      // 401/403 → non consentito ai docenti: fallback a predefinite
+      setAule(AULE_PREDEFINITE);
+      setForm(f => ({ ...f, aula: AULE_PREDEFINITE[0] }));
+    }
+  }, [open]);
+
+  // Carica allievi e aule quando il modal si apre
   useEffect(() => {
-    const fetchAllievi = async () => {
-      if (!open || !insegnanteId || !token) return;
-      setErrore(null);
-      try {
-        const res = await fetch(
-          `${BASE_URL}/api/insegnanti/${insegnanteId}/allievi`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error("Errore nel recupero allievi assegnati");
-        const data = await res.json();
-        setAllievi(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setErrore(err.message);
-      }
-    };
-    fetchAllievi();
-  }, [open, insegnanteId, token]);
+    if (!open) return;
+    loadAllievi();
+    loadAule();
+  }, [open, loadAllievi, loadAule]);
 
   const cambia = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
@@ -98,6 +104,10 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     }
     if (!form.id_allievo) {
       setErrore("Seleziona un allievo");
+      return false;
+    }
+    if (!form.aula) {
+      setErrore("Seleziona un'aula");
       return false;
     }
     if (form.ora_fine <= form.ora_inizio) {
@@ -119,19 +129,11 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
   };
 
   const createOne = async (payload) => {
-    const res = await fetch(`${BASE_URL}/api/lezioni`, {
+    // usa apiFetch per avere Authorization automatico
+    return await apiFetch(`/api/lezioni`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status}${t ? `: ${t}` : ""}`);
-    }
-    return res.json().catch(() => null);
   };
 
   const submit = async (e) => {
@@ -139,41 +141,38 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     if (!valida()) return;
 
     setLoading(true);
-
     try {
-      if (!BASE_URL) throw new Error("REACT_APP_API_URL non configurata");
       if (!insegnanteId) throw new Error("ID insegnante non disponibile");
 
       const basePayload = {
-        id_insegnante: insegnanteId,
+        id_insegnante: insegnanteId,              // 👈 docente vincolato al proprio id
         id_allievo: Number(form.id_allievo),
-        data: form.data, // YYYY-MM-DD
+        data: form.data,                          // YYYY-MM-DD
         ora_inizio: form.ora_inizio,
         ora_fine: form.ora_fine,
         aula: form.aula,
         motivazione: form.motivazione || null,
-        stato: "svolta", // 👈 default richiesto
+        stato: "svolta",                          // default
       };
 
       if (!isRecurring) {
         const created = await createOne(basePayload);
-        onCreated && onCreated(created); // 👈 passa al genitore
+        onCreated && onCreated(created);
         resetAndClose();
         return;
       }
 
-      // Ricorrenza settimanale: ritorna array di create
-      let ok = 0, ko = 0;
+      // Ricorrenza settimanale
       const createdItems = [];
       for (const ymd of weeklyGenerator(form.data, untilDate)) {
         try {
           const c = await createOne({ ...basePayload, data: ymd });
-          ok++; if (c) createdItems.push(c);
+          if (c) createdItems.push(c);
         } catch {
-          ko++;
+          // silenzia singoli errori per continuare a creare le altre occorrenze
         }
       }
-      onCreated && onCreated(createdItems); // 👈 array verso il genitore
+      onCreated && onCreated(createdItems);
       resetAndClose();
     } catch (err) {
       setErrore(err.message || "Errore inatteso");
@@ -187,7 +186,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       data: "",
       ora_inizio: "",
       ora_fine: "",
-      aula: AULE_PREDEFINITE[0],
+      aula: (aule[0] || AULE_PREDEFINITE[0] || ""),
       id_allievo: "",
       motivazione: "",
     });
@@ -237,8 +236,9 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
                 className="w-full rounded-lg border px-3 py-2"
                 value={form.aula}
                 onChange={(e) => cambia("aula", e.target.value)}
+                required
               >
-                {AULE_PREDEFINITE.map((a) => (
+                {aule.map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
