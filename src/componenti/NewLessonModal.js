@@ -29,7 +29,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     data: "",
     ora_inizio: "",
     ora_fine: "",
-    aula: AULE_PREDEFINITE[0],
+    aula: "",
     id_allievo: "",
     motivazione: "",
   });
@@ -73,20 +73,28 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
   }, [open, insegnanteId]);
 
   const loadAule = useCallback(async () => {
-    if (!open) return;
-    try {
-      const rows = await apiFetch(`/api/aule`);
-      const list = Array.isArray(rows) ? rows.map(r => r?.nome).filter(Boolean) : [];
-      const uniq = Array.from(new Set([...list, ...AULE_PREDEFINITE])); // merge + dedup con predefinite
-      setAule(uniq);
-      // se l'aula selezionata non esiste più, scegli la prima disponibile
-      setForm(f => ({ ...f, aula: uniq.includes(f.aula) ? f.aula : (uniq[0] || "") }));
-    } catch (err) {
-      // 401/403 → non consentito ai docenti: fallback a predefinite
+  if (!open) return;
+  try {
+    const rows = await apiFetch(`/api/aule`);
+    const list = Array.isArray(rows)
+      ? rows.map(r => String(r?.nome || '').trim()).filter(Boolean)
+      : [];
+    // usa SOLO le aule del server (niente merge con le predefinite)
+    if (list.length > 0) {
+      setAule(list);
+      // se l'aula selezionata non è più valida, seleziona la prima
+      setForm(f => ({ ...f, aula: list.includes(f.aula) ? f.aula : list[0] }));
+    } else {
+      // fallback se il server risponde ma senza dati
       setAule(AULE_PREDEFINITE);
       setForm(f => ({ ...f, aula: AULE_PREDEFINITE[0] }));
     }
-  }, [open]);
+  } catch (err) {
+    // 401/403 o errore qualsiasi → fallback predefinito
+    setAule(AULE_PREDEFINITE);
+    setForm(f => ({ ...f, aula: AULE_PREDEFINITE[0] }));
+  }
+}, [open]);
 
   // Carica allievi e aule quando il modal si apre
   useEffect(() => {
@@ -186,7 +194,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       data: "",
       ora_inizio: "",
       ora_fine: "",
-      aula: (aule[0] || AULE_PREDEFINITE[0] || ""),
+      aula: (aule[0] || ""),
       id_allievo: "",
       motivazione: "",
     });

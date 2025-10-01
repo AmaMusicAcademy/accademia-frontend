@@ -45,7 +45,7 @@ async function resolveTeacherId(token) {
   const payload = jwtPayload(token);
   const username = payload?.username;
   if (!username) throw new Error("Impossibile determinare l'insegnante corrente.");
-  const list = await fetchJSON(`${API_BASE}/api/insegnanti`, null);
+  const list = await fetchJSON(`${API_BASE}/api/insegnanti`, token /* facoltativo */);
   const match = (Array.isArray(list) ? list : []).find(
     (i) => (i.username || "").toLowerCase() === username.toLowerCase()
   );
@@ -142,8 +142,8 @@ export default function AllieviPage() {
 
         setTeacherId(id);
 
-        // allievi assegnati
-        const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, null);
+        // allievi assegnati (⚠️ serve Authorization)
+        const allievi = await fetchJSON(`${API_BASE}/api/insegnanti/${id}/allievi`, token);
         if (cancel) return;
         setStudents(Array.isArray(allievi) ? allievi : []);
 
