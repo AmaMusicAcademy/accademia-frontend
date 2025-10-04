@@ -100,6 +100,7 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
         <div className="text-xs">Allievi</div>
       </button>
     </div>
+    </nav>
   );
 };
 
