@@ -36,7 +36,14 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
   };
 
   return (
-    <div className="fixed bottom-0 w-full bg-white shadow-inner flex justify-between items-center px-10 py-2 h-16 z-50">
+    <nav
+  className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 border-t backdrop-blur supports-[backdrop-filter]:bg-white/80 h-[72px]"
+  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+  role="navigation"
+        aria-label="Navigazione insegnante"
+      >
+
+      <div className="max-w-xl mx-auto h-full w-full flex items-center justify-around px-2">
       {/* Profilo */}
       <button
         onClick={() => navigate('/admin')}
