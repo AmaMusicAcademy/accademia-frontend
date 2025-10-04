@@ -34,7 +34,7 @@ const BottomNav = ({ onLessonCreated }) => {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 w-full bg-white border-t shadow z-50 flex justify-between items-center px-6 py-2"
+        className="fixed bottom-0 left-0 right-0 h-16 z-40 bg-white border-t shadow-sm pb-[env(safe-area-inset-bottom)]"
         role="navigation"
         aria-label="Navigazione insegnante"
       >
