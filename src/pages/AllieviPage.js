@@ -351,7 +351,7 @@ export default function AllieviPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-[calc(64px+env(safe-area-inset-bottom))]">{/* spazio per BottomNav */}
+    <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-xl mx-auto px-4 py-3">
