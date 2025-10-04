@@ -36,18 +36,16 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
   };
 
   return (
-    <nav
-  className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 border-t backdrop-blur supports-[backdrop-filter]:bg-white/80 h-[72px]"
-  style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-  role="navigation"
-        aria-label="Navigazione insegnante"
-      >
-
-      <div className="max-w-xl mx-auto h-full w-full flex items-center justify-around px-2">
+  <nav
+    className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 border-t backdrop-blur supports-[backdrop-filter]:bg-white/80 h-16"
+    style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    role="navigation"
+  >
+    <div className="max-w-xl mx-auto h-full w-full grid grid-cols-3 place-items-center px-4">
       {/* Profilo */}
       <button
         onClick={() => navigate('/admin')}
-        className={`text-center ${
+        className={`w-full flex flex-col items-center justify-center text-center ${
           isActive('/admin') &&
           !isAllieviList &&
           !isAllievoDettaglio &&
@@ -61,47 +59,53 @@ const BottomNavAdmin = ({ onAdd, onEdit }) => {
         <div className="text-xs">Profilo</div>
       </button>
 
-      {/* CENTRO: "+" / "✏️" / "📅" */}
-      {showAddCentral ? (
-        <button
-          onClick={onAdd}
-          className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10"
-          aria-label="Aggiungi"
-          title="Aggiungi"
-        >
-          +
-        </button>
-      ) : isAllievoDettaglio || isInsegnanteDettaglio ? (
-        <button
-          onClick={handleEdit}
-          className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10"
-          aria-label="Modifica"
-          title="Modifica"
-        >
-          ✏️
-        </button>
-      ) : (
-        <button
-          onClick={() => navigate('/admin/calendario')}
-          className={`text-center ${isActive('/admin/calendario') ? 'text-blue-600' : 'text-gray-500'}`}
-          title="Calendario"
-        >
-          <div>📅</div>
-          <div className="text-xs">Calendario</div>
-        </button>
-      )}
+      {/* CENTRO: FAB/Modifica/Calendario */}
+      <div className="relative w-full flex items-center justify-center">
+        {showAddCentral ? (
+          <button
+            onClick={onAdd}
+            className="bg-red-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10 z-10"
+            aria-label="Aggiungi"
+            title="Aggiungi"
+          >
+            +
+          </button>
+        ) : (isAllievoDettaglio || isInsegnanteDettaglio) ? (
+          <button
+            onClick={handleEdit}
+            className="bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md -mt-10 z-10"
+            aria-label="Modifica"
+            title="Modifica"
+          >
+            ✏️
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/admin/calendario')}
+            className={`w-full flex flex-col items-center justify-center text-center ${
+              isActive('/admin/calendario') ? 'text-blue-600' : 'text-gray-500'
+            }`}
+            title="Calendario"
+          >
+            <div>📅</div>
+            <div className="text-xs">Calendario</div>
+          </button>
+        )}
+      </div>
 
-      {/* Lista Allievi */}
+      {/* Allievi */}
       <button
         onClick={() => navigate('/admin/allievi_lesson')}
-        className={`text-center ${isActive('/admin/allievi_lesson') ? 'text-blue-600' : 'text-gray-500'}`}
+        className={`w-full flex flex-col items-center justify-center text-center ${
+          isActive('/admin/allievi_lesson') ? 'text-blue-600' : 'text-gray-500'
+        }`}
       >
         <div className="text-xl">🎓</div>
         <div className="text-xs">Allievi</div>
       </button>
     </div>
-    </nav>
-  );
+  </nav>
+);
 };
 
 export default BottomNavAdmin;
