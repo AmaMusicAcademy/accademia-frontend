@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import BottomNav from "../componenti/BottomNav";
-import EditLessonModal from "../componenti/EditLessonModal";
+import EditLessonModal from "../componenti/NewLessonModal";
 
 // Base API
 const API_BASE =
