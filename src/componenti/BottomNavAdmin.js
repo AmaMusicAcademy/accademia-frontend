@@ -118,7 +118,7 @@ const BottomNavAdmin = ({ addActionsByRoute = {}, onEdit }) => {
             </button>
           )}
         </div>
-
+        
         {/* Allievi */}
         <button
           onClick={() => navigate('/admin/allievi_lesson')}
