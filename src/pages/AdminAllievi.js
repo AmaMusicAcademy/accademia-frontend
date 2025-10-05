@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
+
+const API = process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com';
 
 const AdminAllievi = () => {
   const [allievi, setAllievi] = useState([]);
@@ -12,27 +14,57 @@ const AdminAllievi = () => {
   const [insegnanti, setInsegnanti] = useState([]);
   const [insegnantiSelezionati, setInsegnantiSelezionati] = useState([]);
 
-  // 👇 nuovo: stato per quota associativa anno corrente (nella modale)
+  // filtro insegnante (lista allievi)
+  const [teacherId, setTeacherId] = useState('');
+
+  // filtro “solo non in regola” (mensilità e/o quota associativa anno corrente)
+  const [arretratoOnly, setArretratoOnly] = useState(false);
+
+  // quota associativa nella modale “nuovo allievo”
   const [qaPagataAnnoCorrente, setQaPagataAnnoCorrente] = useState(false);
 
   const navigate = useNavigate();
-  const API = 'https://app-docenti.onrender.com';
   const annoCorrente = new Date().getFullYear();
+
+  async function fetchInsegnanti() {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API}/api/insegnanti`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setInsegnanti(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Errore insegnanti:', err);
+    }
+  }
+
+  async function fetchAllieviBase() {
+    const token = localStorage.getItem('token');
+    if (teacherId) {
+      // allievi assegnati a un insegnante specifico
+      const r = await fetch(`${API}/api/insegnanti/${teacherId}/allievi`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return await r.json();
+    }
+    const res = await fetch(`${API}/api/allievi`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return await res.json();
+  }
 
   const fetchAllievi = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API}/api/allievi`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const baseList = await fetchAllieviBase();
 
       const allieviEnriched = await Promise.all(
-        data.map(async (allievo) => {
+        (Array.isArray(baseList) ? baseList : []).map(async (allievo) => {
           const base = { ...allievo, in_regola: false, quota_assoc_anno_corrente: null };
 
           try {
-            // 1) Pagamenti mensili → in_regola (come già facevi)
+            // mensilità
             const resPag = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -42,7 +74,6 @@ const AdminAllievi = () => {
             const inizio = new Date(allievo.data_iscrizione);
             const oggi = new Date();
             const mesiAttesi = [];
-
             const y0 = inizio.getFullYear();
             const m0 = inizio.getMonth();
             const y1 = oggi.getFullYear();
@@ -61,7 +92,7 @@ const AdminAllievi = () => {
           }
 
           try {
-            // 2) Quota associativa anno corrente
+            // quota associativa anno corrente
             const resQA = await fetch(`${API}/api/allievi/${allievo.id}/quote-associative`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -87,9 +118,8 @@ const AdminAllievi = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAllievi();
-  }, []);
+  useEffect(() => { fetchInsegnanti(); }, []);
+  useEffect(() => { fetchAllievi(); }, [teacherId]);
 
   const handleClick = (id) => {
     navigate(`/admin/allievi/${id}`);
@@ -97,17 +127,8 @@ const AdminAllievi = () => {
 
   const apriModale = async () => {
     setShowModal(true);
-    setQaPagataAnnoCorrente(false); // reset
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API}/api/insegnanti`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setInsegnanti(data);
-    } catch (err) {
-      console.error('Errore nel caricamento insegnanti:', err);
-    }
+    setQaPagataAnnoCorrente(false);
+    if (!insegnanti.length) await fetchInsegnanti();
   };
 
   const handleCheckboxChange = (id) => {
@@ -119,14 +140,10 @@ const AdminAllievi = () => {
   const handleSalvaAllievo = async () => {
     try {
       const token = localStorage.getItem('token');
-
-      // 1) crea allievo
+      // 1) crea
       const res = await fetch(`${API}/api/allievi`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           nome,
           cognome,
@@ -134,72 +151,107 @@ const AdminAllievi = () => {
           quota_mensile: quotaMensile
         })
       });
-
       const newAllievo = await res.json();
-
-      if (res.ok && newAllievo.id) {
-        // 2) assegna insegnanti
-        await fetch(`${API}/api/allievi/${newAllievo.id}/insegnanti`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ insegnanti: insegnantiSelezionati }),
-        });
-
-        // 3) (opzionale) quota associativa anno corrente
-        if (qaPagataAnnoCorrente) {
-          await fetch(`${API}/api/allievi/${newAllievo.id}/quota-associativa`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ anno: annoCorrente, pagata: true })
-          });
-        }
-
-        // reset UI
-        setShowModal(false);
-        setNome('');
-        setCognome('');
-        setDataIscrizione('');
-        setQuotaMensile('');
-        setInsegnantiSelezionati([]);
-        setQaPagataAnnoCorrente(false);
-        fetchAllievi();
-      } else {
-        alert('Errore nella creazione allievo');
+      if (!res.ok || !newAllievo?.id) {
+        alert('Errore nella creazione allievo'); return;
       }
+
+      // 2) assegna insegnanti
+      await fetch(`${API}/api/allievi/${newAllievo.id}/insegnanti`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ insegnanti: insegnantiSelezionati }),
+      });
+
+      // 3) quota associativa (opzionale)
+      if (qaPagataAnnoCorrente) {
+        await fetch(`${API}/api/allievi/${newAllievo.id}/quota-associativa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ anno: annoCorrente, pagata: true })
+        });
+      }
+
+      // reset
+      setShowModal(false);
+      setNome(''); setCognome(''); setDataIscrizione(''); setQuotaMensile('');
+      setInsegnantiSelezionati([]); setQaPagataAnnoCorrente(false);
+      fetchAllievi();
     } catch (err) {
       console.error('Errore salvataggio allievo:', err);
     }
   };
 
+  async function deleteStudent(id) {
+    if (!window.confirm('Eliminare DEFINITIVAMENTE questo allievo? Operazione irreversibile.')) return;
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API}/api/allievi/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(()=> '');
+      alert(t || 'Errore cancellazione');
+      return;
+    }
+    setAllievi(list => list.filter(x => String(x.id) !== String(id)));
+  }
+
+  // filtro “solo non in regola”
+  const visibili = useMemo(() => {
+    if (!arretratoOnly) return allievi;
+    return allievi.filter(a => {
+      const qaOk = a.quota_assoc_anno_corrente?.pagata === true;
+      const mensOk = a.in_regola === true;
+      return !(qaOk && mensOk); // mostra solo chi non è pienamente in regola
+    });
+  }, [allievi, arretratoOnly]);
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Header stile iOS */}
-      <div className="flex items-center p-4 bg-white shadow">
-        <button onClick={() => navigate(-1)} className="text-blue-500 font-bold text-lg">← Indietro</button>
+    <div className="flex flex-col min-h-screen bg-gray-100 pb-16">
+      {/* Header */}
+      <div className="sticky top-0 z-30 flex items-center gap-3 p-4 bg-white shadow">
+        <button onClick={() => navigate(-1)} className="text-blue-500 font-bold text-lg">←</button>
         <h2 className="flex-grow text-center text-lg font-semibold">Lista Allievi</h2>
         <div style={{ width: '70px' }}></div>
+      </div>
+
+      {/* Filtro insegnante + toggle arretrati */}
+      <div className="sticky top-[56px] z-20 bg-white border-b px-4 py-2 flex items-center gap-3">
+        <label className="text-sm text-gray-600">Insegnante:</label>
+        <select
+          className="border rounded px-3 py-1.5 text-sm"
+          value={teacherId}
+          onChange={(e)=>setTeacherId(e.target.value)}
+        >
+          <option value="">Tutti</option>
+          {insegnanti.map(t => (
+            <option key={t.id} value={t.id}>{t.nome} {t.cognome}</option>
+          ))}
+        </select>
+
+        <label className="ml-auto flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={arretratoOnly}
+            onChange={(e)=>setArretratoOnly(e.target.checked)}
+          />
+          <span>Solo non in regola</span>
+        </label>
       </div>
 
       {/* Lista allievi */}
       <div className="flex-grow p-4">
         <div className="bg-white rounded-lg shadow divide-y">
-          {allievi.map((allievo) => {
+          {visibili.map((allievo) => {
             const qa = allievo.quota_assoc_anno_corrente;
             const qaOk = qa?.pagata === true;
             return (
-              <button
-                key={allievo.id}
-                onClick={() => handleClick(allievo.id)}
-                className="w-full flex justify-between items-center p-4 text-left"
-              >
-                <div className="flex items-center space-x-3">
-                  {/* Stato rate mensili */}
+              <div key={allievo.id} className="flex items-center justify-between p-4">
+                <button
+                  onClick={() => handleClick(allievo.id)}
+                  className="flex-1 flex items-center text-left gap-3"
+                >
                   <span
                     className={`inline-block w-3 h-3 rounded-full ${allievo.in_regola ? 'bg-green-500' : 'bg-red-500'}`}
                     title={allievo.in_regola ? 'Mensilità in regola' : 'Mensilità NON in regola'}
@@ -208,15 +260,23 @@ const AdminAllievi = () => {
                     <span className="font-medium">
                       {allievo.nome} {allievo.cognome}
                     </span>
-                    {/* Badge Quota Associativa anno corrente */}
                     <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border ${qaOk ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                       🪪 Quota {annoCorrente}: {qaOk ? 'SALDATA' : 'DA SALDARE'}
                       {qa?.data_pagamento ? ` · ${qa.data_pagamento}` : ''}
                     </span>
                   </div>
+                </button>
+                <div className="flex items-center gap-2 pl-3">
+                  <button
+                    onClick={() => deleteStudent(allievo.id)}
+                    className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs"
+                    title="Elimina allievo"
+                  >
+                    Elimina
+                  </button>
+                  <span className="text-gray-400">›</span>
                 </div>
-                <span className="text-gray-400">›</span>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -226,7 +286,7 @@ const AdminAllievi = () => {
 
       {/* Modale inserimento allievo */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg shadow-lg p-6 w-96 max-w-full">
             <h3 className="text-lg font-semibold mb-4">Nuovo Allievo</h3>
 
@@ -252,7 +312,6 @@ const AdminAllievi = () => {
               </div>
             </div>
 
-            {/* 👇 nuovo: quota associativa anno corrente */}
             <label className="flex items-center gap-2 mb-4">
               <input
                 type="checkbox"

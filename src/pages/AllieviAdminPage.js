@@ -32,20 +32,12 @@ async function fetchJSON(url, token, opts = {}) {
   }
   return res.json();
 }
-
-function ymd(dateLike) { return String(dateLike || "").slice(0, 10); } // "YYYY-MM-DD"
+function ymd(dateLike) { return String(dateLike || "").slice(0, 10); }
 function hhmm(t) { return t ? String(t).slice(0,5) : ""; }
 function isoFromDateTime(dateStr, timeStr) {
   if (!dateStr || !timeStr) return null;
   const t = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
   return `${dateStr}T${t}`;
-}
-function isFromTodayOnward(lez) {
-  const ymdStr = ymd(lez.data);
-  if (!ymdStr) return false;
-  const lessonDay = new Date(`${ymdStr}T00:00:00`);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return lessonDay.getTime() >= today.getTime();
 }
 function inRangeInclusive(lez, startYMD, endYMD) {
   const day = ymd(lez.data);
@@ -54,22 +46,6 @@ function inRangeInclusive(lez, startYMD, endYMD) {
   if (endYMD && day > endYMD) return false;
   return true;
 }
-const sameKey = (o) =>
-  [
-    ymd(o.data) || ymd(o.start),
-    o.ora_inizio || (typeof o.start === "string" ? o.start.slice(11,16) : ""),
-    o.ora_fine   || (typeof o.end   === "string" ? o.end.slice(11,16)   : ""),
-    String(o.id_allievo || ""),
-    String(o.aula || "")
-  ].join("|");
-
-// history helpers → etichetta “riprogrammata”
-const parseHistory = (v) => {
-  if (Array.isArray(v)) return v;
-  if (typeof v === "string") { try { const j = JSON.parse(v); return Array.isArray(j) ? j : []; } catch { return []; } }
-  return [];
-};
-const hasHistory = (l) => parseHistory(l?.old_schedules).length > 0;
 const statoLabel = (l) => {
   const raw = (l?.stato || "svolta").toLowerCase();
   if (raw === "rimandata" && l?.riprogrammata === true) return "riprogrammata";
@@ -79,34 +55,48 @@ const statoLabel = (l) => {
 export default function AllieviAdminPage() {
   const token = getToken();
 
+  // filtro insegnante
+  const [teachers, setTeachers] = useState([]);
+  const [teacherId, setTeacherId] = useState("");
+
   const [students, setStudents] = useState([]);
-  const [allLessonsFromToday, setAllLessonsFromToday] = useState([]); // oggi → futuro (tutti gli stati)
+  const [allLessons, setAllLessons] = useState([]); // tutte (non solo da oggi)
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
-  // Modale modifica/riprogramma
+  // selezione multipla lezioni
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
+  // modale modifica/riprogramma
   const [editOpen, setEditOpen] = useState(false);
   const [editMode, setEditMode] = useState("edit"); // "edit" | "reschedule"
   const [editLesson, setEditLesson] = useState(null);
 
-  // UI state
+  // UI
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState(""); // "YYYY-MM-DD"
-  const [dateTo, setDateTo] = useState("");     // "YYYY-MM-DD"
-
-  // ✅ Filtro per stato (checkbox multiple)
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [statusOnly, setStatusOnly] = useState({
     svolta: false,
     annullata: false,
     riprogrammata: false,
     rimandata: false,
   });
-  const toggleStatus = (key) =>
-    setStatusOnly((s) => ({ ...s, [key]: !s[key] }));
-  const clearStatusFilters = () =>
-    setStatusOnly({ svolta: false, annullata: false, riprogrammata: false, rimandata: false });
+  const toggleStatus = (key) => setStatusOnly((s) => ({ ...s, [key]: !s[key] }));
+  const clearStatusFilters = () => setStatusOnly({ svolta: false, annullata: false, riprogrammata: false, rimandata: false });
 
-  // primo caricamento (ADMIN)
+  // carica insegnanti (per filtro)
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${API_BASE}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await r.json().catch(()=>[]);
+        setTeachers(Array.isArray(data)?data:[]);
+      } catch {}
+    })();
+  }, [token]);
+
+  // primo caricamento
   useEffect(() => {
     let cancel = false;
     (async () => {
@@ -116,13 +106,18 @@ export default function AllieviAdminPage() {
 
         if (!token) throw new Error("Token non presente. Esegui il login.");
 
-        // allievi: admin vede tutti
-        const allievi = await fetchJSON(`${API_BASE}/api/allievi`, token);
-        if (cancel) return;
-        setStudents(Array.isArray(allievi) ? allievi : []);
+        // allievi (tutti o per insegnante)
+        if (teacherId) {
+          const a = await fetchJSON(`${API_BASE}/api/insegnanti/${teacherId}/allievi`, token);
+          if (cancel) return;
+          setStudents(Array.isArray(a) ? a : []);
+        } else {
+          const all = await fetchJSON(`${API_BASE}/api/allievi`, token);
+          if (cancel) return;
+          setStudents(Array.isArray(all) ? all : []);
+        }
 
-        // lezioni cumulative (oggi→futuro, tutti gli stati)
-        await refetchLessons();
+        await refetchLessons(teacherId);
       } catch (e) {
         if (!cancel) setErr(e.message || "Errore di caricamento.");
       } finally {
@@ -130,35 +125,30 @@ export default function AllieviAdminPage() {
       }
     })();
     return () => { cancel = true; };
-  }, [token]);
+  }, [token, teacherId]);
 
-  // Refetch lezioni (oggi → futuro, TUTTI gli stati) — cumulativo
-  const refetchLessons = async () => {
-    if (!token) return;
-    const lezioni = await fetchJSON(`${API_BASE}/api/lezioni?scope=all&t=${Date.now()}`, token);
-    const base = Array.isArray(lezioni) ? lezioni : [];
-    setAllLessonsFromToday(base);
-  };
+  async function refetchLessons(tid = teacherId) {
+    const url = tid
+      ? `${API_BASE}/api/insegnanti/${tid}/lezioni?t=${Date.now()}`
+      : `${API_BASE}/api/lezioni?t=${Date.now()}`;
+    const lezioni = await fetchJSON(url, token);
+    setAllLessons(Array.isArray(lezioni) ? lezioni : []);
+    setSelectedIds(new Set());
+  }
 
-  // Filtro studenti (ricerca)
+  // filtro studenti (ricerca)
   const filteredStudents = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) => `${s.nome} ${s.cognome}`.toLowerCase().includes(q));
   }, [students, search]);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // NUOVO: baseFiltered + statusCounts + filteredLessons (con checkbox stato)
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  // 1) Base filtrata da date + ricerca (NO filtro stato qui)
+  // base lezioni → filtri data e ricerca, poi stato
   const baseFiltered = useMemo(() => {
-    let list = allLessonsFromToday;
+    let list = allLessons;
 
-    // filtro intervallo date
     if (dateFrom || dateTo) list = list.filter((l) => inRangeInclusive(l, dateFrom, dateTo));
 
-    // filtro ricerca (per allievo)
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((l) =>
@@ -166,32 +156,31 @@ export default function AllieviAdminPage() {
       );
     }
 
-    return list;
-  }, [allLessonsFromToday, dateFrom, dateTo, search]);
+    // se filtro insegnante è attivo ma l'endpoint /api/lezioni (tutte) lo include già,
+    // lascia così; se unisci endpoint, puoi filtrare qui per sicurezza:
+    if (teacherId) {
+      list = list.filter(l => String(l.id_insegnante) === String(teacherId));
+    }
 
-  // 2) Contatori per stato (pre-filtro-stato)
+    return list;
+  }, [allLessons, dateFrom, dateTo, search, teacherId]);
+
   const statusCounts = useMemo(() => {
     const counts = { svolta: 0, annullata: 0, riprogrammata: 0, rimandata: 0 };
     for (const l of baseFiltered) {
       const s = statoLabel(l);
       if (counts[s] != null) counts[s] += 1;
-      else counts[s] = 1; // salvaguardia per stati imprevisti
+      else counts[s] = 1;
     }
     return counts;
   }, [baseFiltered]);
 
-  // 3) Lista finale applicando i checkbox stato
   const filteredLessons = useMemo(() => {
-    const activeStates = Object.entries(statusOnly)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-
+    const activeStates = Object.entries(statusOnly).filter(([,v])=>v).map(([k])=>k);
     if (activeStates.length === 0) return baseFiltered;
     return baseFiltered.filter((l) => activeStates.includes(statoLabel(l)));
   }, [baseFiltered, statusOnly]);
-  // ─────────────────────────────────────────────────────────────────────────────
 
-  // Raggruppa lezioni per giorno
   const lessonsByDay = useMemo(() => {
     const map = new Map();
     for (const l of filteredLessons) {
@@ -200,7 +189,7 @@ export default function AllieviAdminPage() {
       if (!map.has(day)) map.set(day, []);
       map.get(day).push(l);
     }
-    return Array.from(map.entries()).sort(([a], [b]) => (a < b ? -1 : 1));
+    return Array.from(map.entries()).sort(([a],[b]) => (a < b ? -1 : 1));
   }, [filteredLessons]);
 
   const rangeError = useMemo(() => {
@@ -210,52 +199,34 @@ export default function AllieviAdminPage() {
     return null;
   }, [dateFrom, dateTo]);
 
-  // --- azioni (Rimanda / Riprogramma / Annulla / Modifica) ---
-
-  // verifica ID sul server, altrimenti risolvi per “chiave naturale” sul cumulativo
-  const resolveLessonId = async (src) => {
-    if (!token) throw new Error("Token non presente");
-    if (src?.id != null) {
-      const r = await fetch(`${API_BASE}/api/lezioni/${src.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (r.ok) return src.id;
-      if (r.status !== 404) {
-        const t = await r.text().catch(() => "");
-        throw new Error(t || `Errore lettura lezione (${r.status})`);
-      }
-    }
-    const res = await fetch(`${API_BASE}/api/lezioni?scope=all&t=${Date.now()}`, {
-      headers: { Authorization: `Bearer ${token}` },
+  // selezione multipla
+  function toggleSelect(id){
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
     });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(t || `Errore nel recupero lezioni (${res.status})`);
-    }
-    const list = await res.json();
-    const key = (o) => [
-      ymd(o.data) || ymd(src.start),
-      o.ora_inizio || (typeof src.start === "string" ? src.start.slice(11, 16) : ""),
-      o.ora_fine   || (typeof src.end   === "string" ? src.end.slice(11, 16)   : ""),
-      String(o.id_allievo || ""),
-      String(o.aula || "")
-    ].join("|");
-    const want = key(src);
-    const found = (Array.isArray(list) ? list : []).find((x) => key(x) === want);
-    if (!found?.id) throw new Error("Lezione equivalente non trovata sul server (ID irrilevabile)");
-    return found.id;
-  };
+  }
+  async function deleteSelected(){
+    if (!selectedIds.size) return;
+    if (!window.confirm(`Eliminare ${selectedIds.size} lezioni selezionate?`)) return;
+    await Promise.all([...selectedIds].map(id =>
+      fetch(`${API_BASE}/api/lezioni/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ));
+    await refetchLessons();
+  }
 
+  // azioni singola lezione
   const patchRimanda = async (lessonId, motivazione = "") => {
     const res = await fetch(`${API_BASE}/api/lezioni/${lessonId}/rimanda`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ motivazione }),
     });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(t || `Errore rimanda (${res.status})`);
-    }
+    if (!res.ok) throw new Error(await res.text().catch(()=> "Errore rimanda"));
     return res.json();
   };
   const patchAnnulla = async (lessonId, motivazione = "") => {
@@ -264,53 +235,24 @@ export default function AllieviAdminPage() {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ motivazione }),
     });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(t || `Errore annulla (${res.status})`);
-    }
+    if (!res.ok) throw new Error(await res.text().catch(()=> "Errore annulla"));
     return res.json();
   };
-
-  const patchLocal = (target, patch) => {
-    setAllLessonsFromToday((prev) =>
-      prev.map((e) => (sameKey(e) === sameKey(target) ? { ...e, ...patch } : e))
-    );
-  };
-
-  const handleRimanda = async (lesson) => {
+  const handleRimanda = async (l) => {
     try {
-      const motivo = window.prompt(
-        "Confermi di rimandare questa lezione?\nInserisci una motivazione (opzionale):",
-        lesson.motivazione || ""
-      );
+      const motivo = window.prompt("Motivazione (opzionale):", l.motivazione || "");
       if (motivo === null) return;
-
-      patchLocal(lesson, { stato: "rimandata", riprogrammata: false, motivazione: motivo });
-      const realId = await resolveLessonId(lesson);
-      await patchRimanda(realId, motivo);
+      await patchRimanda(l.id, motivo);
       await refetchLessons();
-    } catch (e) {
-      alert(e.message || "Errore nel rimandare la lezione");
-      refetchLessons();
-    }
+    } catch (e) { alert(e.message || "Errore rimando"); }
   };
-
-  const handleAnnulla = async (lesson) => {
+  const handleAnnulla = async (l) => {
     try {
-      const motivo = window.prompt(
-        "Confermi l'annullamento della lezione?\nInserisci una motivazione (opzionale):",
-        lesson.motivazione || ""
-      );
+      const motivo = window.prompt("Motivazione (opzionale):", l.motivazione || "");
       if (motivo === null) return;
-
-      patchLocal(lesson, { stato: "annullata", riprogrammata: false, motivazione: motivo });
-      const realId = await resolveLessonId(lesson);
-      await patchAnnulla(realId, motivo);
+      await patchAnnulla(l.id, motivo);
       await refetchLessons();
-    } catch (e) {
-      alert(e.message || "Errore nell'annullare la lezione");
-      refetchLessons();
-    }
+    } catch (e) { alert(e.message || "Errore annullamento"); }
   };
 
   const openEdit = (lesson, mode = "edit") => {
@@ -318,19 +260,29 @@ export default function AllieviAdminPage() {
     setEditMode(mode);
     setEditOpen(true);
   };
-  const closeEdit = () => setEditOpen(false);
   const handleSaved = async () => {
-    closeEdit();
+    setEditOpen(false);
     await refetchLessons();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">{/* spazio per BottomNav */}
+    <div className="min-h-screen bg-gray-50 pb-16">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-xl mx-auto px-4 py-3">
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b">
+        <div className="max-w-xl mx-auto px-4 py-3 flex items-center gap-3">
           <h1 className="text-xl font-semibold">Allievi (Admin)</h1>
-          <p className="text-sm text-gray-500">Tutti gli allievi & lezioni future</p>
+          {/* filtro insegnante */}
+          <div className="ml-auto flex items-center gap-2">
+            <label className="text-xs text-gray-600">Insegnante:</label>
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={teacherId}
+              onChange={(e)=>setTeacherId(e.target.value)}
+            >
+              <option value="">Tutti</option>
+              {teachers.map(t => <option key={t.id} value={t.id}>{t.nome} {t.cognome}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -343,7 +295,6 @@ export default function AllieviAdminPage() {
           className="w-full rounded-xl border px-4 py-2 text-sm focus:outline-none focus:ring"
         />
 
-        {/* Intervallo date */}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-600 w-10">Da</label>
@@ -365,7 +316,6 @@ export default function AllieviAdminPage() {
           </div>
         </div>
 
-        {/* Azioni rapide su date */}
         <div className="mt-2 flex gap-2">
           <button
             type="button"
@@ -375,8 +325,7 @@ export default function AllieviAdminPage() {
               const y = today.getFullYear();
               const m = String(today.getMonth() + 1).padStart(2, "0");
               const d = String(today.getDate()).padStart(2, "0");
-              setDateFrom(`${y}-${m}-${d}`);
-              setDateTo("");
+              setDateFrom(`${y}-${m}-${d}`); setDateTo("");
             }}
           >
             Da oggi
@@ -390,70 +339,40 @@ export default function AllieviAdminPage() {
           </button>
         </div>
 
-        {/* ⚡ Filtro STATO con contatori */}
+        {/* filtro stato */}
         <div className="mt-3">
           <div className="text-xs font-medium text-gray-600 mb-1">Mostra solo:</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={statusOnly.svolta}
-                onChange={() => toggleStatus("svolta")}
-              />
-              <span>Svolte ({statusCounts.svolta || 0})</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={statusOnly.annullata}
-                onChange={() => toggleStatus("annullata")}
-              />
-              <span>Annullate ({statusCounts.annullata || 0})</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={statusOnly.riprogrammata}
-                onChange={() => toggleStatus("riprogrammata")}
-              />
-              <span>Riprogrammate ({statusCounts.riprogrammata || 0})</span>
-            </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                checked={statusOnly.rimandata}
-                onChange={() => toggleStatus("rimandata")}
-              />
-              <span>Rimandate ({statusCounts.rimandata || 0})</span>
-            </label>
+            {["svolta","annullata","riprogrammata","rimandata"].map(k=>(
+              <label key={k} className="flex items-center gap-2 text-xs">
+                <input type="checkbox" checked={statusOnly[k]} onChange={()=>toggleStatus(k)} />
+                <span className="capitalize">
+                  {k} ({(filteredLessons.length ? filteredLessons : baseFiltered).filter(l=>statoLabel(l)===k).length})
+                </span>
+              </label>
+            ))}
           </div>
           <div className="mt-2">
-            <button
-              type="button"
-              className="text-xs px-3 py-1.5 rounded-lg border bg-white"
-              onClick={clearStatusFilters}
-            >
+            <button type="button" className="text-xs px-3 py-1.5 rounded-lg border bg-white" onClick={clearStatusFilters}>
               Pulisci stati
             </button>
           </div>
         </div>
-
-        {rangeError && (
-          <div className="mt-2 text-xs text-red-600">
-            {rangeError}
-          </div>
-        )}
       </div>
 
-      {/* Loading / Errore */}
-      {loading && (
-        <div className="max-w-xl mx-auto px-4 space-y-3">
-          <Skeleton h="48px" />
-          <Skeleton h="48px" />
-          <Skeleton h="112px" />
-        </div>
-      )}
-      {!loading && err && (
+      {/* barra azioni selezione */}
+      <div className="sticky top-[140px] z-20 bg-white border-y px-4 py-2 flex items-center gap-2">
+        <button
+          onClick={deleteSelected}
+          disabled={!selectedIds.size}
+          className="px-3 py-1.5 text-sm rounded bg-red-600 text-white disabled:opacity-50"
+        >
+          Elimina selezionate ({selectedIds.size})
+        </button>
+      </div>
+
+      {/* Errori */}
+      {err && (
         <div className="max-w-xl mx-auto px-4">
           <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
             {err}
@@ -462,33 +381,23 @@ export default function AllieviAdminPage() {
       )}
 
       {/* Contenuti */}
-      {!loading && !err && (
+      {!err && (
         <>
           {/* Allievi */}
           <SectionTitle title="Allievi" />
           <div className="max-w-xl mx-auto px-4 pb-4 grid gap-2">
             {filteredStudents.length === 0 ? (
-              <EmptyState
-                title="Nessun allievo"
-                subtitle={search ? "Modifica la ricerca." : "Non sono presenti allievi."}
-              />
+              <EmptyState title="Nessun allievo" subtitle={search ? "Modifica la ricerca." : "Non sono presenti allievi."} />
             ) : (
               filteredStudents.map((s) => <StudentRow key={s.id} s={s} />)
             )}
           </div>
 
-          {/* Lezioni future (tutti gli stati, filtrati) */}
-          <SectionTitle title="Lezioni future" />
+          {/* Lezioni filtrate */}
+          <SectionTitle title="Lezioni" />
           <div className="max-w-xl mx-auto px-4">
             {lessonsByDay.length === 0 ? (
-              <EmptyState
-                title="Nessuna lezione trovata"
-                subtitle={
-                  dateFrom || dateTo || search || Object.values(statusOnly).some(Boolean)
-                    ? "Nessuna lezione che rispetta i filtri."
-                    : "Quando verranno aggiunte, le vedrai qui."
-                }
-              />
+              <EmptyState title="Nessuna lezione trovata" />
             ) : (
               lessonsByDay.map(([day, items]) => (
                 <div key={day} className="mb-5">
@@ -503,10 +412,11 @@ export default function AllieviAdminPage() {
                           key={`${l.id || "k"}-${i}`}
                           l={l}
                           last={i === items.length - 1}
-                          onOpenEdit={(mode) => openEdit(l, mode || "edit")}
+                          onOpenEdit={(mode) => { setEditLesson(l); setEditMode(mode || "edit"); setEditOpen(true); }}
                           onRimanda={() => handleRimanda(l)}
                           onAnnulla={() => handleAnnulla(l)}
-                          mostraDocente={true} // 👈 MOSTRA SEMPRE DOCENTE LATO ADMIN
+                          selected={selectedIds.has(l.id)}
+                          onToggle={() => toggleSelect(l.id)}
                         />
                       ))}
                   </div>
@@ -524,15 +434,14 @@ export default function AllieviAdminPage() {
         onSaved={handleSaved}
         lesson={editLesson}
         mode={editMode}
+        showTeacherSelect={true} // admin può cambiare docente/allievo
       />
 
-      {/* Bottom Navigation (Admin) */}
       <BottomNavAdmin />
     </div>
   );
 }
 
-// --- UI bits ---
 function SectionTitle({ title }) {
   return (
     <div className="max-w-xl mx-auto px-4 pt-3 pb-2">
@@ -550,9 +459,6 @@ function EmptyState({ title, subtitle }) {
 }
 function StudentRow({ s }) {
   const initials = `${(s.nome || "?")[0] ?? ""}${(s.cognome || "?")[0] ?? ""}`.toUpperCase();
-  // opzionale: se l'endpoint include i docenti assegnati all'allievo (es. s.insegnanti = [{nome,cognome}, ...])
-  const docenti = Array.isArray(s.insegnanti) ? s.insegnanti : null;
-
   return (
     <div className="flex items-start gap-3 rounded-xl border bg-white px-3 py-2">
       <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
@@ -562,13 +468,6 @@ function StudentRow({ s }) {
         <div className="text-sm font-medium truncate">
           {s.nome} {s.cognome}
         </div>
-        {docenti && docenti.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {docenti.map((d, idx) => (
-              <Badge key={idx}>{`${d.cognome || ""} ${d.nome || ""}`.trim()}</Badge>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -583,16 +482,12 @@ function Badge({ children, tone = "gray" }) {
     purple: "bg-purple-100 text-purple-700 border-purple-200",
   };
   return (
-    <span
-      className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${
-        tones[tone] || tones.gray
-      }`}
-    >
+    <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${tones[tone] || tones.gray}`}>
       {children}
     </span>
   );
 }
-function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, mostraDocente = false }) {
+function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, selected, onToggle }) {
   const startISO = isoFromDateTime(ymd(l.data), l.ora_inizio);
   const endISO = isoFromDateTime(ymd(l.data), l.ora_fine);
   const orario =
@@ -604,23 +499,16 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, mostraDocente = 
   const isRimandata = label === "rimandata";
   const isAnnullata = label === "annullata";
   const isRiprogrammata = label === "riprogrammata";
-
   const tone =
-    isAnnullata ? "red"
-    : isRiprogrammata ? "purple"
-    : isRimandata ? "orange"
-    : (label === "svolta" ? "green" : "blue");
+    isAnnullata ? "red" : isRiprogrammata ? "purple" : isRimandata ? "orange" : (label === "svolta" ? "green" : "blue");
 
   const docente = [l.nome_insegnante, l.cognome_insegnante].filter(Boolean).join(" ");
 
   return (
-    <div
-      className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"} cursor-pointer`}
-      onClick={() => onOpenEdit && onOpenEdit("edit")}
-      title="Modifica lezione"
-    >
+    <div className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"}`}>
+      <input type="checkbox" checked={selected} onChange={onToggle} className="mt-0.5" />
       <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenEdit("edit")}>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="text-sm font-medium truncate">
             {l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ""}`.trim() : "Allievo"}
@@ -628,51 +516,28 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, mostraDocente = 
           <Badge tone={tone}>{label}</Badge>
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
-
-        {/* 👇 docente visibile lato admin */}
-        {mostraDocente && docente && (
-          <div className="text-xs text-gray-500 mt-0.5">👨‍🏫 {docente}</div>
-        )}
-
+        {docente && <div className="text-xs text-gray-500 mt-0.5">👨‍🏫 {docente}</div>}
         {l.motivazione && label !== "svolta" && (
           <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
         )}
       </div>
-
-      {/* Azioni – per stato */}
       {!isAnnullata && (
-        <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 shrink-0">
           {isRimandata ? (
             <>
-              <button
-                className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white"
-                title="Riprogramma"
-                onClick={() => onOpenEdit && onOpenEdit("reschedule")}
-              >
+              <button className="px-2 py-1 rounded-md text-xs bg-amber-600 text-white" onClick={() => onOpenEdit("reschedule")}>
                 Riprogramma
               </button>
-              <button
-                className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                title="Annulla"
-                onClick={onAnnulla}
-              >
+              <button className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800" onClick={onAnnulla}>
                 Annulla
               </button>
             </>
           ) : (
             <>
-              <button
-                className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800"
-                title="Rimanda"
-                onClick={onRimanda}
-              >
+              <button className="px-2 py-1 rounded-md text-xs bg-amber-100 text-amber-800" onClick={onRimanda}>
                 Rimanda
               </button>
-              <button
-                className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800"
-                title="Annulla"
-                onClick={onAnnulla}
-              >
+              <button className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-800" onClick={onAnnulla}>
                 Annulla
               </button>
             </>
@@ -681,7 +546,4 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, mostraDocente = 
       )}
     </div>
   );
-}
-function Skeleton({ h = "48px" }) {
-  return <div className="animate-pulse rounded-xl bg-gray-200" style={{ height: h }} />;
 }
