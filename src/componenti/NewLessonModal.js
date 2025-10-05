@@ -207,7 +207,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/40 px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="nuova-lezione-title"
