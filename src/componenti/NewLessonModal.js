@@ -212,7 +212,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       aria-modal="true"
       aria-labelledby="nuova-lezione-title"
     >
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-4 sm:p-6">
+      <div className="relative z-[10000] bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 m-4">
         <div className="flex items-center justify-between mb-3">
           <h2 id="nuova-lezione-title" className="text-lg font-semibold">
             Nuova lezione
