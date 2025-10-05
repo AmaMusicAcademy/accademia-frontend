@@ -144,7 +144,7 @@ export default function EditLessonModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center bg-black/40">
       <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="text-base font-semibold">
