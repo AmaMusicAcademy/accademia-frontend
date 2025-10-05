@@ -1,18 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-/**
- * Props:
- * - addActionsByRoute: { [routePrefix: string]: () => void }
- *   es: {
- *     '/admin/allievi': openNuovoAllievoModal,
- *     '/admin/insegnanti': openNuovoInsegnanteModal,
- *     '/admin/aule': openNuovaAulaModal,
- *     '/admin/calendario': openAdminNewLessonModal,
- *     'default': openFallbackModal
- *   }
- * - onEdit?: () => void
- */
 const BottomNavAdmin = ({ addActionsByRoute = {}, onEdit }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -118,7 +106,7 @@ const BottomNavAdmin = ({ addActionsByRoute = {}, onEdit }) => {
             </button>
           )}
         </div>
-        
+
         {/* Allievi */}
         <button
           onClick={() => navigate('/admin/allievi_lesson')}
