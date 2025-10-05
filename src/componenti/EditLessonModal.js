@@ -220,7 +220,7 @@ export default function EditLessonModal({
   const modal = (
     <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center">
+      <div className="relative z-[10000] bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 m-4">
         <div className="flex items-center justify-between mb-2">
           <div className="text-base font-semibold">
             {mode === "reschedule"
