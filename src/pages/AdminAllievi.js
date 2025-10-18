@@ -42,7 +42,6 @@ const AdminAllievi = () => {
   async function fetchAllieviBase() {
     const token = localStorage.getItem('token');
     if (teacherId) {
-      // allievi assegnati a un insegnante specifico
       const r = await fetch(`${API}/api/insegnanti/${teacherId}/allievi`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -61,15 +60,17 @@ const AdminAllievi = () => {
 
       const allieviEnriched = await Promise.all(
         (Array.isArray(baseList) ? baseList : []).map(async (allievo) => {
-          const base = { ...allievo, in_regola: false, quota_assoc_anno_corrente: null };
+          const base = { ...allievo, in_regola: false, quota_assoc_anno_corrente: null, __pagamenti: [] };
 
           try {
-            // mensilità
+            // mensilità (salviamo anche i pagamenti grezzi per il bottone "Pagato")
             const resPag = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             const pagamenti = await resPag.json();
-            const mesiPagati = pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
+            base.__pagamenti = Array.isArray(pagamenti) ? pagamenti : [];
+
+            const mesiPagati = base.__pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
 
             const inizio = new Date(allievo.data_iscrizione);
             const oggi = new Date();
@@ -89,6 +90,7 @@ const AdminAllievi = () => {
             base.in_regola = mesiAttesi.every(mese => mesiPagati.includes(mese));
           } catch {
             base.in_regola = false;
+            base.__pagamenti = [];
           }
 
           try {
@@ -182,21 +184,6 @@ const AdminAllievi = () => {
     }
   };
 
-  async function deleteStudent(id) {
-    if (!window.confirm('Eliminare DEFINITIVAMENTE questo allievo? Operazione irreversibile.')) return;
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${API}/api/allievi/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(()=> '');
-      alert(t || 'Errore cancellazione');
-      return;
-    }
-    setAllievi(list => list.filter(x => String(x.id) !== String(id)));
-  }
-
   // filtro “solo non in regola”
   const visibili = useMemo(() => {
     if (!arretratoOnly) return allievi;
@@ -246,11 +233,63 @@ const AdminAllievi = () => {
           {visibili.map((allievo) => {
             const qa = allievo.quota_assoc_anno_corrente;
             const qaOk = qa?.pagata === true;
+
+            // 🔢 ultimo mese pagato
+            const pagamenti = Array.isArray(allievo.__pagamenti) ? allievo.__pagamenti : [];
+            const last = pagamenti.reduce((acc, p) => {
+              const k = Number(p.anno) * 100 + Number(p.mese);
+              return k > acc.key ? { key: k, anno: Number(p.anno), mese: Number(p.mese) } : acc;
+            }, { key: 0, anno: 0, mese: 0 });
+
+            // 📅 mese corrente
+            const now = new Date();
+            const curAnno = now.getFullYear();
+            const curMese = now.getMonth() + 1;
+
+            // ⚠️ disabilita se mese corrente già pagato
+            const currentPaid = pagamenti.some(p => Number(p.anno) === curAnno && Number(p.mese) === curMese);
+
+            // ➕ prossimo mese da registrare
+            let nextAnno = curAnno, nextMese = curMese;
+            if (last.key > 0) {
+              nextAnno = last.anno;
+              nextMese = last.mese + 1;
+              if (nextMese === 13) { nextMese = 1; nextAnno += 1; }
+              // se "ultimo pagato" è nel passato remoto, non torniamo indietro: al minimo il corrente
+              if (nextAnno * 100 + nextMese < curAnno * 100 + curMese) {
+                nextAnno = curAnno; nextMese = curMese;
+              }
+            }
+
+            const handleSegnaPagato = async (e) => {
+              e.stopPropagation();
+              try {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ anno: nextAnno, mese: nextMese }),
+                });
+                if (!res.ok) {
+                  const t = await res.text().catch(()=> '');
+                  throw new Error(t || 'Errore nel salvataggio del pagamento');
+                }
+                // ricarica per riflettere subito lo stato
+                fetchAllievi();
+              } catch (err) {
+                alert(err.message || 'Errore nel salvataggio pagamento');
+              }
+            };
+
             return (
               <div key={allievo.id} className="flex items-center justify-between p-4">
                 <button
                   onClick={() => handleClick(allievo.id)}
                   className="flex-1 flex items-center text-left gap-3"
+                  title="Apri dettaglio allievo"
                 >
                   <span
                     className={`inline-block w-3 h-3 rounded-full ${allievo.in_regola ? 'bg-green-500' : 'bg-red-500'}`}
@@ -266,15 +305,21 @@ const AdminAllievi = () => {
                     </span>
                   </div>
                 </button>
-                <div className="flex items-center gap-2 pl-3">
+
+                {/* 👉 Bottone Pagato (al posto di "Elimina") */}
+                <div className="ml-3">
                   <button
-                    onClick={() => deleteStudent(allievo.id)}
-                    className="px-2 py-1 rounded bg-red-100 text-red-700 text-xs"
-                    title="Elimina allievo"
+                    onClick={handleSegnaPagato}
+                    disabled={currentPaid}
+                    className={`px-3 py-1.5 rounded text-sm border ${
+                      currentPaid
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-green-600 text-white border-green-600 hover:bg-green-700'
+                    }`}
+                    title={currentPaid ? 'Mese corrente già saldato' : `Registra ${String(nextMese).padStart(2, '0')}/${nextAnno}`}
                   >
-                    Elimina
+                    {currentPaid ? 'Pagato (mese ok)' : `Pagato ${String(nextMese).padStart(2, '0')}/${nextAnno}`}
                   </button>
-                  <span className="text-gray-400">›</span>
                 </div>
               </div>
             );
