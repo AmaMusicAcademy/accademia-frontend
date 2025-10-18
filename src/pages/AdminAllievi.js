@@ -17,7 +17,7 @@ const AdminAllievi = () => {
   // filtro insegnante (lista allievi)
   const [teacherId, setTeacherId] = useState('');
 
-  // filtro “solo non in regola” (mensilità e/o quota associativa anno corrente)
+  // filtro “solo non in regola”
   const [arretratoOnly, setArretratoOnly] = useState(false);
 
   // quota associativa nella modale “nuovo allievo”
@@ -25,6 +25,20 @@ const AdminAllievi = () => {
 
   const navigate = useNavigate();
   const annoCorrente = new Date().getFullYear();
+
+  // ─────────────────────────────────────────────────────
+  // Helpers per mesi
+  // ─────────────────────────────────────────────────────
+  const ymKey = (y, m) => `${y}-${String(m).padStart(2, '0')}`;
+  const incMonth = (y, m) => {
+    const nextM = m === 12 ? 1 : m + 1;
+    const nextY = m === 12 ? y + 1 : y;
+    return { y: nextY, m: nextM };
+  };
+  const monthLabelShort = (y, m) => {
+    const mesi = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+    return `${mesi[m - 1] || ''}${String(y).slice(-2)}`; // es. ott25
+  };
 
   async function fetchInsegnanti() {
     try {
@@ -42,6 +56,7 @@ const AdminAllievi = () => {
   async function fetchAllieviBase() {
     const token = localStorage.getItem('token');
     if (teacherId) {
+      // allievi assegnati a un insegnante specifico
       const r = await fetch(`${API}/api/insegnanti/${teacherId}/allievi`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -60,37 +75,65 @@ const AdminAllievi = () => {
 
       const allieviEnriched = await Promise.all(
         (Array.isArray(baseList) ? baseList : []).map(async (allievo) => {
-          const base = { ...allievo, in_regola: false, quota_assoc_anno_corrente: null, __pagamenti: [] };
+          const base = {
+            ...allievo,
+            in_regola: false,
+            quota_assoc_anno_corrente: null,
+            mesiPagati: [],       // es. ["2025-09", "2025-10", ...]
+            ultimoPagato: null,   // es. { anno: 2025, mese: 9 }
+            currentPaid: false    // mese corrente già pagato?
+          };
 
           try {
-            // mensilità (salviamo anche i pagamenti grezzi per il bottone "Pagato")
+            // mensilità
             const resPag = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
               headers: { Authorization: `Bearer ${token}` }
             });
-            const pagamenti = await resPag.json();
-            base.__pagamenti = Array.isArray(pagamenti) ? pagamenti : [];
+            const pagamenti = await resPag.json(); // [{anno, mese}]
+            const mesiPagati = (Array.isArray(pagamenti) ? pagamenti : []).map(
+              (p) => ymKey(Number(p.anno), Number(p.mese))
+            );
+            base.mesiPagati = mesiPagati;
 
-            const mesiPagati = base.__pagamenti.map(p => `${p.anno}-${String(p.mese).padStart(2, '0')}`);
-
-            const inizio = new Date(allievo.data_iscrizione);
-            const oggi = new Date();
-            const mesiAttesi = [];
-            const y0 = inizio.getFullYear();
-            const m0 = inizio.getMonth();
-            const y1 = oggi.getFullYear();
-            const m1 = oggi.getMonth();
-
-            for (let y = y0; y <= y1; y++) {
-              const start = y === y0 ? m0 : 0;
-              const end = y === y1 ? m1 : 11;
-              for (let m = start; m <= end; m++) {
-                mesiAttesi.push(`${y}-${String(m + 1).padStart(2, '0')}`);
+            // in_regola = ogni mese da iscrizione → oggi è tra i pagati
+            try {
+              const inizio = new Date(allievo.data_iscrizione);
+              const oggi = new Date();
+              const mesiAttesi = [];
+              const y0 = inizio.getFullYear();
+              const m0 = inizio.getMonth();
+              const y1 = oggi.getFullYear();
+              const m1 = oggi.getMonth();
+              for (let y = y0; y <= y1; y++) {
+                const start = y === y0 ? m0 : 0;
+                const end = y === y1 ? m1 : 11;
+                for (let m = start; m <= end; m++) {
+                  mesiAttesi.push(ymKey(y, m + 1));
+                }
               }
+              base.in_regola = mesiAttesi.every(mese => mesiPagati.includes(mese));
+            } catch {
+              base.in_regola = false;
             }
-            base.in_regola = mesiAttesi.every(mese => mesiPagati.includes(mese));
+
+            // ultimoPagato
+            if (mesiPagati.length) {
+              const toPairs = mesiPagati
+                .map(s => {
+                  const [yy, mm] = s.split('-').map(Number);
+                  return { yy, mm };
+                })
+                .sort((a,b) => (a.yy === b.yy ? a.mm - b.mm : a.yy - b.yy));
+              const last = toPairs[toPairs.length - 1];
+              base.ultimoPagato = { anno: last.yy, mese: last.mm };
+            }
+
+            // currentPaid?
+            const now = new Date();
+            const curKey = ymKey(now.getFullYear(), now.getMonth() + 1);
+            base.currentPaid = mesiPagati.includes(curKey);
           } catch {
             base.in_regola = false;
-            base.__pagamenti = [];
           }
 
           try {
@@ -194,6 +237,68 @@ const AdminAllievi = () => {
     });
   }, [allievi, arretratoOnly]);
 
+  // calcola prossimo mese da segnare pagato: mese successivo a ultimoPagato
+  const getNextMonthToPay = (allievo) => {
+    const iscr = new Date(allievo.data_iscrizione);
+    let y = iscr.getFullYear();
+    let m = iscr.getMonth() + 1;
+    if (allievo.ultimoPagato) {
+      y = allievo.ultimoPagato.anno;
+      m = allievo.ultimoPagato.mese;
+      const step = incMonth(y, m);
+      y = step.y;
+      m = step.m;
+    }
+    return { y, m };
+  };
+
+  const handleSegnaPagato = async (allievo) => {
+    try {
+      // se già pagato il mese corrente → non fare nulla
+      if (allievo.currentPaid) return;
+
+      const { y, m } = getNextMonthToPay(allievo);
+      const token = localStorage.getItem('token');
+
+      const res = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ anno: y, mese: m })
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(()=>'');
+        throw new Error(t || 'Errore nel registrare il pagamento');
+      }
+
+      // aggiorna stato locale senza ricaricare tutto
+      setAllievi(prev => prev.map(a => {
+        if (String(a.id) !== String(allievo.id)) return a;
+        const newMesi = [...(a.mesiPagati || []), ymKey(y,m)];
+        // ricalcola ultimoPagato
+        const pairs = newMesi
+          .map(s => {
+            const [yy, mm] = s.split('-').map(Number);
+            return { yy, mm };
+          })
+          .sort((A,B) => (A.yy === B.yy ? A.mm - B.mm : A.yy - B.yy));
+        const last = pairs[pairs.length - 1];
+        // currentPaid?
+        const now = new Date();
+        const curKey = ymKey(now.getFullYear(), now.getMonth() + 1);
+        const isCurPaid = newMesi.includes(curKey);
+        return {
+          ...a,
+          mesiPagati: newMesi,
+          ultimoPagato: { anno: last.yy, mese: last.mm },
+          currentPaid: isCurPaid
+        };
+      }));
+    } catch (e) {
+      alert(e.message || 'Errore durante il salvataggio del pagamento');
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 pb-16">
       {/* Header */}
@@ -234,62 +339,18 @@ const AdminAllievi = () => {
             const qa = allievo.quota_assoc_anno_corrente;
             const qaOk = qa?.pagata === true;
 
-            // 🔢 ultimo mese pagato
-            const pagamenti = Array.isArray(allievo.__pagamenti) ? allievo.__pagamenti : [];
-            const last = pagamenti.reduce((acc, p) => {
-              const k = Number(p.anno) * 100 + Number(p.mese);
-              return k > acc.key ? { key: k, anno: Number(p.anno), mese: Number(p.mese) } : acc;
-            }, { key: 0, anno: 0, mese: 0 });
+            // mese corrente è già pagato?
+            const disabled = allievo.currentPaid === true;
 
-            // 📅 mese corrente
-            const now = new Date();
-            const curAnno = now.getFullYear();
-            const curMese = now.getMonth() + 1;
-
-            // ⚠️ disabilita se mese corrente già pagato
-            const currentPaid = pagamenti.some(p => Number(p.anno) === curAnno && Number(p.mese) === curMese);
-
-            // ➕ prossimo mese da registrare
-            let nextAnno = curAnno, nextMese = curMese;
-            if (last.key > 0) {
-              nextAnno = last.anno;
-              nextMese = last.mese + 1;
-              if (nextMese === 13) { nextMese = 1; nextAnno += 1; }
-              // se "ultimo pagato" è nel passato remoto, non torniamo indietro: al minimo il corrente
-              if (nextAnno * 100 + nextMese < curAnno * 100 + curMese) {
-                nextAnno = curAnno; nextMese = curMese;
-              }
-            }
-
-            const handleSegnaPagato = async (e) => {
-              e.stopPropagation();
-              try {
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${API}/api/allievi/${allievo.id}/pagamenti`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({ anno: nextAnno, mese: nextMese }),
-                });
-                if (!res.ok) {
-                  const t = await res.text().catch(()=> '');
-                  throw new Error(t || 'Errore nel salvataggio del pagamento');
-                }
-                // ricarica per riflettere subito lo stato
-                fetchAllievi();
-              } catch (err) {
-                alert(err.message || 'Errore nel salvataggio pagamento');
-              }
-            };
+            // prossimo mese “dopo l’ultimo pagato” oppure dal mese di iscrizione
+            const { y: nextY, m: nextM } = getNextMonthToPay(allievo);
+            const shortLabel = monthLabelShort(nextY, nextM).toUpperCase();
 
             return (
               <div key={allievo.id} className="flex items-center justify-between p-4">
                 <button
                   onClick={() => handleClick(allievo.id)}
                   className="flex-1 flex items-center text-left gap-3"
-                  title="Apri dettaglio allievo"
                 >
                   <span
                     className={`inline-block w-3 h-3 rounded-full ${allievo.in_regola ? 'bg-green-500' : 'bg-red-500'}`}
@@ -306,35 +367,37 @@ const AdminAllievi = () => {
                   </div>
                 </button>
 
-                {/* 👉 Bottone Pagato (al posto di "Elimina") */}
-                <div className="ml-3">
-                  const shortLabel = (() => {
-  const mesi = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-  const lblMese = mesi[nextMese - 1] || '';
-  const lblAnno = String(nextAnno).slice(-2);
-  return `${lblMese}${lblAnno}`;
-})();
+                {/* Bottone PAGATO (pill), disabilitato se mese corrente già saldato */}
+                <div className="flex items-center gap-2 pl-3">
+                  <button
+                    onClick={() => handleSegnaPagato(allievo)}
+                    disabled={disabled}
+                    className={`relative flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm
+                      ${disabled
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-emerald-500 text-white active:scale-95 hover:bg-emerald-600'
+                      }`}
+                    title={disabled ? 'Mese corrente già saldato' : `Registra pagamento ${shortLabel}`}
+                  >
+                    {disabled ? (
+                      <span className="flex items-center gap-1">
+                        ✅ <span className="text-[13px]">Pagato</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        💶 <span className="text-[13px]">{shortLabel}</span>
+                      </span>
+                    )}
+                  </button>
 
-<button
-  onClick={handleSegnaPagato}
-  disabled={currentPaid}
-  className={`relative flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm
-    ${currentPaid
-      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-      : 'bg-emerald-500 text-white active:scale-95 hover:bg-emerald-600'
-    }`}
-  title={currentPaid ? 'Mese corrente già saldato' : `Registra pagamento ${shortLabel.toUpperCase()}`}
->
-  {currentPaid ? (
-    <span className="flex items-center gap-1">
-      ✅ <span className="text-[13px]">Pagato</span>
-    </span>
-  ) : (
-    <span className="flex items-center gap-1">
-      💶 <span className="text-[13px]">{shortLabel}</span>
-    </span>
-  )}
-</button>
+                  {/* caret */}
+                  <span
+                    onClick={() => handleClick(allievo.id)}
+                    className="text-gray-400 cursor-pointer select-none"
+                    title="Dettaglio"
+                  >
+                    ›
+                  </span>
                 </div>
               </div>
             );
