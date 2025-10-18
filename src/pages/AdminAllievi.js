@@ -361,8 +361,7 @@ const AdminAllievi = () => {
                       {allievo.nome} {allievo.cognome}
                     </span>
                     <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded-full border ${qaOk ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                      🪪 Quota {annoCorrente}: {qaOk ? 'SALDATA' : 'DA SALDARE'}
-                      {qa?.data_pagamento ? ` · ${qa.data_pagamento}` : ''}
+                      🪪 Quota {annoCorrente}
                     </span>
                   </div>
                 </button>
