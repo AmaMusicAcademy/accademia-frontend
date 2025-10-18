@@ -308,18 +308,33 @@ const AdminAllievi = () => {
 
                 {/* 👉 Bottone Pagato (al posto di "Elimina") */}
                 <div className="ml-3">
-                  <button
-                    onClick={handleSegnaPagato}
-                    disabled={currentPaid}
-                    className={`px-3 py-1.5 rounded text-sm border ${
-                      currentPaid
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                        : 'bg-green-600 text-white border-green-600 hover:bg-green-700'
-                    }`}
-                    title={currentPaid ? 'Mese corrente già saldato' : `Registra ${String(nextMese).padStart(2, '0')}/${nextAnno}`}
-                  >
-                    {currentPaid ? 'Pagato (mese ok)' : `Pagato ${String(nextMese).padStart(2, '0')}/${nextAnno}`}
-                  </button>
+                  const shortLabel = (() => {
+  const mesi = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const lblMese = mesi[nextMese - 1] || '';
+  const lblAnno = String(nextAnno).slice(-2);
+  return `${lblMese}${lblAnno}`;
+})();
+
+<button
+  onClick={handleSegnaPagato}
+  disabled={currentPaid}
+  className={`relative flex items-center justify-center px-4 py-2 rounded-full text-sm font-semibold transition-all shadow-sm
+    ${currentPaid
+      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+      : 'bg-emerald-500 text-white active:scale-95 hover:bg-emerald-600'
+    }`}
+  title={currentPaid ? 'Mese corrente già saldato' : `Registra pagamento ${shortLabel.toUpperCase()}`}
+>
+  {currentPaid ? (
+    <span className="flex items-center gap-1">
+      ✅ <span className="text-[13px]">Pagato</span>
+    </span>
+  ) : (
+    <span className="flex items-center gap-1">
+      💶 <span className="text-[13px]">{shortLabel}</span>
+    </span>
+  )}
+</button>
                 </div>
               </div>
             );
