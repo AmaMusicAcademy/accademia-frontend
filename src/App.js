@@ -16,6 +16,7 @@ import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
+import AdminIscrizioni from './pages/AdminIscrizioni';
 import AdminLessonTotal from './pages/AllieviAdminPage';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
@@ -137,6 +138,9 @@ function App() {
   } />
   <Route path="/admin/chiusure" element={
     <ProtectedRoute element={<GiorniChiusura />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/iscrizioni" element={
+    <ProtectedRoute element={<AdminIscrizioni />} allowedRoles={['admin']} />
   } />
 
   {/* 📚 Allievo */}
