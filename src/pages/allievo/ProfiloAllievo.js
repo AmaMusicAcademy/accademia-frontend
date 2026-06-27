@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut } from 'lucide-react';
+import { User, Phone, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut, Pencil } from 'lucide-react';
 import AllievoLayout from '../../componenti/AllievoLayout';
 import { apiFetch } from '../../utils/api';
 
@@ -62,7 +62,16 @@ function ModalRegolamento({ onClose }) {
   );
 }
 
-function Campo({ label, value, onChange, type = 'text', disabled = false, className = '' }) {
+function Riga({ label, value }) {
+  return (
+    <div className="flex items-start gap-2 py-2 border-b border-gray-50 last:border-0">
+      <span className="text-xs text-gray-400 w-36 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-gray-900 font-medium">{value || '—'}</span>
+    </div>
+  );
+}
+
+function Campo({ label, value, onChange, type = 'text', className = '' }) {
   return (
     <div className={className}>
       <label className="block text-xs text-gray-500 mb-1">{label}</label>
@@ -70,10 +79,8 @@ function Campo({ label, value, onChange, type = 'text', disabled = false, classN
         type={type}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        disabled={disabled}
-        className={`w-full text-sm border rounded-xl px-3 py-2.5 outline-none transition
-          ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-transparent' :
-            'bg-white text-gray-900 border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100'}`}
+        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none
+          bg-white text-gray-900 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
       />
     </div>
   );
@@ -92,22 +99,22 @@ function Sezione({ titolo, icona: Icon, children, collapsible = false }) {
         </div>
         {collapsible && (aperta ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />)}
       </div>
-      {aperta && <div className="px-4 py-4 space-y-3">{children}</div>}
+      {aperta && <div className="px-4 py-2">{children}</div>}
     </div>
   );
 }
 
 export default function ProfiloAllievo() {
   const navigate  = useNavigate();
-  const [dati, setDati]           = useState(null);
-  const [form, setForm]           = useState({});
-  const [loading, setLoading]     = useState(true);
-  const [salvando, setSalvando]   = useState(false);
-  const [salvato, setSalvato]     = useState(false);
-  const [errore, setErrore]       = useState('');
-  const [showReg, setShowReg]     = useState(false);
+  const [dati, setDati]         = useState(null);
+  const [form, setForm]         = useState({});
+  const [editing, setEditing]   = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [errore, setErrore]     = useState('');
+  const [showReg, setShowReg]   = useState(false);
 
-  useEffect(() => {
+  const carica = () => {
     apiFetch('/api/allievo/me').then(d => {
       setDati(d);
       setForm({
@@ -120,7 +127,6 @@ export default function ProfiloAllievo() {
         codice_fiscale:         d.codice_fiscale || '',
         luogo_nascita:          d.luogo_nascita || '',
         data_nascita:           d.data_nascita ? String(d.data_nascita).slice(0,10) : '',
-        minore:                 d.minore || false,
         genitore_nome:          d.genitore_nome || '',
         genitore_cognome:       d.genitore_cognome || '',
         genitore_cf:            d.genitore_cf || '',
@@ -132,9 +138,17 @@ export default function ProfiloAllievo() {
         accettazione_reg:       d.accettazione_reg || false,
       });
     }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { carica(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const annulla = () => {
+    carica();
+    setEditing(false);
+    setErrore('');
+  };
 
   const salva = async () => {
     setSalvando(true);
@@ -144,8 +158,8 @@ export default function ProfiloAllievo() {
         method: 'PATCH',
         body: JSON.stringify(form),
       });
-      setSalvato(true);
-      setTimeout(() => setSalvato(false), 2500);
+      await apiFetch('/api/allievo/me').then(d => setDati(d));
+      setEditing(false);
     } catch {
       setErrore('Errore nel salvataggio. Riprova.');
     } finally {
@@ -163,150 +177,202 @@ export default function ProfiloAllievo() {
     </AllievoLayout>
   );
 
+  const indirizzoCompleto = [dati?.indirizzo, dati?.cap, dati?.citta, dati?.provincia ? `(${dati.provincia})` : ''].filter(Boolean).join(', ') || '—';
+
   return (
     <AllievoLayout>
-      <div className="pt-6 pb-2 mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Il mio profilo</h1>
-        <p className="text-sm text-gray-500">Aggiorna le tue informazioni personali</p>
-      </div>
-
-      {/* Dati anagrafici allievo */}
-      <Sezione titolo="Dati personali" icona={User}>
-        <div className="grid grid-cols-2 gap-3">
-          <Campo label="Nome"    value={dati?.nome}    onChange={() => {}} disabled />
-          <Campo label="Cognome" value={dati?.cognome} onChange={() => {}} disabled />
+      {/* Header */}
+      <div className="pt-6 pb-2 mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Il mio profilo</h1>
+          <p className="text-sm text-gray-500">{editing ? 'Modifica le informazioni' : 'Informazioni personali'}</p>
         </div>
-        <Campo label="Codice Fiscale" value={form.codice_fiscale}
-          onChange={v => set('codice_fiscale', v.toUpperCase())} />
-        <div className="grid grid-cols-2 gap-3">
-          <Campo label="Data di nascita" value={form.data_nascita} type="date"
-            onChange={v => set('data_nascita', v)} />
-          <Campo label="Luogo di nascita" value={form.luogo_nascita}
-            onChange={v => set('luogo_nascita', v)} />
-        </div>
-        <Campo label="Indirizzo di residenza" value={form.indirizzo}
-          onChange={v => set('indirizzo', v)} />
-        <div className="grid grid-cols-3 gap-3">
-          <Campo label="CAP" value={form.cap} onChange={v => set('cap', v)} />
-          <Campo label="Città" value={form.citta} onChange={v => set('citta', v)} />
-          <Campo label="Prov." value={form.provincia} onChange={v => set('provincia', v.toUpperCase().slice(0,2))} />
-        </div>
-      </Sezione>
-
-      {/* Contatti */}
-      <Sezione titolo="Contatti" icona={Phone}>
-        <Campo label="Telefono" value={form.telefono} type="tel"
-          onChange={v => set('telefono', v)} />
-        <Campo label="Email" value={form.email} type="email"
-          onChange={v => set('email', v)} />
-      </Sezione>
-
-      {/* Flag minore */}
-      <div className="bg-white border rounded-2xl px-4 py-4 mb-4">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <div
-            onClick={() => set('minore', !form.minore)}
-            className={`w-10 h-6 rounded-full flex items-center transition-colors shrink-0 mt-0.5 ${form.minore ? 'bg-indigo-600' : 'bg-gray-200'}`}>
-            <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.minore ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Minore di 18 anni</p>
-            <p className="text-xs text-gray-500 mt-0.5">Attiva se l'allievo è minorenne — richiede i dati del genitore o tutore</p>
-          </div>
-        </label>
-      </div>
-
-      {/* Dati genitore (condizionale) */}
-      {form.minore && (
-        <Sezione titolo="Genitore / Tutore" icona={Users} collapsible>
-          <div className="grid grid-cols-2 gap-3">
-            <Campo label="Nome" value={form.genitore_nome}
-              onChange={v => set('genitore_nome', v)} />
-            <Campo label="Cognome" value={form.genitore_cognome}
-              onChange={v => set('genitore_cognome', v)} />
-          </div>
-          <Campo label="Codice Fiscale" value={form.genitore_cf}
-            onChange={v => set('genitore_cf', v.toUpperCase())} />
-          <div className="grid grid-cols-2 gap-3">
-            <Campo label="Data di nascita" value={form.genitore_data_nascita} type="date"
-              onChange={v => set('genitore_data_nascita', v)} />
-            <Campo label="Luogo di nascita" value={form.genitore_luogo_nascita}
-              onChange={v => set('genitore_luogo_nascita', v)} />
-          </div>
-          <Campo label="Indirizzo di residenza" value={form.genitore_indirizzo}
-            onChange={v => set('genitore_indirizzo', v)} />
-          <div className="grid grid-cols-2 gap-3">
-            <Campo label="Telefono" value={form.genitore_telefono} type="tel"
-              onChange={v => set('genitore_telefono', v)} />
-            <Campo label="Email" value={form.genitore_email} type="email"
-              onChange={v => set('genitore_email', v)} />
-          </div>
-        </Sezione>
-      )}
-
-      {/* Data iscrizione (sola lettura) */}
-      <div className="bg-white border rounded-2xl px-4 py-4 mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar size={16} className="text-indigo-500" />
-          <span className="text-sm font-semibold text-gray-900">Iscrizione</span>
-        </div>
-        <p className="text-xs text-gray-400 mb-0.5">Data di iscrizione</p>
-        <p className="text-sm font-medium text-gray-900">{fmtData(dati?.data_iscrizione)}</p>
-      </div>
-
-      {/* Regolamento */}
-      <div className={`border rounded-2xl px-4 py-4 mb-6 ${form.accettazione_reg ? 'bg-emerald-50 border-emerald-200' : 'bg-white'}`}>
-        <div className="flex items-start gap-3">
-          <div
-            onClick={() => { if (!form.accettazione_reg) setShowReg(true); }}
-            className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 cursor-pointer border-2 transition-colors
-              ${form.accettazione_reg ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-white'}`}>
-            {form.accettazione_reg && <Check size={14} className="text-white" strokeWidth={3} />}
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900">
-              {form.accettazione_reg ? 'Regolamento accettato ✓' : 'Accettazione regolamento'}
-            </p>
-            {form.accettazione_reg && dati?.data_accettazione_reg ? (
-              <p className="text-xs text-emerald-700 mt-0.5">
-                Accettato il {new Date(dati.data_accettazione_reg).toLocaleDateString('it-IT')}
-              </p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-0.5">
-                Spunta per accettare il{' '}
-                <button onClick={e => { e.stopPropagation(); setShowReg(true); }}
-                  className="text-indigo-600 underline">regolamento interno</button>
-                {' '}dell'accademia.
-              </p>
-            )}
-          </div>
-        </div>
-        {!form.accettazione_reg && (
-          <button onClick={() => setShowReg(true)}
-            className="mt-3 w-full border border-indigo-200 rounded-xl py-2 text-xs font-medium text-indigo-600 bg-indigo-50">
-            Leggi il regolamento
+        {!editing && (
+          <button onClick={() => setEditing(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-medium bg-indigo-50 active:bg-indigo-100">
+            <Pencil size={14} /> Modifica
           </button>
         )}
       </div>
 
-      {/* Salva */}
-      {errore && <p className="text-xs text-red-500 mb-3 text-center">{errore}</p>}
-      <button
-        onClick={salva}
-        disabled={salvando || salvato}
-        className={`w-full py-4 rounded-2xl text-sm font-bold transition mb-4 flex items-center justify-center gap-2
-          ${salvato ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white active:bg-indigo-700'}
-          ${salvando ? 'opacity-70' : ''}`}>
-        {salvando ? (
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-        ) : salvato ? (
-          <><Check size={16} strokeWidth={3} /> Salvato!</>
-        ) : (
-          <><ShieldCheck size={16} /> Salva modifiche</>
-        )}
-      </button>
+      {/* ── VIEW MODE ── */}
+      {!editing && (
+        <>
+          <Sezione titolo="Dati personali" icona={User}>
+            <Riga label="Nome" value={dati?.nome} />
+            <Riga label="Cognome" value={dati?.cognome} />
+            <Riga label="Codice Fiscale" value={dati?.codice_fiscale} />
+            <Riga label="Data di nascita" value={fmtData(dati?.data_nascita)} />
+            <Riga label="Luogo di nascita" value={dati?.luogo_nascita} />
+            <Riga label="Indirizzo" value={indirizzoCompleto} />
+          </Sezione>
 
-      {/* Logout */}
+          <Sezione titolo="Contatti" icona={Phone}>
+            <Riga label="Telefono" value={dati?.telefono} />
+            <Riga label="Email" value={dati?.email} />
+          </Sezione>
+
+          {dati?.minore && (
+            <Sezione titolo="Genitore / Tutore" icona={Users} collapsible>
+              <Riga label="Nome e Cognome" value={[dati.genitore_nome, dati.genitore_cognome].filter(Boolean).join(' ')} />
+              <Riga label="Codice Fiscale" value={dati.genitore_cf} />
+              <Riga label="Data di nascita" value={fmtData(dati.genitore_data_nascita)} />
+              <Riga label="Luogo di nascita" value={dati.genitore_luogo_nascita} />
+              <Riga label="Indirizzo" value={dati.genitore_indirizzo} />
+              <Riga label="Telefono" value={dati.genitore_telefono} />
+              <Riga label="Email" value={dati.genitore_email} />
+            </Sezione>
+          )}
+
+          <div className="bg-white border rounded-2xl px-4 py-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar size={16} className="text-indigo-500" />
+              <span className="text-sm font-semibold text-gray-900">Iscrizione</span>
+            </div>
+            <Riga label="Data iscrizione" value={fmtData(dati?.data_iscrizione)} />
+            <Riga label="Minore di 18 anni" value={dati?.minore ? 'Sì' : 'No'} />
+          </div>
+
+          {/* Regolamento (sempre visibile, non in edit) */}
+          <div className={`border rounded-2xl px-4 py-4 mb-6 ${form.accettazione_reg ? 'bg-emerald-50 border-emerald-200' : 'bg-white'}`}>
+            <div className="flex items-start gap-3">
+              <div
+                onClick={() => { if (!form.accettazione_reg) setShowReg(true); }}
+                className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 cursor-pointer border-2 transition-colors
+                  ${form.accettazione_reg ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-white'}`}>
+                {form.accettazione_reg && <Check size={14} className="text-white" strokeWidth={3} />}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  {form.accettazione_reg ? 'Regolamento accettato ✓' : 'Accettazione regolamento'}
+                </p>
+                {form.accettazione_reg && dati?.data_accettazione_reg ? (
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Accettato il {new Date(dati.data_accettazione_reg).toLocaleDateString('it-IT')}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Spunta per accettare il{' '}
+                    <button onClick={e => { e.stopPropagation(); setShowReg(true); }}
+                      className="text-indigo-600 underline">regolamento interno</button>
+                    {' '}dell'accademia.
+                  </p>
+                )}
+              </div>
+            </div>
+            {!form.accettazione_reg && (
+              <button onClick={() => setShowReg(true)}
+                className="mt-3 w-full border border-indigo-200 rounded-xl py-2 text-xs font-medium text-indigo-600 bg-indigo-50">
+                Leggi il regolamento
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── EDIT MODE ── */}
+      {editing && (
+        <>
+          <Sezione titolo="Dati personali" icona={User}>
+            <div className="space-y-3 py-1">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Nome</label>
+                  <p className="text-sm text-gray-500 px-3 py-2.5 bg-gray-50 rounded-xl">{dati?.nome}</p>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Cognome</label>
+                  <p className="text-sm text-gray-500 px-3 py-2.5 bg-gray-50 rounded-xl">{dati?.cognome}</p>
+                </div>
+              </div>
+              <Campo label="Codice Fiscale" value={form.codice_fiscale}
+                onChange={v => set('codice_fiscale', v.toUpperCase())} />
+              <div className="grid grid-cols-2 gap-3">
+                <Campo label="Data di nascita" value={form.data_nascita} type="date"
+                  onChange={v => set('data_nascita', v)} />
+                <Campo label="Luogo di nascita" value={form.luogo_nascita}
+                  onChange={v => set('luogo_nascita', v)} />
+              </div>
+              <Campo label="Indirizzo di residenza" value={form.indirizzo}
+                onChange={v => set('indirizzo', v)} />
+              <div className="grid grid-cols-3 gap-3">
+                <Campo label="CAP" value={form.cap} onChange={v => set('cap', v)} />
+                <Campo label="Città" value={form.citta} onChange={v => set('citta', v)} />
+                <Campo label="Prov." value={form.provincia}
+                  onChange={v => set('provincia', v.toUpperCase().slice(0,2))} />
+              </div>
+            </div>
+          </Sezione>
+
+          <Sezione titolo="Contatti" icona={Phone}>
+            <div className="space-y-3 py-1">
+              <Campo label="Telefono" value={form.telefono} type="tel"
+                onChange={v => set('telefono', v)} />
+              <Campo label="Email" value={form.email} type="email"
+                onChange={v => set('email', v)} />
+            </div>
+          </Sezione>
+
+          {/* Minore: read-only in edit mode */}
+          <div className="bg-gray-50 border rounded-2xl px-4 py-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-6 rounded-full flex items-center shrink-0 ${dati?.minore ? 'bg-indigo-400' : 'bg-gray-300'}`}>
+                <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${dati?.minore ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-600">Minore di 18 anni</p>
+                <p className="text-xs text-gray-400">Non modificabile — contatta la segreteria</p>
+              </div>
+            </div>
+          </div>
+
+          {dati?.minore && (
+            <Sezione titolo="Genitore / Tutore" icona={Users} collapsible>
+              <div className="space-y-3 py-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <Campo label="Nome" value={form.genitore_nome}
+                    onChange={v => set('genitore_nome', v)} />
+                  <Campo label="Cognome" value={form.genitore_cognome}
+                    onChange={v => set('genitore_cognome', v)} />
+                </div>
+                <Campo label="Codice Fiscale" value={form.genitore_cf}
+                  onChange={v => set('genitore_cf', v.toUpperCase())} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Campo label="Data di nascita" value={form.genitore_data_nascita} type="date"
+                    onChange={v => set('genitore_data_nascita', v)} />
+                  <Campo label="Luogo di nascita" value={form.genitore_luogo_nascita}
+                    onChange={v => set('genitore_luogo_nascita', v)} />
+                </div>
+                <Campo label="Indirizzo" value={form.genitore_indirizzo}
+                  onChange={v => set('genitore_indirizzo', v)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Campo label="Telefono" value={form.genitore_telefono} type="tel"
+                    onChange={v => set('genitore_telefono', v)} />
+                  <Campo label="Email" value={form.genitore_email} type="email"
+                    onChange={v => set('genitore_email', v)} />
+                </div>
+              </div>
+            </Sezione>
+          )}
+
+          {errore && <p className="text-xs text-red-500 mb-3 text-center">{errore}</p>}
+
+          <div className="flex gap-3 mb-6">
+            <button onClick={annulla}
+              className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-600 text-sm font-semibold">
+              Annulla
+            </button>
+            <button onClick={salva} disabled={salvando}
+              className="flex-1 py-3.5 rounded-2xl bg-indigo-600 text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-indigo-700">
+              {salvando
+                ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <><ShieldCheck size={16} /> Salva</>}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Logout — sempre visibile */}
       <button onClick={logout}
         className="w-full flex items-center justify-center gap-2 text-red-500 font-medium py-3 mb-8 border border-red-100 rounded-xl bg-red-50 active:bg-red-100">
         <LogOut size={17} /> Esci dall'account
@@ -317,6 +383,7 @@ export default function ProfiloAllievo() {
           onClose={() => {
             setShowReg(false);
             set('accettazione_reg', true);
+            apiFetch('/api/allievo/profilo', { method: 'PATCH', body: JSON.stringify({ accettazione_reg: true }) }).catch(() => {});
           }}
         />
       )}
