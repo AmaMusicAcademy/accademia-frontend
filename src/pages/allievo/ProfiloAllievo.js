@@ -114,6 +114,9 @@ export default function ProfiloAllievo() {
         email:                  d.email || '',
         telefono:               d.telefono || '',
         indirizzo:              d.indirizzo || '',
+        cap:                    d.cap || '',
+        citta:                  d.citta || '',
+        provincia:              d.provincia || '',
         codice_fiscale:         d.codice_fiscale || '',
         luogo_nascita:          d.luogo_nascita || '',
         data_nascita:           d.data_nascita ? String(d.data_nascita).slice(0,10) : '',
@@ -183,6 +186,11 @@ export default function ProfiloAllievo() {
         </div>
         <Campo label="Indirizzo di residenza" value={form.indirizzo}
           onChange={v => set('indirizzo', v)} />
+        <div className="grid grid-cols-3 gap-3">
+          <Campo label="CAP" value={form.cap} onChange={v => set('cap', v)} />
+          <Campo label="Città" value={form.citta} onChange={v => set('citta', v)} />
+          <Campo label="Prov." value={form.provincia} onChange={v => set('provincia', v.toUpperCase().slice(0,2))} />
+        </div>
       </Sezione>
 
       {/* Contatti */}
