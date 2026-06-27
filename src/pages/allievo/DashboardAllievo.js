@@ -143,7 +143,7 @@ export default function DashboardAllievo() {
     ]).then(([p, lezioni, pag, notif, riep, chius]) => {
       setProfilo(p);
       const future = lezioni
-        .filter(l => l.stato === 'futura')
+        .filter(l => l.stato !== 'annullata')
         .sort((a,b) => a.data.localeCompare(b.data) || a.ora_inizio.localeCompare(b.ora_inizio));
       setProssima(future[0] || null);
       const mesePagato = pag.pagamenti?.find(p => p.anno === anno && p.mese === mese);
