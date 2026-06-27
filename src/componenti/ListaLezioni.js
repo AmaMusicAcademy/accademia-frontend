@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const API_URL = 'http://localhost:3000/api/lezioni';
+const _BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com';
+const API_URL = `${_BASE}/api/lezioni`;
 
 function ListaLezioni({ idInsegnante, nome, cognome }) {
   const [lezioni, setLezioni] = useState([]);

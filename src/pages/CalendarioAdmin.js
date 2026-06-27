@@ -5,7 +5,7 @@ import BottomNavAdmin from "../componenti/BottomNavAdmin";
 import EditLessonModal from "../componenti/EditLessonModal";
 import PageHeader from "../componenti/PageHeader";
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 export default function CalendarioAdmin() {
   const [lezioni, setLezioni] = useState([]);

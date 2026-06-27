@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 function KpiCard({ icon: Icon, label, value, color, onClick }) {
   const colors = {

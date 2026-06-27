@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:3000";
+const API_BASE = process.env.REACT_APP_API_URL || (
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : 'https://app-docenti.onrender.com'
+);
 
 function LoginPage() {
   const [username, setUsername] = useState('');

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ListaInsegnanti from './componenti/ListaInsegnanti';
 
-const API_URL = 'http://localhost:3000/api/insegnanti';
+const _BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com';
+const API_URL = `${_BASE}/api/insegnanti`;
 
 function App() {
   const [insegnanti, setInsegnanti] = useState([]);

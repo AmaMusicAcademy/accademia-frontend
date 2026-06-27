@@ -7,7 +7,7 @@ const API_BASE =
   (typeof process !== 'undefined' &&
     process.env &&
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
-  'http://localhost:3000';
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 function decodeJwt(token) {
   try {

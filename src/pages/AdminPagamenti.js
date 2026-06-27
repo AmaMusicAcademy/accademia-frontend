@@ -5,7 +5,7 @@ import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import CompensoInsegnante from '../componenti/CompensoInsegnante';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 const MESI_NOME = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
