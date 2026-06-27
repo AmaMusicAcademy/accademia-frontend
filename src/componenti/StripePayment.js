@@ -13,18 +13,18 @@ async function getStripe() {
   return stripePromise;
 }
 
-// ── Form pagamento singolo (PaymentIntent) ────────────────────────────────
-function CheckoutFormPagamento({ onSuccess, onError, label = 'Paga ora' }) {
+// ── Pagamento singolo (PaymentIntent) ────────────────────────────────────────
+function FormPagamento({ label, onSuccess, onError }) {
   const stripe   = useStripe();
   const elements = useElements();
-  const [loading, setLoading]     = useState(false);
-  const [messaggio, setMessaggio] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errore, setErrore]   = useState('');
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setLoading(true);
-    setMessaggio('');
+    setErrore('');
 
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
@@ -33,7 +33,7 @@ function CheckoutFormPagamento({ onSuccess, onError, label = 'Paga ora' }) {
     });
 
     if (error) {
-      setMessaggio(error.message || 'Errore nel pagamento.');
+      setErrore(error.message || 'Errore nel pagamento.');
       onError?.(error);
     } else if (paymentIntent?.status === 'succeeded') {
       onSuccess?.(paymentIntent);
@@ -42,31 +42,32 @@ function CheckoutFormPagamento({ onSuccess, onError, label = 'Paga ora' }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4">
       <PaymentElement options={{ layout: 'tabs' }} />
-      {messaggio && <p className="text-sm text-center font-medium text-red-500">{messaggio}</p>}
+      {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
-        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : label}
+        {loading
+          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          : label}
       </button>
     </form>
   );
 }
 
-// ── Form abbonamento (SetupIntent → conferma → crea sub) ──────────────────
-function CheckoutFormAbbonamento({ onSuccess, onError }) {
+// ── Abbonamento (SetupIntent → conferma → crea subscription) ─────────────────
+function FormAbbonamento({ onSuccess, onError }) {
   const stripe   = useStripe();
   const elements = useElements();
-  const [loading, setLoading]     = useState(false);
-  const [messaggio, setMessaggio] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errore, setErrore]   = useState('');
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!stripe || !elements) return;
     setLoading(true);
-    setMessaggio('');
+    setErrore('');
 
-    // 1. Conferma il SetupIntent per salvare la carta
     const { error, setupIntent } = await stripe.confirmSetup({
       elements,
       confirmParams: { return_url: window.location.href },
@@ -74,49 +75,47 @@ function CheckoutFormAbbonamento({ onSuccess, onError }) {
     });
 
     if (error) {
-      setMessaggio(error.message || 'Errore nella configurazione della carta.');
+      setErrore(error.message || 'Errore nella configurazione della carta.');
       onError?.(error);
       setLoading(false);
       return;
     }
 
-    // 2. Crea l'abbonamento con il payment method confermato
     try {
       const res = await apiFetch('/api/stripe/abbonamento', {
         method: 'POST',
         body: JSON.stringify({ paymentMethodId: setupIntent.payment_method }),
       });
-
       if (res.clientSecret) {
-        // Primo addebito richiede conferma
-        const { error: piError } = await stripe.confirmCardPayment(res.clientSecret);
-        if (piError) throw new Error(piError.message);
+        const { error: piErr } = await stripe.confirmCardPayment(res.clientSecret);
+        if (piErr) throw new Error(piErr.message);
       }
       onSuccess?.(res);
     } catch (err) {
-      setMessaggio(err.message || 'Errore nell\'attivazione abbonamento.');
+      setErrore(err.message || "Errore nell'attivazione abbonamento.");
       onError?.(err);
     }
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4">
       <PaymentElement options={{ layout: 'tabs' }} />
-      {messaggio && <p className="text-sm text-center font-medium text-red-500">{messaggio}</p>}
+      {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
-        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Attiva addebito mensile'}
+        {loading
+          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          : 'Attiva addebito mensile'}
       </button>
     </form>
   );
 }
 
-// ── Wrapper pubblico ──────────────────────────────────────────────────────
+// ── Wrapper ────────────────────────────────────────────────────────────────────
 // mode: 'arretrati' | 'abbonamento'
-// mesi: [{anno, mese, importo}]  (solo per arretrati)
-// priceId: string                (solo per abbonamento)
-export default function StripePayment({ mode, mesi = [], priceId, onSuccess, onClose }) {
+// mesi: [{anno, mese, importo}]  — richiesto solo per 'arretrati'
+export default function StripePayment({ mode, mesi = [], onSuccess, onError }) {
   const [clientSecret, setClientSecret] = useState(null);
   const [totale, setTotale]             = useState(null);
   const [stripeObj, setStripeObj]       = useState(null);
@@ -127,7 +126,8 @@ export default function StripePayment({ mode, mesi = [], priceId, onSuccess, onC
     (async () => {
       try {
         const s = await getStripe();
-        if (!cancelled) setStripeObj(s);
+        if (cancelled) return;
+        setStripeObj(s);
 
         if (mode === 'arretrati') {
           const d = await apiFetch('/api/stripe/payment-intent', {
@@ -135,20 +135,18 @@ export default function StripePayment({ mode, mesi = [], priceId, onSuccess, onC
             body: JSON.stringify({ mesi }),
           });
           if (!cancelled) { setClientSecret(d.clientSecret); setTotale(d.totale); }
-        } else if (mode === 'abbonamento') {
+        } else {
           const d = await apiFetch('/api/stripe/setup-intent', { method: 'POST' });
           if (!cancelled) setClientSecret(d.clientSecret);
         }
-      } catch (e) {
+      } catch {
         if (!cancelled) setErrore('Impossibile avviare il pagamento. Riprova.');
       }
     })();
     return () => { cancelled = true; };
-  }, [mode]);
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (errore) return (
-    <div className="text-center py-8 text-red-500 text-sm">{errore}</div>
-  );
+  if (errore) return <p className="text-center text-sm text-red-500 py-6">{errore}</p>;
 
   if (!clientSecret || !stripeObj) return (
     <div className="flex justify-center py-10">
@@ -163,30 +161,15 @@ export default function StripePayment({ mode, mesi = [], priceId, onSuccess, onC
 
   return (
     <Elements stripe={stripeObj} options={{ clientSecret, appearance, locale: 'it' }}>
-      <div className="space-y-4">
-        {mode === 'arretrati' && totale !== null && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-center">
-            <p className="text-xs text-gray-500 mb-0.5">Totale da pagare</p>
-            <p className="text-2xl font-bold text-indigo-700">€{totale.toFixed(2)}</p>
-          </div>
-        )}
-        {mode === 'abbonamento' && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 text-sm text-indigo-800">
-            Inserisci la carta per attivare l'addebito mensile automatico. Verrà addebitata la tua quota ogni mese. Potrai annullare in qualsiasi momento contattando la segreteria.
-          </div>
-        )}
-        {mode === 'arretrati'
-          ? <CheckoutFormPagamento
-              label={`Paga €${totale?.toFixed(2)}`}
-              onSuccess={onSuccess}
-              onError={() => {}}
-            />
-          : <CheckoutFormAbbonamento
-              onSuccess={onSuccess}
-              onError={() => {}}
-            />
-        }
-      </div>
+      {mode === 'arretrati' ? (
+        <FormPagamento
+          label={totale !== null ? `Paga €${totale.toFixed(2)}` : 'Paga ora'}
+          onSuccess={onSuccess}
+          onError={onError}
+        />
+      ) : (
+        <FormAbbonamento onSuccess={onSuccess} onError={onError} />
+      )}
     </Elements>
   );
 }
