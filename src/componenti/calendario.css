@@ -1,0 +1,153 @@
+/* ── FullCalendar token overrides ─────────────────────────────────────── */
+:root {
+  --fc-border-color: #f0f0f0;
+  --fc-today-bg-color: #eff6ff;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f9fafb;
+  --fc-button-bg-color: #2563eb;
+  --fc-button-border-color: #2563eb;
+  --fc-button-hover-bg-color: #1d4ed8;
+  --fc-button-hover-border-color: #1d4ed8;
+  --fc-button-active-bg-color: #1e40af;
+  --fc-button-active-border-color: #1e40af;
+  --fc-daygrid-event-dot-width: 6px;
+  --fc-daygrid-event-dot-height: 6px;
+}
+
+/* ── toolbar ──────────────────────────────────────────────────────────── */
+.fc .fc-toolbar {
+  padding: 10px 12px 8px;
+  align-items: center;
+}
+.fc .fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+.fc .fc-button {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.fc .fc-button:focus { box-shadow: none !important; }
+
+/* ── intestazione giorni settimana ───────────────────────────────────── */
+.fc .fc-col-header-cell-cushion {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  padding: 6px 0;
+}
+.fc .fc-col-header-cell { border: none; }
+
+/* ── celle giorno ────────────────────────────────────────────────────── */
+.fc .fc-daygrid-day-number {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  padding: 4px 6px;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 3px 4px;
+  padding: 0;
+}
+.fc .fc-daygrid-day-frame { padding: 2px; min-height: 40px; }
+.fc .fc-daygrid-day-events { margin-top: 0; }
+.fc .fc-daygrid-day:hover { background: #f9fafb; cursor: pointer; }
+
+/* ── dot eventi ──────────────────────────────────────────────────────── */
+.fc-event-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin: 0 1px;
+}
+.fc-daygrid-event-harness {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0;
+  line-height: 1;
+}
+
+/* ── bordi griglia ───────────────────────────────────────────────────── */
+.fc .fc-scrollgrid { border: none; }
+.fc .fc-scrollgrid-section > td { border: none; }
+.fc td, .fc th { border-color: #f0f0f0; }
+
+/* ── layout container ────────────────────────────────────────────────── */
+.calendario-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f9fafb;
+  padding-bottom: 80px;
+}
+.cal-gutters {
+  padding: 0 12px;
+}
+
+/* il blocco calendario rimane bianco, il resto grigio chiaro */
+.calendario-sticky {
+  position: relative;
+  z-index: 1;
+  background: white;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  margin: 0 -12px;
+  padding: 0 12px 8px;
+}
+
+/* pannello lista giorno */
+.elenco-lezioni {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* ── Domeniche ───────────────────────────────────────────────────────── */
+.fc .fc-domenica {
+  background-color: #f9fafb !important;
+}
+.fc .fc-domenica .fc-daygrid-day-number {
+  color: #d1d5db !important;
+}
+
+/* ── Giorni di chiusura ──────────────────────────────────────────────── */
+.fc .fc-chiusura-cell {
+  background-color: #fff7ed !important;
+}
+.fc .fc-chiusura-cell .fc-daygrid-day-number {
+  color: #f97316 !important;
+  font-weight: 600;
+}
+.fc-chiusura-label {
+  font-size: 9px;
+  color: #f97316;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 0 4px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── legacy (non rimuovere) ──────────────────────────────────────────── */
+.bottom-nav { position: sticky; bottom: 0; background-color: white; border-top: 1px solid #ccc; padding: 10px 0; text-align: center; font-size: 1.2rem; }
+.bottom-nav ul { display: flex; justify-content: space-around; margin: 0; padding: 0; list-style: none; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { background: white; padding: 20px; border-radius: 1rem; width: 90%; max-width: 400px; }
