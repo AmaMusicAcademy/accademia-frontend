@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, Mail, MapPin, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut } from 'lucide-react';
+import { User, Phone, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut } from 'lucide-react';
 import AllievoLayout from '../../componenti/AllievoLayout';
 import { apiFetch } from '../../utils/api';
 

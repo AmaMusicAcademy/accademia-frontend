@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, BookOpen, CreditCard, ChevronRight, Calendar, CalendarOff, X, BellOff } from 'lucide-react';
 import AllievoLayout from '../../componenti/AllievoLayout';
@@ -8,7 +8,7 @@ import { registraPush } from '../../utils/push';
 const nomiMesi = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-const MESI_BR = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const MESI_BR = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']; // eslint-disable-line no-unused-vars
 
 function fmtData(d) {
   if (!d) return '';
