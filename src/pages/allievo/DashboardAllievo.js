@@ -154,7 +154,7 @@ export default function DashboardAllievo() {
       setChiusure(Array.isArray(chius) ? chius : []);
     }).catch(console.error).finally(() => setLoading(false));
 
-    // Registra push al primo accesso
+    // Registra push al primo accesso (invia push di conferma se nuova iscrizione)
     registraPush().catch(() => {});
   }, []);
 
@@ -283,6 +283,21 @@ export default function DashboardAllievo() {
           <span className="text-xs font-medium text-gray-700 text-center">Chiusure</span>
         </button>
       </div>
+
+      {/* Bottone test push (visibile solo se service worker supportato) */}
+      {'serviceWorker' in navigator && (
+        <button
+          onClick={async () => {
+            try {
+              await registraPush();
+              await apiFetch('/api/allievo/push-test', { method: 'POST' });
+            } catch {}
+          }}
+          className="mt-4 w-full text-xs text-gray-400 py-2 underline"
+        >
+          Testa notifiche push
+        </button>
+      )}
 
       {/* Popup notifiche */}
       {showNotifiche && (
