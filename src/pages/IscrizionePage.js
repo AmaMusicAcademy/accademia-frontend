@@ -241,7 +241,13 @@ export default function IscrizionePage() {
     : [0, 2, 3, 4, 5];      // senza genitore (salta step 1)
   const currentRealStep = stepOrder[step] ?? step;
 
-  const avanti = () => setStep(s => Math.min(s + 1, stepOrder.length - 1));
+  const avanti = () => {
+    // Se siamo sullo step firma (real step 4), salva prima di navigare
+    if (stepOrder[step] === 4 && sigRef.current && !sigRef.current.isEmpty()) {
+      set('firma_allievo', sigRef.current.toDataURL('image/png'));
+    }
+    setStep(s => Math.min(s + 1, stepOrder.length - 1));
+  };
   const indietro = () => setStep(s => Math.max(s - 1, 0));
 
   const svuotaFirma = () => { sigRef.current?.clear(); set('firma_allievo', null); };
