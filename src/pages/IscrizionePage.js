@@ -244,31 +244,35 @@ export default function IscrizionePage() {
   const avanti = () => setStep(s => Math.min(s + 1, stepOrder.length - 1));
   const indietro = () => setStep(s => Math.max(s - 1, 0));
 
-  const svuotaFirma = () => sigRef.current?.clear();
-  const salvaFirma = useCallback(() => {
-    if (!sigRef.current || sigRef.current.isEmpty()) return false;
-    set('firma_allievo', sigRef.current.toDataURL('image/png'));
-    return true;
-  }, []);
+  const svuotaFirma = () => { sigRef.current?.clear(); set('firma_allievo', null); };
+
+  // Legge la firma direttamente dal canvas (evita race condition con setState)
+  const getFirma = useCallback(() => {
+    if (form.firma_allievo) return form.firma_allievo;
+    if (!sigRef.current || sigRef.current.isEmpty()) return null;
+    return sigRef.current.toDataURL('image/png');
+  }, [form.firma_allievo]);
 
   const handleSubmit = async () => {
-    if (!form.firma_allievo && !salvaFirma()) {
+    const firma = getFirma();
+    if (!firma) {
       setErrore('Apponi la firma prima di inviare.');
       return;
     }
     setLoading(true);
     setErrore('');
     try {
+      const payload = { ...form, firma_allievo: firma };
       const res = await fetch(`${API_BASE}/api/iscrizione`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Errore');
       setSuccesso(true);
     } catch (e) {
-      setErrore(e.message || 'Errore nell\'invio. Riprova.');
+      setErrore(e.message || "Errore nell'invio. Riprova.");
     } finally {
       setLoading(false);
     }
@@ -544,7 +548,7 @@ export default function IscrizionePage() {
             </button>
           )}
           {isUltimoStep ? (
-            <button onClick={async () => { salvaFirma(); await handleSubmit(); }}
+            <button onClick={handleSubmit}
               disabled={loading || !form.acc_privacy}
               className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               {loading
@@ -552,7 +556,7 @@ export default function IscrizionePage() {
                 : <><Check size={16} /> Invia domanda</>}
             </button>
           ) : (
-            <button onClick={() => { if (stepOrder[step] === 4) salvaFirma(); avanti(); }}
+            <button onClick={avanti}
               className="flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold active:bg-indigo-700">
               Avanti <ChevronRight size={16} />
             </button>
