@@ -73,7 +73,7 @@ Il consenso è facoltativo e può essere revocato in qualsiasi momento inviando 
 In caso di mancato consenso, non verranno utilizzate immagini che consentano l'identificazione del soggetto.`;
 
 // ── Componenti UI ─────────────────────────────────────────────────────────
-function Campo({ label, value, onChange, type = 'text', required = false, disabled = false, className = '' }) {
+function Campo({ label, value, onChange, type = 'text', required = false, disabled = false, className = '', error = false }) {
   return (
     <div className={className}>
       <label className="block text-xs text-gray-500 mb-1">
@@ -81,19 +81,21 @@ function Campo({ label, value, onChange, type = 'text', required = false, disabl
       </label>
       <input type={type} value={value || ''} onChange={e => onChange(e.target.value)}
         required={required} disabled={disabled}
-        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white" />
+        className={`w-full text-sm border rounded-xl px-3 py-2.5 outline-none focus:ring-2 bg-white transition-colors
+          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-100'}`} />
     </div>
   );
 }
 
-function Select({ label, value, onChange, options, required = false }) {
+function Select({ label, value, onChange, options, required = false, error = false }) {
   return (
     <div>
       <label className="block text-xs text-gray-500 mb-1">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <select value={value || ''} onChange={e => onChange(e.target.value)}
-        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 bg-white">
+        className={`w-full text-sm border rounded-xl px-3 py-2.5 outline-none focus:ring-2 bg-white transition-colors
+          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400'}`}>
         <option value="">— Seleziona —</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -209,7 +211,9 @@ export default function IscrizionePage() {
   const [successo, setSuccesso] = useState(false);
   const [errore, setErrore]   = useState('');
   const [modal, setModal]     = useState(null); // quale modale è aperta
-  const [showAvviso, setShowAvviso] = useState(true);
+  const [showAvviso, setShowAvviso]     = useState(true);
+  const [showMinoreAvviso, setShowMinoreAvviso] = useState(false);
+  const [erroriStep, setErroriStep]     = useState({});
 
   const sigRef = useRef(null);
 
@@ -242,7 +246,64 @@ export default function IscrizionePage() {
     : [0, 2, 3, 4, 5];      // senza genitore (salta step 1)
   const currentRealStep = stepOrder[step] ?? step;
 
+  const isMinorenne = (dataNascita) => {
+    if (!dataNascita) return false;
+    const nascita = new Date(dataNascita);
+    const oggi = new Date();
+    const eta = oggi.getFullYear() - nascita.getFullYear() -
+      (oggi < new Date(oggi.getFullYear(), nascita.getMonth(), nascita.getDate()) ? 1 : 0);
+    return eta < 18;
+  };
+
   const avanti = () => {
+    // Validazione step 0 — dati allievo
+    if (stepOrder[step] === 0) {
+      const obbligatori = {
+        nome:           'Nome',
+        cognome:        'Cognome',
+        codice_fiscale: 'Codice Fiscale',
+        data_nascita:   'Data di nascita',
+        luogo_nascita:  'Luogo di nascita',
+        indirizzo:      'Indirizzo',
+        cap:            'CAP',
+        citta:          'Città',
+        provincia:      'Provincia',
+        telefono:       'Telefono',
+        email:          'Email',
+        strumento:      'Strumento richiesto',
+      };
+      const errori = {};
+      for (const [k, label] of Object.entries(obbligatori)) {
+        if (!form[k]?.toString().trim()) errori[k] = `${label} obbligatorio`;
+      }
+      setErroriStep(errori);
+      if (Object.keys(errori).length > 0) return;
+
+      // Controlla se è minorenne senza flag
+      if (isMinorenne(form.data_nascita) && !form.minore) {
+        setShowMinoreAvviso(true);
+        return;
+      }
+    }
+
+    // Validazione step 1 — dati genitore
+    if (stepOrder[step] === 1) {
+      const obbligatori = {
+        genitore_nome:     'Nome genitore',
+        genitore_cognome:  'Cognome genitore',
+        genitore_cf:       'Codice Fiscale genitore',
+        genitore_telefono: 'Telefono genitore',
+        genitore_email:    'Email genitore',
+      };
+      const errori = {};
+      for (const [k, label] of Object.entries(obbligatori)) {
+        if (!form[k]?.toString().trim()) errori[k] = `${label} obbligatorio`;
+      }
+      setErroriStep(errori);
+      if (Object.keys(errori).length > 0) return;
+    }
+
+    setErroriStep({});
     // Se siamo sullo step firma (real step 4), salva prima di navigare
     if (stepOrder[step] === 4 && sigRef.current && !sigRef.current.isEmpty()) {
       set('firma_allievo', sigRef.current.toDataURL('image/png'));
@@ -302,33 +363,40 @@ export default function IscrizionePage() {
     </div>
   );
 
+  const e = erroriStep; // alias corto
+
   // ── STEP 0 — Dati allievo ─────────────────────────────────────────────
   const renderStep0 = () => (
     <div className="space-y-3">
+      {Object.keys(e).length > 0 && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          Compila tutti i campi obbligatori prima di procedere.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        <Campo label="Nome" value={form.nome} onChange={v => set('nome', v)} required />
-        <Campo label="Cognome" value={form.cognome} onChange={v => set('cognome', v)} required />
+        <Campo label="Nome" value={form.nome} onChange={v => set('nome', v)} required error={!!e.nome} />
+        <Campo label="Cognome" value={form.cognome} onChange={v => set('cognome', v)} required error={!!e.cognome} />
       </div>
       <Campo label="Codice Fiscale" value={form.codice_fiscale}
-        onChange={v => set('codice_fiscale', v.toUpperCase())} />
+        onChange={v => set('codice_fiscale', v.toUpperCase())} required error={!!e.codice_fiscale} />
       <div className="grid grid-cols-2 gap-3">
         <Campo label="Data di nascita" type="date" value={form.data_nascita}
-          onChange={v => set('data_nascita', v)} />
+          onChange={v => set('data_nascita', v)} required error={!!e.data_nascita} />
         <Campo label="Luogo di nascita" value={form.luogo_nascita}
-          onChange={v => set('luogo_nascita', v)} />
+          onChange={v => set('luogo_nascita', v)} required error={!!e.luogo_nascita} />
       </div>
-      <Campo label="Indirizzo" value={form.indirizzo} onChange={v => set('indirizzo', v)} />
+      <Campo label="Indirizzo" value={form.indirizzo} onChange={v => set('indirizzo', v)} required error={!!e.indirizzo} />
       <div className="grid grid-cols-3 gap-3">
-        <Campo label="CAP" value={form.cap} onChange={v => set('cap', v)} className="col-span-1" />
-        <Campo label="Città" value={form.citta} onChange={v => set('citta', v)} className="col-span-1" />
-        <Campo label="Prov." value={form.provincia} onChange={v => set('provincia', v)} className="col-span-1" />
+        <Campo label="CAP" value={form.cap} onChange={v => set('cap', v)} className="col-span-1" required error={!!e.cap} />
+        <Campo label="Città" value={form.citta} onChange={v => set('citta', v)} className="col-span-1" required error={!!e.citta} />
+        <Campo label="Prov." value={form.provincia} onChange={v => set('provincia', v)} className="col-span-1" required error={!!e.provincia} />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Campo label="Telefono" type="tel" value={form.telefono} onChange={v => set('telefono', v)} />
-        <Campo label="Email" type="email" value={form.email} onChange={v => set('email', v)} />
+        <Campo label="Telefono" type="tel" value={form.telefono} onChange={v => set('telefono', v)} required error={!!e.telefono} />
+        <Campo label="Email" type="email" value={form.email} onChange={v => set('email', v)} required error={!!e.email} />
       </div>
       <Select label="Strumento richiesto" value={form.strumento}
-        onChange={v => set('strumento', v)} options={STRUMENTI} required />
+        onChange={v => set('strumento', v)} options={STRUMENTI} required error={!!e.strumento} />
       <div>
         <label className="block text-xs text-gray-500 mb-1">Note</label>
         <textarea value={form.note} onChange={e => set('note', e.target.value)} rows={2}
@@ -354,12 +422,17 @@ export default function IscrizionePage() {
   const renderStep1 = () => (
     <div className="space-y-3">
       <p className="text-sm text-gray-500 mb-2">Dati del genitore o tutore legale del minore.</p>
+      {Object.keys(e).length > 0 && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          Compila tutti i campi obbligatori prima di procedere.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        <Campo label="Nome" value={form.genitore_nome} onChange={v => set('genitore_nome', v)} required />
-        <Campo label="Cognome" value={form.genitore_cognome} onChange={v => set('genitore_cognome', v)} required />
+        <Campo label="Nome" value={form.genitore_nome} onChange={v => set('genitore_nome', v)} required error={!!e.genitore_nome} />
+        <Campo label="Cognome" value={form.genitore_cognome} onChange={v => set('genitore_cognome', v)} required error={!!e.genitore_cognome} />
       </div>
       <Campo label="Codice Fiscale" value={form.genitore_cf}
-        onChange={v => set('genitore_cf', v.toUpperCase())} />
+        onChange={v => set('genitore_cf', v.toUpperCase())} required error={!!e.genitore_cf} />
       <div className="grid grid-cols-2 gap-3">
         <Campo label="Data di nascita" type="date" value={form.genitore_data_nascita}
           onChange={v => set('genitore_data_nascita', v)} />
@@ -370,9 +443,9 @@ export default function IscrizionePage() {
         onChange={v => set('genitore_indirizzo', v)} />
       <div className="grid grid-cols-2 gap-3">
         <Campo label="Telefono" type="tel" value={form.genitore_telefono}
-          onChange={v => set('genitore_telefono', v)} required />
+          onChange={v => set('genitore_telefono', v)} required error={!!e.genitore_telefono} />
         <Campo label="Email" type="email" value={form.genitore_email}
-          onChange={v => set('genitore_email', v)} required />
+          onChange={v => set('genitore_email', v)} required error={!!e.genitore_email} />
       </div>
     </div>
   );
@@ -524,6 +597,38 @@ export default function IscrizionePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* Popup minore senza flag */}
+      {showMinoreAvviso && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="bg-amber-500 px-5 py-4 flex items-center gap-3">
+              <AlertCircle size={22} className="text-white shrink-0" />
+              <h2 className="text-white font-bold text-base">Allievo minorenne?</h2>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-sm text-gray-700 mb-4">
+                La data di nascita inserita indica che l'allievo è <strong>minore di 18 anni</strong>.
+              </p>
+              <p className="text-sm text-gray-700 mb-5">
+                Per iscrivere un minore è necessario attivare il flag <strong>"Minore di 18 anni"</strong> e inserire i dati del genitore o tutore legale.
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { set('minore', true); setShowMinoreAvviso(false); }}
+                  className="w-full py-3 bg-amber-500 text-white rounded-xl font-semibold text-sm active:bg-amber-600">
+                  Attiva flag minore e continua
+                </button>
+                <button
+                  onClick={() => setShowMinoreAvviso(false)}
+                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm active:bg-gray-200">
+                  La data è corretta, non è minorenne
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Popup avviso documenti */}
       {showAvviso && (
