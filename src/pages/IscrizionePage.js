@@ -308,6 +308,31 @@ export default function IscrizionePage() {
       if (!form.acc_tesseramento || !form.acc_regolamento || !form.acc_privacy) return;
     }
 
+    // Validazione step 3 — foto documenti obbligatorie
+    if (stepOrder[step] === 3) {
+      const errori = {};
+      if (!form.doc_allievo_fronte) errori.doc_allievo_fronte = true;
+      if (!form.doc_allievo_retro)  errori.doc_allievo_retro  = true;
+      if (form.minore) {
+        if (!form.doc_genitore_fronte) errori.doc_genitore_fronte = true;
+        if (!form.doc_genitore_retro)  errori.doc_genitore_retro  = true;
+      }
+      setErroriStep(errori);
+      if (Object.keys(errori).length > 0) return;
+    }
+
+    // Validazione step 4 — firma obbligatoria
+    if (stepOrder[step] === 4) {
+      const firma = sigRef.current && !sigRef.current.isEmpty()
+        ? sigRef.current.toDataURL('image/png')
+        : form.firma_allievo;
+      if (!firma) {
+        setErroriStep({ firma_allievo: true });
+        return;
+      }
+      set('firma_allievo', firma);
+    }
+
     setErroriStep({});
     // Se siamo sullo step firma (real step 4), salva prima di navigare
     if (stepOrder[step] === 4 && sigRef.current && !sigRef.current.isEmpty()) {
@@ -496,22 +521,27 @@ export default function IscrizionePage() {
   const renderStep3 = () => (
     <div className="space-y-4">
       <p className="text-sm text-gray-500">Carica le foto del documento di identità (fronte e retro).</p>
-      <div className="bg-white border rounded-2xl p-4 space-y-3">
+      {(e.doc_allievo_fronte || e.doc_allievo_retro || e.doc_genitore_fronte || e.doc_genitore_retro) && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          Carica tutte le foto dei documenti richiesti prima di procedere.
+        </p>
+      )}
+      <div className={`bg-white border-2 rounded-2xl p-4 space-y-3 ${(e.doc_allievo_fronte || e.doc_allievo_retro) ? 'border-red-400' : 'border-transparent'}`}>
         <p className="text-xs font-semibold text-gray-700 uppercase">Documento allievo</p>
         <div className="grid grid-cols-2 gap-3">
-          <UploadFoto label="Fronte" value={form.doc_allievo_fronte}
+          <UploadFoto label="Fronte *" value={form.doc_allievo_fronte}
             onChange={v => set('doc_allievo_fronte', v)} />
-          <UploadFoto label="Retro" value={form.doc_allievo_retro}
+          <UploadFoto label="Retro *" value={form.doc_allievo_retro}
             onChange={v => set('doc_allievo_retro', v)} />
         </div>
       </div>
       {form.minore && (
-        <div className="bg-white border rounded-2xl p-4 space-y-3">
+        <div className={`bg-white border-2 rounded-2xl p-4 space-y-3 ${(e.doc_genitore_fronte || e.doc_genitore_retro) ? 'border-red-400' : 'border-transparent'}`}>
           <p className="text-xs font-semibold text-gray-700 uppercase">Documento genitore/tutore</p>
           <div className="grid grid-cols-2 gap-3">
-            <UploadFoto label="Fronte" value={form.doc_genitore_fronte}
+            <UploadFoto label="Fronte *" value={form.doc_genitore_fronte}
               onChange={v => set('doc_genitore_fronte', v)} />
-            <UploadFoto label="Retro" value={form.doc_genitore_retro}
+            <UploadFoto label="Retro *" value={form.doc_genitore_retro}
               onChange={v => set('doc_genitore_retro', v)} />
           </div>
         </div>
@@ -547,7 +577,12 @@ export default function IscrizionePage() {
           />
         </div>
       </div>
-      {form.firma_allievo && (
+      {e.firma_allievo && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          Apponi la firma prima di procedere.
+        </p>
+      )}
+      {form.firma_allievo && !e.firma_allievo && (
         <div className="text-center">
           <p className="text-xs text-emerald-600 font-medium">✓ Firma acquisita</p>
         </div>
