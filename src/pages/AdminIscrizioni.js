@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { apiFetch } from '../utils/api';
+import BottomNavAdmin from '../componenti/BottomNavAdmin';
 
 const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -441,7 +442,7 @@ export default function AdminIscrizioni() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b px-5 py-4 flex items-center gap-3">
         <a href="/admin" className="text-gray-400"><ChevronLeft size={22} /></a>
         <h1 className="text-lg font-bold text-gray-900">Domande di iscrizione</h1>
@@ -505,6 +506,8 @@ export default function AdminIscrizioni() {
           onRifiuta={() => carica(tab)}
         />
       )}
+
+      <BottomNavAdmin />
     </div>
   );
 }
