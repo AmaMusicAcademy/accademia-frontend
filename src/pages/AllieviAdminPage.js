@@ -267,7 +267,7 @@ export default function AllieviAdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-n-50 pb-16">
       <PageHeader
         title="Allievi"
         backTo="/admin"
@@ -294,7 +294,7 @@ export default function AllieviAdminPage() {
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600 w-10">Da</label>
+            <label className="text-xs text-n-600 w-10">Da</label>
             <input
               type="date"
               className="w-full rounded-xl border px-3 py-1.5 text-sm"
@@ -303,7 +303,7 @@ export default function AllieviAdminPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600 w-10">A</label>
+            <label className="text-xs text-n-600 w-10">A</label>
             <input
               type="date"
               className="w-full rounded-xl border px-3 py-1.5 text-sm"
@@ -338,7 +338,7 @@ export default function AllieviAdminPage() {
 
         {/* filtro stato */}
         <div className="mt-3">
-          <div className="text-xs font-medium text-gray-600 mb-1">Mostra solo:</div>
+          <div className="text-xs font-medium text-n-600 mb-1">Mostra solo:</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {["svolta","annullata","riprogrammata","rimandata"].map(k=>(
               <label key={k} className="flex items-center gap-2 text-xs">
@@ -398,7 +398,7 @@ export default function AllieviAdminPage() {
             ) : (
               lessonsByDay.map(([day, items]) => (
                 <div key={day} className="mb-5">
-                  <div className="text-xs font-medium text-gray-500 mb-1">
+                  <div className="text-xs font-medium text-n-600 mb-1">
                     {format(parseISO(`${day}T00:00:00`), "EEEE d MMMM yyyy", { locale: it })}
                   </div>
                   <div className="rounded-xl border bg-white">
@@ -450,7 +450,7 @@ function EmptyState({ title, subtitle }) {
   return (
     <div className="rounded-xl border bg-white p-6 text-center">
       <div className="text-base font-medium">{title}</div>
-      {subtitle && <div className="mt-1 text-sm text-gray-500">{subtitle}</div>}
+      {subtitle && <div className="mt-1 text-sm text-n-600">{subtitle}</div>}
     </div>
   );
 }
@@ -459,7 +459,7 @@ function StudentRow({ s }) {
   return (
     <div className="flex items-start gap-3 rounded-xl border bg-white px-3 py-2">
       <div className="w-9 h-9 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
-        <span className="text-xs font-semibold text-gray-600">{initials}</span>
+        <span className="text-xs font-semibold text-n-600">{initials}</span>
       </div>
       <div className="flex-1">
         <div className="text-sm font-medium truncate">
@@ -471,8 +471,8 @@ function StudentRow({ s }) {
 }
 function Badge({ children, tone = "gray" }) {
   const tones = {
-    gray: "bg-gray-100 text-gray-700 border-gray-200",
-    blue: "bg-blue-100 text-blue-700 border-blue-200",
+    gray: "bg-n-100 text-gray-700 border-n-100",
+    blue: "bg-ama-100 text-blue-700 border-blue-200",
     orange: "bg-orange-100 text-orange-700 border-orange-200",
     red: "bg-red-100 text-red-700 border-red-200",
     green: "bg-green-100 text-green-700 border-green-200",
@@ -504,7 +504,7 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, selected, onTogg
   return (
     <div className={`flex items-center gap-3 px-3 py-2 ${last ? "" : "border-b"}`}>
       <input type="checkbox" checked={selected} onChange={onToggle} className="mt-0.5" />
-      <div className="w-12 text-xs text-gray-600 shrink-0">{orario}</div>
+      <div className="w-12 text-xs text-n-600 shrink-0">{orario}</div>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpenEdit("edit")}>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="text-sm font-medium truncate">
@@ -513,9 +513,9 @@ function LessonRow({ l, last, onOpenEdit, onRimanda, onAnnulla, selected, onTogg
           <Badge tone={tone}>{label}</Badge>
           {l.aula ? <Badge>{`Aula ${l.aula}`}</Badge> : null}
         </div>
-        {docente && <div className="text-xs text-gray-500 mt-0.5">👨‍🏫 {docente}</div>}
+        {docente && <div className="text-xs text-n-600 mt-0.5">👨‍🏫 {docente}</div>}
         {l.motivazione && label !== "svolta" && (
-          <div className="text-xs text-gray-500 mt-0.5">Motivo: {l.motivazione}</div>
+          <div className="text-xs text-n-600 mt-0.5">Motivo: {l.motivazione}</div>
         )}
       </div>
       {!isAnnullata && (

@@ -86,9 +86,9 @@ function QuoteAllievi({ token }) {
 
       {/* Navigatore mese */}
       <div className="bg-white border rounded-xl px-4 py-3 flex items-center justify-between">
-        <button onClick={() => vai('prev')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 active:bg-gray-100 text-lg font-medium">‹</button>
-        <p className="text-sm font-semibold text-gray-900">{nomeMese(anno, mese)}</p>
-        <button onClick={() => vai('next')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 active:bg-gray-100 text-lg font-medium">›</button>
+        <button onClick={() => vai('prev')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 text-n-600 active:bg-n-100 text-lg font-medium">‹</button>
+        <p className="text-sm font-semibold text-n-900">{nomeMese(anno, mese)}</p>
+        <button onClick={() => vai('next')} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 text-n-600 active:bg-n-100 text-lg font-medium">›</button>
       </div>
 
       {/* Contatori */}
@@ -105,12 +105,12 @@ function QuoteAllievi({ token }) {
 
       {/* Barra di ricerca */}
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Cerca allievo…"
           className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300" />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         )}
@@ -122,7 +122,7 @@ function QuoteAllievi({ token }) {
           <div className="w-7 h-7 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtroDati.length === 0 ? (
-        <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-gray-400">
+        <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
           {search ? 'Nessun risultato.' : 'Nessun allievo per questo mese.'}
         </div>
       ) : (
@@ -130,20 +130,20 @@ function QuoteAllievi({ token }) {
           {filtroDati.map(r => (
             <div key={r.id} className="flex items-center gap-3 px-4 py-3">
               {/* Avatar */}
-              <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full bg-ama-100 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-blue-500">
                   {(r.nome?.[0]||'').toUpperCase()}{(r.cognome?.[0]||'').toUpperCase()}
                 </span>
               </div>
               {/* Nome + data pagamento */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{r.nome} {r.cognome}</p>
+                <p className="text-sm font-semibold text-n-900 truncate">{r.nome} {r.cognome}</p>
                 {r.pagato && r.data_pagamento ? (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-n-300">
                     Pagato il {new Date(r.data_pagamento).toLocaleDateString('it-IT')}
                   </p>
                 ) : r.quota_mensile ? (
-                  <p className="text-xs text-gray-400">€ {r.quota_mensile} / mese</p>
+                  <p className="text-xs text-n-300">€ {r.quota_mensile} / mese</p>
                 ) : null}
               </div>
               {/* Toggle pagamento */}
@@ -198,15 +198,15 @@ function PannelloNotifiche({ token }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bell size={15} className="text-amber-500" />
-          <p className="text-sm font-semibold text-gray-800">Notifiche automatiche</p>
+          <p className="text-sm font-semibold text-n-900">Notifiche automatiche</p>
         </div>
         <button onClick={inviaOra} disabled={sending}
-          className="flex items-center gap-1.5 text-xs text-blue-600 font-medium disabled:opacity-40">
+          className="flex items-center gap-1.5 text-xs text-ama-500 font-medium disabled:opacity-40">
           <RefreshCw size={12} className={sending ? 'animate-spin' : ''} />
           {sending ? 'Invio…' : 'Invia ora'}
         </button>
       </div>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-n-300">
         Ogni <strong>lunedì alle 09:00</strong> gli allievi con pagamenti arretrati ricevono un promemoria automatico. Ultima esecuzione: <strong>{status ? fmtDt(status.eseguito_il) : '—'}</strong>
         {status?.notifiche_inviate != null && ` (${status.notifiche_inviate} notifiche)`}.
       </p>
@@ -269,9 +269,9 @@ function TassaAnnuale({ token }) {
 
       {/* Selettore anno */}
       <div className="bg-white border rounded-xl px-4 py-3 flex items-center justify-between">
-        <button onClick={() => setAnno(a => a - 1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 active:bg-gray-100 text-lg font-medium">‹</button>
-        <p className="text-sm font-semibold text-gray-900">{anno}</p>
-        <button onClick={() => setAnno(a => a + 1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 active:bg-gray-100 text-lg font-medium">›</button>
+        <button onClick={() => setAnno(a => a - 1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 text-n-600 active:bg-n-100 text-lg font-medium">‹</button>
+        <p className="text-sm font-semibold text-n-900">{anno}</p>
+        <button onClick={() => setAnno(a => a + 1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 text-n-600 active:bg-n-100 text-lg font-medium">›</button>
       </div>
 
       {/* Contatori */}
@@ -288,12 +288,12 @@ function TassaAnnuale({ token }) {
 
       {/* Ricerca */}
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
         <input value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Cerca allievo…"
           className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300" />
         {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
         )}
@@ -305,26 +305,26 @@ function TassaAnnuale({ token }) {
           <div className="w-7 h-7 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtroDati.length === 0 ? (
-        <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-gray-400">
+        <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
           {search ? 'Nessun risultato.' : 'Nessun allievo.'}
         </div>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
           {filtroDati.map(r => (
             <div key={r.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-full bg-ama-100 flex items-center justify-center shrink-0">
                 <span className="text-xs font-bold text-blue-500">
                   {(r.nome?.[0]||'').toUpperCase()}{(r.cognome?.[0]||'').toUpperCase()}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{r.nome} {r.cognome}</p>
+                <p className="text-sm font-semibold text-n-900 truncate">{r.nome} {r.cognome}</p>
                 {r.pagata && r.data_pagamento ? (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-n-300">
                     Pagata il {new Date(r.data_pagamento).toLocaleDateString('it-IT')}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-400">Tassa {anno}</p>
+                  <p className="text-xs text-n-300">Tassa {anno}</p>
                 )}
               </div>
               <button
@@ -364,7 +364,7 @@ export default function AdminPagamenti() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-between pb-16">
+    <div className="min-h-screen bg-n-100 flex flex-col justify-between pb-16">
       <PageHeader title="Pagamenti" backTo="/admin" />
 
       {/* Tab switcher */}
@@ -378,7 +378,7 @@ export default function AdminPagamenti() {
             key={id}
             onClick={() => setTab(id)}
             className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500'
+              tab === id ? 'border-blue-600 text-ama-500' : 'border-transparent text-n-600'
             }`}
           >
             {label}
@@ -405,7 +405,7 @@ export default function AdminPagamenti() {
         {tab === 'insegnanti' && (
           <>
             <div className="bg-white rounded-xl shadow-sm p-4">
-              <label className="block text-xs text-gray-600 mb-1">Seleziona insegnante</label>
+              <label className="block text-xs text-n-600 mb-1">Seleziona insegnante</label>
               <select
                 value={insegnanteId}
                 onChange={(e) => setInsegnanteId(e.target.value)}
@@ -418,7 +418,7 @@ export default function AdminPagamenti() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-n-600 mt-2">
                 Seleziona un insegnante per scegliere il mese e generare il PDF.
               </p>
             </div>
@@ -427,7 +427,7 @@ export default function AdminPagamenti() {
                 <CompensoInsegnante insegnanteId={insegnanteId} />
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm p-4 text-sm text-gray-600">
+              <div className="bg-white rounded-xl shadow-sm p-4 text-sm text-n-600">
                 Nessun insegnante selezionato.
               </div>
             )}

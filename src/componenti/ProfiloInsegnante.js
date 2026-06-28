@@ -10,13 +10,13 @@ function MenuRow({ icon: Icon, label, onClick, danger }) {
       onClick={onClick}
       className="w-full flex items-center gap-3 py-3 border-b last:border-0"
     >
-      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${danger ? 'bg-red-50' : 'bg-gray-100'}`}>
-        <Icon size={17} className={danger ? 'text-red-400' : 'text-gray-500'} />
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${danger ? 'bg-red-50' : 'bg-n-100'}`}>
+        <Icon size={17} className={danger ? 'text-red-400' : 'text-n-600'} />
       </div>
-      <span className={`flex-1 text-sm font-medium text-left ${danger ? 'text-red-500' : 'text-gray-800'}`}>
+      <span className={`flex-1 text-sm font-medium text-left ${danger ? 'text-red-500' : 'text-n-900'}`}>
         {label}
       </span>
-      <ChevronRight size={16} className="text-gray-300" />
+      <ChevronRight size={16} className="text-n-300" />
     </button>
   );
 }
@@ -47,22 +47,22 @@ const ProfiloInsegnante = () => {
   if (loading || !utente) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-n-50 pb-20">
       <div className="pt-6 pb-2 px-4 max-w-xl mx-auto">
 
         {/* Avatar e nome */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-            <User size={36} className="text-blue-400" />
+          <div className="w-20 h-20 bg-ama-100 rounded-full flex items-center justify-center mb-3">
+            <User size={36} className="text-ama-300" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">{utente.nome} {utente.cognome}</h1>
-          <p className="text-sm text-blue-600 mt-0.5">@{utente.username}</p>
+          <h1 className="text-xl font-bold text-n-900">{utente.nome} {utente.cognome}</h1>
+          <p className="text-sm text-ama-500 mt-0.5">@{utente.username}</p>
         </div>
 
         {/* Account */}

@@ -150,7 +150,7 @@ export default function EditLessonModal({
           <div className="text-base font-semibold">
             {mode === "reschedule" ? "Riprogramma lezione" : (lesson?.id ? "Modifica lezione" : "Nuova lezione")}
           </div>
-          <button className="text-sm text-gray-500" onClick={onClose}>Chiudi</button>
+          <button className="text-sm text-n-600" onClick={onClose}>Chiudi</button>
         </div>
 
         {error && (
@@ -250,7 +250,7 @@ export default function EditLessonModal({
                         }
                       }}
                     />
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-n-600 mt-1">
                       Verrà salvato esattamente il testo inserito.
                     </div>
                   </div>
@@ -261,7 +261,7 @@ export default function EditLessonModal({
                     {roomsErr}. Puoi comunque inserire manualmente:
                     <button
                       type="button"
-                      className="ml-2 text-blue-600 underline"
+                      className="ml-2 text-ama-500 underline"
                       onClick={() => setUseManualAula(true)}
                     >
                       inserisci a mano
@@ -281,7 +281,7 @@ export default function EditLessonModal({
                 <div className="mt-1">
                   <button
                     type="button"
-                    className="text-xs text-blue-600 underline"
+                    className="text-xs text-ama-500 underline"
                     onClick={() => setUseManualAula(false)}
                   >
                     Torna alla lista aule
@@ -297,7 +297,7 @@ export default function EditLessonModal({
             Annulla
           </button>
           <button
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-ama-500 text-white disabled:opacity-50"
             onClick={handleSave}
             disabled={saving || !hasMinData}
           >
@@ -312,7 +312,7 @@ export default function EditLessonModal({
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs text-n-600 mb-1">{label}</label>
       {children}
     </div>
   );

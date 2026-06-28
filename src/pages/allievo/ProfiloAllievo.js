@@ -43,17 +43,17 @@ function ModalRegolamento({ onClose }) {
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <div className="flex items-center gap-2">
-            <FileText size={18} className="text-indigo-500" />
-            <h2 className="font-semibold text-gray-900">Regolamento interno</h2>
+            <FileText size={18} className="text-ama-500" />
+            <h2 className="font-semibold text-n-900">Regolamento interno</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400"><X size={20} /></button>
+          <button onClick={onClose} className="text-n-300"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto flex-1 px-5 py-4">
           <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{REGOLAMENTO}</pre>
         </div>
         <div className="px-5 pb-5 pt-3 border-t shrink-0">
           <button onClick={onClose}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm">
+            className="w-full py-3 rounded-xl bg-ama-500 text-white font-semibold text-sm">
             Ho letto il regolamento
           </button>
         </div>
@@ -65,8 +65,8 @@ function ModalRegolamento({ onClose }) {
 function Riga({ label, value }) {
   return (
     <div className="flex items-start gap-2 py-2 border-b border-gray-50 last:border-0">
-      <span className="text-xs text-gray-400 w-36 shrink-0 pt-0.5">{label}</span>
-      <span className="text-sm text-gray-900 font-medium">{value || '—'}</span>
+      <span className="text-xs text-n-300 w-36 shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm text-n-900 font-medium">{value || '—'}</span>
     </div>
   );
 }
@@ -74,13 +74,13 @@ function Riga({ label, value }) {
 function Campo({ label, value, onChange, type = 'text', className = '' }) {
   return (
     <div className={className}>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs text-n-600 mb-1">{label}</label>
       <input
         type={type}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none
-          bg-white text-gray-900 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+        className="w-full text-sm border border-n-100 rounded-xl px-3 py-2.5 outline-none
+          bg-white text-n-900 focus:border-ama-300 focus:ring-2 focus:ring-ama-100 transition"
       />
     </div>
   );
@@ -94,10 +94,10 @@ function Sezione({ titolo, icona: Icon, children, collapsible = false }) {
         className={`flex items-center justify-between px-4 py-3 border-b ${collapsible ? 'cursor-pointer' : ''}`}
         onClick={() => collapsible && setAperta(v => !v)}>
         <div className="flex items-center gap-2">
-          <Icon size={16} className="text-indigo-500" />
-          <span className="text-sm font-semibold text-gray-900">{titolo}</span>
+          <Icon size={16} className="text-ama-500" />
+          <span className="text-sm font-semibold text-n-900">{titolo}</span>
         </div>
-        {collapsible && (aperta ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />)}
+        {collapsible && (aperta ? <ChevronUp size={16} className="text-n-300" /> : <ChevronDown size={16} className="text-n-300" />)}
       </div>
       {aperta && <div className="px-4 py-2">{children}</div>}
     </div>
@@ -174,7 +174,7 @@ export default function ProfiloAllievo() {
   if (loading) return (
     <AllievoLayout>
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
       </div>
     </AllievoLayout>
   );
@@ -186,12 +186,12 @@ export default function ProfiloAllievo() {
       {/* Header */}
       <div className="pt-6 pb-2 mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Il mio profilo</h1>
-          <p className="text-sm text-gray-500">{editing ? 'Modifica le informazioni' : 'Informazioni personali'}</p>
+          <h1 className="text-2xl font-bold text-n-900">Il mio profilo</h1>
+          <p className="text-sm text-n-600">{editing ? 'Modifica le informazioni' : 'Informazioni personali'}</p>
         </div>
         {!editing && (
           <button onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-medium bg-indigo-50 active:bg-indigo-100">
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-ama-100 text-ama-500 text-sm font-medium bg-ama-100 active:bg-ama-100">
             <Pencil size={14} /> Modifica
           </button>
         )}
@@ -228,15 +228,15 @@ export default function ProfiloAllievo() {
 
           <div className="bg-white border rounded-2xl px-4 py-4 mb-4">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar size={16} className="text-indigo-500" />
-              <span className="text-sm font-semibold text-gray-900">Iscrizione</span>
+              <Calendar size={16} className="text-ama-500" />
+              <span className="text-sm font-semibold text-n-900">Iscrizione</span>
             </div>
             <Riga label="Data iscrizione" value={fmtData(dati?.data_iscrizione)} />
             <Riga label="Minore di 18 anni" value={dati?.minore ? 'Sì' : 'No'} />
             {pdfToken && (
               <a href={`${process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com'}/api/iscrizione/${pdfToken}/pdf`}
                 target="_blank" rel="noopener noreferrer"
-                className="mt-3 flex items-center justify-center gap-2 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-medium w-full">
+                className="mt-3 flex items-center justify-center gap-2 py-2.5 bg-ama-100 text-ama-700 border border-ama-100 rounded-xl text-sm font-medium w-full">
                 <FileDown size={15} /> Scarica modulo iscrizione PDF
               </a>
             )}
@@ -248,11 +248,11 @@ export default function ProfiloAllievo() {
               <div
                 onClick={() => { if (!form.accettazione_reg) setShowReg(true); }}
                 className={`w-6 h-6 rounded flex items-center justify-center shrink-0 mt-0.5 cursor-pointer border-2 transition-colors
-                  ${form.accettazione_reg ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300 bg-white'}`}>
+                  ${form.accettazione_reg ? 'bg-emerald-500 border-emerald-500' : 'border-n-300 bg-white'}`}>
                 {form.accettazione_reg && <Check size={14} className="text-white" strokeWidth={3} />}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900">
+                <p className="text-sm font-semibold text-n-900">
                   {form.accettazione_reg ? 'Regolamento accettato ✓' : 'Accettazione regolamento'}
                 </p>
                 {form.accettazione_reg && dati?.data_accettazione_reg ? (
@@ -260,10 +260,10 @@ export default function ProfiloAllievo() {
                     Accettato il {new Date(dati.data_accettazione_reg).toLocaleDateString('it-IT')}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="text-xs text-n-600 mt-0.5">
                     Spunta per accettare il{' '}
                     <button onClick={e => { e.stopPropagation(); setShowReg(true); }}
-                      className="text-indigo-600 underline">regolamento interno</button>
+                      className="text-ama-500 underline">regolamento interno</button>
                     {' '}dell'accademia.
                   </p>
                 )}
@@ -271,7 +271,7 @@ export default function ProfiloAllievo() {
             </div>
             {!form.accettazione_reg && (
               <button onClick={() => setShowReg(true)}
-                className="mt-3 w-full border border-indigo-200 rounded-xl py-2 text-xs font-medium text-indigo-600 bg-indigo-50">
+                className="mt-3 w-full border border-ama-100 rounded-xl py-2 text-xs font-medium text-ama-500 bg-ama-100">
                 Leggi il regolamento
               </button>
             )}
@@ -286,12 +286,12 @@ export default function ProfiloAllievo() {
             <div className="space-y-3 py-1">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Nome</label>
-                  <p className="text-sm text-gray-500 px-3 py-2.5 bg-gray-50 rounded-xl">{dati?.nome}</p>
+                  <label className="block text-xs text-n-300 mb-1">Nome</label>
+                  <p className="text-sm text-n-600 px-3 py-2.5 bg-n-50 rounded-xl">{dati?.nome}</p>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1">Cognome</label>
-                  <p className="text-sm text-gray-500 px-3 py-2.5 bg-gray-50 rounded-xl">{dati?.cognome}</p>
+                  <label className="block text-xs text-n-300 mb-1">Cognome</label>
+                  <p className="text-sm text-n-600 px-3 py-2.5 bg-n-50 rounded-xl">{dati?.cognome}</p>
                 </div>
               </div>
               <Campo label="Codice Fiscale" value={form.codice_fiscale}
@@ -323,14 +323,14 @@ export default function ProfiloAllievo() {
           </Sezione>
 
           {/* Minore: read-only in edit mode */}
-          <div className="bg-gray-50 border rounded-2xl px-4 py-4 mb-4">
+          <div className="bg-n-50 border rounded-2xl px-4 py-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-6 rounded-full flex items-center shrink-0 ${dati?.minore ? 'bg-indigo-400' : 'bg-gray-300'}`}>
+              <div className={`w-10 h-6 rounded-full flex items-center shrink-0 ${dati?.minore ? 'bg-ama-300' : 'bg-gray-300'}`}>
                 <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${dati?.minore ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-600">Minore di 18 anni</p>
-                <p className="text-xs text-gray-400">Non modificabile — contatta la segreteria</p>
+                <p className="text-sm font-semibold text-n-600">Minore di 18 anni</p>
+                <p className="text-xs text-n-300">Non modificabile — contatta la segreteria</p>
               </div>
             </div>
           </div>
@@ -368,11 +368,11 @@ export default function ProfiloAllievo() {
 
           <div className="flex gap-3 mb-6">
             <button onClick={annulla}
-              className="flex-1 py-3.5 rounded-2xl border border-gray-200 text-gray-600 text-sm font-semibold">
+              className="flex-1 py-3.5 rounded-2xl border border-n-100 text-n-600 text-sm font-semibold">
               Annulla
             </button>
             <button onClick={salva} disabled={salvando}
-              className="flex-1 py-3.5 rounded-2xl bg-indigo-600 text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-indigo-700">
+              className="flex-1 py-3.5 rounded-2xl bg-ama-500 text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-ama-700">
               {salvando
                 ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 : <><ShieldCheck size={16} /> Salva</>}

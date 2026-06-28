@@ -244,8 +244,8 @@ export default function EditLessonModal({
 
         {/* header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 active:text-gray-700 text-xl leading-none">×</button>
+          <h2 className="text-base font-semibold text-n-900">{title}</h2>
+          <button onClick={onClose} className="text-n-300 active:text-gray-700 text-xl leading-none">×</button>
         </div>
 
         {/* body */}
@@ -261,7 +261,7 @@ export default function EditLessonModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Insegnante *">
               {lockedTeacherId ? (
-                <div className="w-full rounded-xl border px-3 py-2 text-sm bg-gray-50 text-gray-700">
+                <div className="w-full rounded-xl border px-3 py-2 text-sm bg-n-50 text-gray-700">
                   {lockedTeacher ? `${lockedTeacher.nome} ${lockedTeacher.cognome}` : `ID ${lockedTeacherId}`}
                 </div>
               ) : (
@@ -293,7 +293,7 @@ export default function EditLessonModal({
                   <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
                 ))}
               </select>
-              <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-gray-500">
+              <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
                 <input
                   type="checkbox"
                   checked={filterByTeacher}
@@ -363,7 +363,7 @@ export default function EditLessonModal({
                   className="w-full rounded-xl border px-3 py-2 text-sm"
                   placeholder="Inserisci nome/numero aula"
                 />
-                <button type="button" className="text-xs text-blue-600 mt-1" onClick={() => setUseManualAula(false)}>
+                <button type="button" className="text-xs text-ama-500 mt-1" onClick={() => setUseManualAula(false)}>
                   Torna alla lista aule
                 </button>
               </>
@@ -376,7 +376,7 @@ export default function EditLessonModal({
           <button
             onClick={handleSave}
             disabled={saving || deleting || !hasMinData}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium text-sm disabled:opacity-40 active:bg-blue-700"
+            className="w-full py-3 bg-ama-500 text-white rounded-xl font-medium text-sm disabled:opacity-40 active:bg-blue-700"
           >
             {saving ? "Salvataggio…" : "Salva"}
           </button>
@@ -396,12 +396,12 @@ export default function EditLessonModal({
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-2xl">
             <div className="bg-white border shadow-lg rounded-2xl p-6 mx-4 text-center">
               <Trash2 size={28} className="text-red-500 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-gray-900 mb-1">Eliminare l'appuntamento?</p>
-              <p className="text-xs text-gray-500 mb-5">L'operazione è irreversibile.</p>
+              <p className="text-sm font-semibold text-n-900 mb-1">Eliminare l'appuntamento?</p>
+              <p className="text-xs text-n-600 mb-5">L'operazione è irreversibile.</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmDel(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium active:bg-gray-200"
+                  className="flex-1 py-2.5 rounded-xl bg-n-100 text-gray-700 text-sm font-medium active:bg-n-100"
                 >
                   Annulla
                 </button>
@@ -425,7 +425,7 @@ export default function EditLessonModal({
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-n-600 mb-1">{label}</label>
       {children}
     </div>
   );

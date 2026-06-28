@@ -76,13 +76,13 @@ In caso di mancato consenso, non verranno utilizzate immagini che consentano l'i
 function Campo({ label, value, onChange, type = 'text', required = false, disabled = false, className = '', error = false }) {
   return (
     <div className={className}>
-      <label className="block text-xs text-gray-500 mb-1">
+      <label className="block text-xs text-n-600 mb-1">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input type={type} value={value || ''} onChange={e => onChange(e.target.value)}
         required={required} disabled={disabled}
         className={`w-full text-sm border rounded-xl px-3 py-2.5 outline-none focus:ring-2 bg-white transition-colors
-          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400 focus:ring-indigo-100'}`} />
+          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-n-100 focus:border-ama-300 focus:ring-ama-100'}`} />
     </div>
   );
 }
@@ -90,12 +90,12 @@ function Campo({ label, value, onChange, type = 'text', required = false, disabl
 function Select({ label, value, onChange, options, required = false, error = false }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-1">
+      <label className="block text-xs text-n-600 mb-1">
         {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <select value={value || ''} onChange={e => onChange(e.target.value)}
         className={`w-full text-sm border rounded-xl px-3 py-2.5 outline-none focus:ring-2 bg-white transition-colors
-          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-gray-200 focus:border-indigo-400'}`}>
+          ${error ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : 'border-n-100 focus:border-ama-300'}`}>
         <option value="">— Seleziona —</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -109,15 +109,15 @@ function ModalTesto({ titolo, testo, onClose }) {
       <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl max-h-[85vh] flex flex-col"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
-          <h2 className="font-semibold text-gray-900 text-sm">{titolo}</h2>
-          <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+          <h2 className="font-semibold text-n-900 text-sm">{titolo}</h2>
+          <button onClick={onClose}><X size={20} className="text-n-300" /></button>
         </div>
         <div className="overflow-y-auto flex-1 px-5 py-4">
           <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{testo}</pre>
         </div>
         <div className="px-5 pb-5 pt-3 border-t shrink-0">
           <button onClick={onClose}
-            className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm">
+            className="w-full py-3 rounded-xl bg-ama-500 text-white font-semibold text-sm">
             Ho letto
           </button>
         </div>
@@ -131,13 +131,13 @@ function FlagConLink({ checked, onChange, label, linkLabel, onLeggi }) {
     <label className="flex items-start gap-3 cursor-pointer py-2">
       <div onClick={() => onChange(!checked)}
         className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-          checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 bg-white'}`}>
+          checked ? 'bg-ama-500 border-ama-500' : 'border-n-300 bg-white'}`}>
         {checked && <Check size={12} className="text-white" strokeWidth={3} />}
       </div>
       <span className="text-sm text-gray-700 flex-1">
         {label}{' '}
         <button type="button" onClick={(e) => { e.preventDefault(); onLeggi(); }}
-          className="text-indigo-600 underline font-medium">{linkLabel}</button>
+          className="text-ama-500 underline font-medium">{linkLabel}</button>
       </span>
     </label>
   );
@@ -156,7 +156,7 @@ function UploadFoto({ label, value, onChange }) {
 
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-xs text-n-600 mb-1">{label}</p>
       <input ref={inputRef} type="file" accept="image/*" capture="environment"
         className="hidden" onChange={handleFile} />
       {value ? (
@@ -169,7 +169,7 @@ function UploadFoto({ label, value, onChange }) {
         </div>
       ) : (
         <button type="button" onClick={() => inputRef.current?.click()}
-          className="w-full h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 active:bg-gray-50">
+          className="w-full h-28 border-2 border-dashed border-n-300 rounded-xl flex flex-col items-center justify-center gap-2 text-n-300 active:bg-n-50">
           <Camera size={24} />
           <span className="text-xs">Tocca per scattare o caricare</span>
         </button>
@@ -190,13 +190,13 @@ function StepBar({ step, minore }) {
         <React.Fragment key={s}>
           <div className="flex flex-col items-center gap-1">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors
-              ${i < stepIdx ? 'bg-indigo-600 text-white' : i === stepIdx ? 'bg-indigo-600 text-white ring-2 ring-indigo-200' : 'bg-gray-200 text-gray-400'}`}>
+              ${i < stepIdx ? 'bg-ama-500 text-white' : i === stepIdx ? 'bg-ama-500 text-white ring-2 ring-ama-100' : 'bg-gray-200 text-n-300'}`}>
               {i < stepIdx ? <Check size={14} /> : i + 1}
             </div>
-            <span className="text-[9px] text-gray-500 hidden sm:block">{s}</span>
+            <span className="text-[9px] text-n-600 hidden sm:block">{s}</span>
           </div>
           {i < stepsVis.length - 1 && (
-            <div className={`flex-1 h-0.5 mx-1 transition-colors ${i < stepIdx ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+            <div className={`flex-1 h-0.5 mx-1 transition-colors ${i < stepIdx ? 'bg-ama-500' : 'bg-gray-200'}`} />
           )}
         </React.Fragment>
       ))}
@@ -377,16 +377,16 @@ export default function IscrizionePage() {
   };
 
   if (successo) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-n-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-sm p-8 max-w-sm w-full text-center">
         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <Check size={32} className="text-emerald-500" strokeWidth={2.5} />
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-2">Domanda inviata!</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-xl font-bold text-n-900 mb-2">Domanda inviata!</h1>
+        <p className="text-sm text-n-600">
           La tua domanda di iscrizione è stata inviata alla direzione. Riceverai una conferma via email non appena verrà accettata.
         </p>
-        <a href="/login" className="mt-6 block w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm">
+        <a href="/login" className="mt-6 block w-full py-3 rounded-xl bg-ama-500 text-white font-bold text-sm">
           Torna al login
         </a>
       </div>
@@ -428,20 +428,20 @@ export default function IscrizionePage() {
       <Select label="Strumento richiesto" value={form.strumento}
         onChange={v => set('strumento', v)} options={STRUMENTI} required error={!!e.strumento} />
       <div>
-        <label className="block text-xs text-gray-500 mb-1">Note</label>
+        <label className="block text-xs text-n-600 mb-1">Note</label>
         <textarea value={form.note} onChange={e => set('note', e.target.value)} rows={2}
-          className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-indigo-400 resize-none" />
+          className="w-full text-sm border border-n-100 rounded-xl px-3 py-2.5 outline-none focus:border-ama-300 resize-none" />
       </div>
       {/* Flag minore */}
-      <div className="bg-gray-50 rounded-xl px-4 py-3 mt-2">
+      <div className="bg-n-50 rounded-xl px-4 py-3 mt-2">
         <label className="flex items-center gap-3 cursor-pointer">
           <div onClick={() => set('minore', !form.minore)}
-            className={`w-10 h-6 rounded-full flex items-center transition-colors shrink-0 ${form.minore ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+            className={`w-10 h-6 rounded-full flex items-center transition-colors shrink-0 ${form.minore ? 'bg-ama-500' : 'bg-gray-300'}`}>
             <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${form.minore ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">Minore di 18 anni</p>
-            <p className="text-xs text-gray-500">Richiede dati del genitore/tutore</p>
+            <p className="text-sm font-semibold text-n-900">Minore di 18 anni</p>
+            <p className="text-xs text-n-600">Richiede dati del genitore/tutore</p>
           </div>
         </label>
       </div>
@@ -451,7 +451,7 @@ export default function IscrizionePage() {
   // ── STEP 1 — Dati genitore ────────────────────────────────────────────
   const renderStep1 = () => (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500 mb-2">Dati del genitore o tutore legale del minore.</p>
+      <p className="text-sm text-n-600 mb-2">Dati del genitore o tutore legale del minore.</p>
       {Object.keys(e).length > 0 && (
         <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           Compila tutti i campi obbligatori prima di procedere.
@@ -483,7 +483,7 @@ export default function IscrizionePage() {
   // ── STEP 2 — Consensi ─────────────────────────────────────────────────
   const renderStep2 = () => (
     <div className="space-y-1">
-      <p className="text-sm text-gray-500 mb-4">Leggi e accetta i documenti seguenti per procedere.</p>
+      <p className="text-sm text-n-600 mb-4">Leggi e accetta i documenti seguenti per procedere.</p>
 
       <FlagConLink checked={form.acc_tesseramento}
         onChange={v => set('acc_tesseramento', v)}
@@ -520,7 +520,7 @@ export default function IscrizionePage() {
   // ── STEP 3 — Documenti ────────────────────────────────────────────────
   const renderStep3 = () => (
     <div className="space-y-4">
-      <p className="text-sm text-gray-500">Carica le foto del documento di identità (fronte e retro).</p>
+      <p className="text-sm text-n-600">Carica le foto del documento di identità (fronte e retro).</p>
       {(e.doc_allievo_fronte || e.doc_allievo_retro || e.doc_genitore_fronte || e.doc_genitore_retro) && (
         <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
           Carica tutte le foto dei documenti richiesti prima di procedere.
@@ -546,7 +546,7 @@ export default function IscrizionePage() {
           </div>
         </div>
       )}
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-n-300 text-center">
         I documenti vengono trasmessi in modo sicuro e conservati secondo la normativa GDPR.
       </p>
     </div>
@@ -555,14 +555,14 @@ export default function IscrizionePage() {
   // ── STEP 4 — Firma ────────────────────────────────────────────────────
   const renderStep4 = () => (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-n-600">
         {form.minore
           ? 'Firma del genitore/tutore che sottoscrive la domanda di iscrizione.'
           : 'Firma dell\'allievo che sottoscrive la domanda di iscrizione.'}
       </p>
-      <div className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-          <div className="flex items-center gap-2 text-gray-600">
+      <div className="bg-white border-2 border-n-100 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-n-50">
+          <div className="flex items-center gap-2 text-n-600">
             <Pen size={16} />
             <span className="text-xs font-medium">Firma qui</span>
           </div>
@@ -593,28 +593,28 @@ export default function IscrizionePage() {
   // ── STEP 5 — Riepilogo e invio ────────────────────────────────────────
   const renderStep5 = () => (
     <div className="space-y-4">
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-n-600">
         Controlla i dati inseriti. Premendo "Invia domanda" la tua richiesta verrà inviata alla direzione.
       </p>
-      <div className="bg-gray-50 rounded-2xl p-4 space-y-2 text-sm">
-        <div className="flex justify-between"><span className="text-gray-500">Nome</span><span className="font-medium">{form.nome} {form.cognome}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Strumento</span><span className="font-medium">{form.strumento || '—'}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Email</span><span className="font-medium">{form.email || '—'}</span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Telefono</span><span className="font-medium">{form.telefono || '—'}</span></div>
-        {form.minore && <div className="flex justify-between"><span className="text-gray-500">Genitore</span><span className="font-medium">{form.genitore_nome} {form.genitore_cognome}</span></div>}
+      <div className="bg-n-50 rounded-2xl p-4 space-y-2 text-sm">
+        <div className="flex justify-between"><span className="text-n-600">Nome</span><span className="font-medium">{form.nome} {form.cognome}</span></div>
+        <div className="flex justify-between"><span className="text-n-600">Strumento</span><span className="font-medium">{form.strumento || '—'}</span></div>
+        <div className="flex justify-between"><span className="text-n-600">Email</span><span className="font-medium">{form.email || '—'}</span></div>
+        <div className="flex justify-between"><span className="text-n-600">Telefono</span><span className="font-medium">{form.telefono || '—'}</span></div>
+        {form.minore && <div className="flex justify-between"><span className="text-n-600">Genitore</span><span className="font-medium">{form.genitore_nome} {form.genitore_cognome}</span></div>}
         <div className="border-t pt-2 mt-2">
-          <p className="text-xs text-gray-500 mb-1">Consensi</p>
+          <p className="text-xs text-n-600 mb-1">Consensi</p>
           <p className="text-xs">{form.acc_tesseramento ? '✓' : '✗'} Tesseramento</p>
           <p className="text-xs">{form.acc_regolamento ? '✓' : '✗'} Regolamento</p>
           <p className="text-xs">{form.acc_privacy ? '✓' : '✗'} Privacy (obbligatorio)</p>
           <p className="text-xs">{form.acc_immagini ? '✓' : '✗'} Uso immagini (facoltativo)</p>
         </div>
         <div className="border-t pt-2 mt-2 flex justify-between">
-          <span className="text-gray-500 text-xs">Documenti caricati</span>
+          <span className="text-n-600 text-xs">Documenti caricati</span>
           <span className="text-xs">{[form.doc_allievo_fronte, form.doc_allievo_retro].filter(Boolean).length}/2 allievo</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500 text-xs">Firma</span>
+          <span className="text-n-600 text-xs">Firma</span>
           <span className="text-xs">{form.firma_allievo ? '✓ Acquisita' : '✗ Mancante'}</span>
         </div>
       </div>
@@ -638,7 +638,7 @@ export default function IscrizionePage() {
   const titoli = ['Dati allievo', 'Dati genitore/tutore', 'Consensi', 'Documenti', 'Firma', 'Riepilogo'];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-n-50">
 
       {/* Popup minore senza flag */}
       {showMinoreAvviso && (
@@ -663,7 +663,7 @@ export default function IscrizionePage() {
                 </button>
                 <button
                   onClick={() => setShowMinoreAvviso(false)}
-                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm active:bg-gray-200">
+                  className="w-full py-3 bg-n-100 text-gray-700 rounded-xl font-medium text-sm active:bg-n-100">
                   La data è corretta, non è minorenne
                 </button>
               </div>
@@ -676,7 +676,7 @@ export default function IscrizionePage() {
       {showAvviso && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="bg-indigo-600 px-5 py-4 flex items-center gap-3">
+            <div className="bg-ama-500 px-5 py-4 flex items-center gap-3">
               <AlertCircle size={22} className="text-white shrink-0" />
               <h2 className="text-white font-bold text-base">Prima di iniziare</h2>
             </div>
@@ -686,30 +686,30 @@ export default function IscrizionePage() {
               </p>
               <ul className="space-y-3 mb-5">
                 <li className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-                    <CreditCard size={18} className="text-indigo-600" />
+                  <div className="w-9 h-9 bg-ama-100 rounded-xl flex items-center justify-center shrink-0">
+                    <CreditCard size={18} className="text-ama-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Carta d'identità</p>
-                    <p className="text-xs text-gray-500">dell'allievo (e del genitore se minorenne)</p>
+                    <p className="text-sm font-semibold text-n-900">Carta d'identità</p>
+                    <p className="text-xs text-n-600">dell'allievo (e del genitore se minorenne)</p>
                   </div>
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-                    <FileText size={18} className="text-indigo-600" />
+                  <div className="w-9 h-9 bg-ama-100 rounded-xl flex items-center justify-center shrink-0">
+                    <FileText size={18} className="text-ama-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">Codice fiscale</p>
-                    <p className="text-xs text-gray-500">dell'allievo (e del genitore se minorenne)</p>
+                    <p className="text-sm font-semibold text-n-900">Codice fiscale</p>
+                    <p className="text-xs text-n-600">dell'allievo (e del genitore se minorenne)</p>
                   </div>
                 </li>
               </ul>
-              <p className="text-xs text-gray-400 mb-5">
+              <p className="text-xs text-n-300 mb-5">
                 Sarà richiesto di fotografare o caricare i documenti e apporre la firma digitale.
               </p>
               <button
                 onClick={() => setShowAvviso(false)}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm active:bg-indigo-700">
+                className="w-full py-3 bg-ama-500 text-white rounded-xl font-semibold text-sm active:bg-ama-700">
                 Ho i documenti, procedi
               </button>
             </div>
@@ -719,12 +719,12 @@ export default function IscrizionePage() {
 
       {/* Header */}
       <div className="bg-white border-b px-5 py-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+        <div className="w-8 h-8 bg-ama-500 rounded-lg flex items-center justify-center">
           <FileText size={16} className="text-white" />
         </div>
         <div>
-          <h1 className="text-base font-bold text-gray-900">Domanda di iscrizione</h1>
-          <p className="text-xs text-gray-500">AMA Music Academy</p>
+          <h1 className="text-base font-bold text-n-900">Domanda di iscrizione</h1>
+          <p className="text-xs text-n-600">AMA Music Academy</p>
         </div>
       </div>
 
@@ -733,8 +733,8 @@ export default function IscrizionePage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-5">
           <div className="flex items-center gap-2 mb-4">
-            <Shield size={16} className="text-indigo-500" />
-            <h2 className="text-base font-bold text-gray-900">{titoli[stepOrder[step]]}</h2>
+            <Shield size={16} className="text-ama-500" />
+            <h2 className="text-base font-bold text-n-900">{titoli[stepOrder[step]]}</h2>
           </div>
           {renderCurrentStep()}
         </div>
@@ -743,21 +743,21 @@ export default function IscrizionePage() {
         <div className={`flex gap-3 ${isPrimoStep ? 'justify-end' : 'justify-between'}`}>
           {!isPrimoStep && (
             <button onClick={indietro}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 bg-white active:bg-gray-50">
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-n-300 text-sm font-medium text-gray-700 bg-white active:bg-n-50">
               <ChevronLeft size={16} /> Indietro
             </button>
           )}
           {isUltimoStep ? (
             <button onClick={handleSubmit}
               disabled={loading || !form.acc_tesseramento || !form.acc_regolamento || !form.acc_privacy}
-              className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
+              className="flex-1 py-3 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               {loading
                 ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 : <><Check size={16} /> Invia domanda</>}
             </button>
           ) : (
             <button onClick={avanti}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold active:bg-indigo-700">
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-ama-500 text-white text-sm font-bold active:bg-ama-700">
               Avanti <ChevronRight size={16} />
             </button>
           )}

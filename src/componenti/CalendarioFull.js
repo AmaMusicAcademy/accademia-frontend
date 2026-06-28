@@ -45,7 +45,7 @@ const visibleInCalendar = (src) => {
 };
 
 const STATO_STYLE = {
-  appuntamentata: { dot: "bg-blue-500",    badge: "bg-blue-50 text-blue-700 border-blue-100" },
+  appuntamentata: { dot: "bg-ama-1000",    badge: "bg-ama-100 text-blue-700 border-blue-100" },
   svolta:         { dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-100" },
   rimandata:      { dot: "bg-amber-500",   badge: "bg-amber-50 text-amber-700 border-amber-100" },
   riprogrammata:  { dot: "bg-purple-500",  badge: "bg-purple-50 text-purple-700 border-purple-100" },
@@ -286,16 +286,16 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
           <div className="mt-4">
             {/* intestazione giorno */}
             <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-sm font-semibold text-gray-900 capitalize">
+              <h2 className="text-sm font-semibold text-n-900 capitalize">
                 {formatDataLunga(dataSelezionata)}
               </h2>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-n-300">
                 {eventiOrdinati.length} {eventiOrdinati.length === 1 ? "lezione" : "lezioni"}
               </span>
             </div>
 
             {eventiOrdinati.length === 0 ? (
-              <div className="bg-white border rounded-xl p-6 text-center text-gray-400 text-sm">
+              <div className="bg-white border rounded-xl p-6 text-center text-n-300 text-sm">
                 Nessuna lezione in questo giorno
               </div>
             ) : (
@@ -323,7 +323,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                       {/* contenuto */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-sm font-semibold text-n-900">
                             {(ep.nome_allievo && ep.cognome_allievo)
                               ? `${ep.nome_allievo} ${ep.cognome_allievo}`
                               : "Allievo"}
@@ -333,7 +333,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
+                        <div className="flex items-center gap-3 flex-wrap text-xs text-n-600">
                           <span className="flex items-center gap-1">
                             <Clock size={11} /> {orario}
                           </span>
@@ -350,7 +350,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                         </div>
 
                         {ep.motivazione && label !== "svolta" && (
-                          <p className="text-xs text-gray-400 mt-1 italic">{ep.motivazione}</p>
+                          <p className="text-xs text-n-300 mt-1 italic">{ep.motivazione}</p>
                         )}
                       </div>
 
@@ -373,7 +373,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                         </div>
                       )}
                       {loading && (
-                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0 mt-1" />
+                        <div className="w-4 h-4 border-2 border-ama-500 border-t-transparent rounded-full animate-spin shrink-0 mt-1" />
                       )}
                     </div>
                   );
@@ -405,7 +405,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
 // ── sub-componenti ─────────────────────────────────────────────────────────
 function ActionBtn({ icon, label, color, onClick }) {
   const colors = {
-    gray:    "bg-gray-100 text-gray-600 hover:bg-gray-200",
+    gray:    "bg-n-100 text-n-600 hover:bg-gray-200",
     amber:   "bg-amber-50 text-amber-700 hover:bg-amber-100",
     red:     "bg-red-50 text-red-600 hover:bg-red-100",
     emerald: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",

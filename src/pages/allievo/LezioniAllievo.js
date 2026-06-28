@@ -6,7 +6,7 @@ import { apiFetch } from '../../utils/api';
 const nomiMesi = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
 const STATI_BADGE = {
-  futura:    { label: 'Programmata', cls: 'bg-indigo-100 text-indigo-700' },
+  futura:    { label: 'Programmata', cls: 'bg-ama-100 text-ama-700' },
   svolta:    { label: 'Svolta',      cls: 'bg-emerald-100 text-emerald-700' },
   rimandata: { label: 'Rimandata',   cls: 'bg-amber-100 text-amber-700' },
   annullata: { label: 'Annullata',   cls: 'bg-red-100 text-red-700' },
@@ -19,19 +19,19 @@ function formatData(d) {
 }
 
 function LezioneCard({ lezione }) {
-  const badge = STATI_BADGE[lezione.stato] || { label: lezione.stato, cls: 'bg-gray-100 text-gray-700' };
+  const badge = STATI_BADGE[lezione.stato] || { label: lezione.stato, cls: 'bg-n-100 text-gray-700' };
   return (
     <div className="bg-white border rounded-xl p-4 mb-3">
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2 text-gray-900 font-semibold">
-          <Calendar size={15} className="text-indigo-400 shrink-0" />
+        <div className="flex items-center gap-2 text-n-900 font-semibold">
+          <Calendar size={15} className="text-ama-300 shrink-0" />
           {formatData(lezione.data)}
         </div>
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
           {badge.label}
         </span>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-n-600 mt-1">
         <span className="flex items-center gap-1">
           <Clock size={13} />
           {lezione.ora_inizio} — {lezione.ora_fine}
@@ -50,7 +50,7 @@ function LezioneCard({ lezione }) {
         )}
       </div>
       {lezione.motivazione && (
-        <p className="mt-2 text-xs text-gray-500 italic">"{lezione.motivazione}"</p>
+        <p className="mt-2 text-xs text-n-600 italic">"{lezione.motivazione}"</p>
       )}
     </div>
   );
@@ -79,14 +79,14 @@ export default function LezioniAllievo() {
   return (
     <AllievoLayout>
       <div className="pt-6 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Le mie lezioni</h1>
-        <button onClick={carica} className="p-2 text-gray-500" aria-label="Aggiorna">
+        <h1 className="text-2xl font-bold text-n-900">Le mie lezioni</h1>
+        <button onClick={carica} className="p-2 text-n-600" aria-label="Aggiorna">
           <RefreshCw size={18} />
         </button>
       </div>
 
       {/* Tab */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+      <div className="flex bg-n-100 rounded-xl p-1 mb-5">
         {[
           { id: 'future',  label: 'Future' },
           { id: 'passate', label: 'Passate' },
@@ -96,8 +96,8 @@ export default function LezioniAllievo() {
             onClick={() => setTab(id)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
               tab === id
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500'
+                ? 'bg-white text-ama-500 shadow-sm'
+                : 'text-n-600'
             }`}
           >
             {label}
@@ -115,7 +115,7 @@ export default function LezioniAllievo() {
           ].map(({ label, n, cls }) => (
             <div key={label} className="bg-white border rounded-xl p-3 text-center">
               <p className={`text-2xl font-bold ${cls}`}>{n}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+              <p className="text-xs text-n-600 mt-0.5">{label}</p>
             </div>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default function LezioniAllievo() {
 
       {/* Sommario (solo tab future) */}
       {tab === 'future' && futureTot > 0 && (
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-n-600 mb-4">
           {futureTot} lezione{futureTot !== 1 ? 'i' : ''} programmata{futureTot !== 1 ? 'e' : ''}
         </p>
       )}
@@ -131,10 +131,10 @@ export default function LezioniAllievo() {
       {/* Lista */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : lezioni.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-n-300">
           <Calendar size={40} className="mx-auto mb-3 opacity-40" />
           <p className="font-medium">Nessuna lezione {tab === 'future' ? 'programmata' : 'passata'}</p>
         </div>

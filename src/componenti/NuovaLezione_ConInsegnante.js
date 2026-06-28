@@ -142,7 +142,7 @@ const NuovaLezione = () => {
 
         <textarea name="note" placeholder="Note (facoltative)" value={formData.note} onChange={handleChange} className="w-full p-2 border" />
 
-        <button type="submit" className="bg-blue-500 text-white p-2 rounded w-full">Crea Lezione</button>
+        <button type="submit" className="bg-ama-1000 text-white p-2 rounded w-full">Crea Lezione</button>
       </form>
     </div>
   );

@@ -131,7 +131,7 @@ export default function CompensoInsegnante({ insegnanteId }) {
 
       {/* Selettore mese */}
       <div className="bg-white border rounded-xl px-4 py-3">
-        <label className="block text-xs font-medium text-gray-500 mb-3">Mese di competenza</label>
+        <label className="block text-xs font-medium text-n-600 mb-3">Mese di competenza</label>
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -139,11 +139,11 @@ export default function CompensoInsegnante({ insegnanteId }) {
               const d = new Date(y, m - 2, 1);
               setMese(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
             }}
-            className="w-9 h-9 flex items-center justify-center rounded-xl border text-gray-500 text-lg active:bg-gray-100"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border text-n-600 text-lg active:bg-n-100"
           >‹</button>
 
           <div className="flex-1 text-center">
-            <p className="text-base font-semibold text-gray-900">{nomeMese(mese)}</p>
+            <p className="text-base font-semibold text-n-900">{nomeMese(mese)}</p>
           </div>
 
           <button
@@ -152,11 +152,11 @@ export default function CompensoInsegnante({ insegnanteId }) {
               const d = new Date(y, m, 1);
               setMese(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
             }}
-            className="w-9 h-9 flex items-center justify-center rounded-xl border text-gray-500 text-lg active:bg-gray-100"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border text-n-600 text-lg active:bg-n-100"
           >›</button>
         </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Solo lezioni <span className="font-medium text-gray-600">svolte</span> nel mese selezionato.
+        <p className="text-xs text-n-300 mt-3">
+          Solo lezioni <span className="font-medium text-n-600">svolte</span> nel mese selezionato.
         </p>
       </div>
 
@@ -169,18 +169,18 @@ export default function CompensoInsegnante({ insegnanteId }) {
           {/* KPI riepilogo */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white border rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-400 mb-1">Lezioni svolte</p>
-              <p className="text-2xl font-bold text-gray-900">{dati.lezioniSvolte}</p>
+              <p className="text-xs text-n-300 mb-1">Lezioni svolte</p>
+              <p className="text-2xl font-bold text-n-900">{dati.lezioniSvolte}</p>
             </div>
             <div className="bg-white border rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-400 mb-1">Ore totali</p>
-              <p className="text-2xl font-bold text-gray-900">{dati.oreTotali.toFixed(2)}</p>
+              <p className="text-xs text-n-300 mb-1">Ore totali</p>
+              <p className="text-2xl font-bold text-n-900">{dati.oreTotali.toFixed(2)}</p>
             </div>
             <div className="bg-white border rounded-xl px-4 py-3">
-              <p className="text-xs text-gray-400 mb-1">Tariffa oraria</p>
-              <p className="text-2xl font-bold text-gray-900">{euro(dati.tariffaOraria)}</p>
+              <p className="text-xs text-n-300 mb-1">Tariffa oraria</p>
+              <p className="text-2xl font-bold text-n-900">{euro(dati.tariffaOraria)}</p>
             </div>
-            <div className="bg-blue-600 rounded-xl px-4 py-3">
+            <div className="bg-ama-500 rounded-xl px-4 py-3">
               <p className="text-xs text-blue-200 mb-1">Totale rimborso</p>
               <p className="text-2xl font-bold text-white">{euro(dati.compensoTotale)}</p>
             </div>
@@ -206,12 +206,12 @@ export default function CompensoInsegnante({ insegnanteId }) {
 
           {/* Lista lezioni */}
           {dati.lezioni.length === 0 ? (
-            <div className="bg-white border border-dashed rounded-xl p-8 text-center text-gray-400 text-sm">
+            <div className="bg-white border border-dashed rounded-xl p-8 text-center text-n-300 text-sm">
               Nessuna lezione svolta in {nomeMese(dati.mese)}.
             </div>
           ) : (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              <p className="text-xs font-semibold text-n-600 uppercase mb-2">
                 Lezioni conteggiate — {nomeMese(dati.mese)}
               </p>
               <div className="bg-white border rounded-xl overflow-hidden">
@@ -219,8 +219,8 @@ export default function CompensoInsegnante({ insegnanteId }) {
                   <div key={l.id ?? i} className={`px-4 py-3 ${i < dati.lezioni.length - 1 ? 'border-b border-gray-50' : ''}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">{l.allievo}</p>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                        <p className="text-sm font-semibold text-n-900 truncate">{l.allievo}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-n-600 flex-wrap">
                           <span className="flex items-center gap-1">
                             <CalendarDays size={11} /> {fmtData(l.data)}
                           </span>
@@ -235,19 +235,19 @@ export default function CompensoInsegnante({ insegnanteId }) {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-gray-900">{euro(l.compenso)}</p>
-                        <p className="text-xs text-gray-400">{l.ore.toFixed(2)} h</p>
+                        <p className="text-sm font-bold text-n-900">{euro(l.compenso)}</p>
+                        <p className="text-xs text-n-300">{l.ore.toFixed(2)} h</p>
                       </div>
                     </div>
                   </div>
                 ))}
 
                 {/* riga totale */}
-                <div className="px-4 py-3 bg-gray-50 border-t flex items-center justify-between">
+                <div className="px-4 py-3 bg-n-50 border-t flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-700">Totale</span>
                   <div className="text-right">
                     <p className="text-base font-bold text-blue-700">{euro(dati.compensoTotale)}</p>
-                    <p className="text-xs text-gray-400">{dati.oreTotali.toFixed(2)} h</p>
+                    <p className="text-xs text-n-300">{dati.oreTotali.toFixed(2)} h</p>
                   </div>
                 </div>
               </div>

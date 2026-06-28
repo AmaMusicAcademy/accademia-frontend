@@ -46,7 +46,7 @@ function FormPagamento({ label, onSuccess, onError }) {
       <PaymentElement options={{ layout: 'tabs' }} />
       {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
-        className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
         {loading
           ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           : label}
@@ -103,7 +103,7 @@ function FormAbbonamento({ onSuccess, onError }) {
       <PaymentElement options={{ layout: 'tabs' }} />
       {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
-        className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
         {loading
           ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           : 'Attiva addebito mensile'}
@@ -150,7 +150,7 @@ export default function StripePayment({ mode, mesi = [], onSuccess, onError }) {
 
   if (!clientSecret || !stripeObj) return (
     <div className="flex justify-center py-10">
-      <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-ama-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 

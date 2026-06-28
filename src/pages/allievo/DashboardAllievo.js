@@ -30,34 +30,34 @@ function PopupNotifiche({ notifiche, nonLette, onLetto, onLettoTutte, onClose })
       <div className="relative mt-16 mr-4 bg-white rounded-2xl shadow-xl w-80 max-h-[70vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <p className="text-sm font-semibold text-gray-900">Notifiche {nonLette > 0 && <span className="text-indigo-600">({nonLette})</span>}</p>
+          <p className="text-sm font-semibold text-n-900">Notifiche {nonLette > 0 && <span className="text-ama-500">({nonLette})</span>}</p>
           <div className="flex items-center gap-2">
             {nonLette > 0 && (
-              <button onClick={onLettoTutte} className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+              <button onClick={onLettoTutte} className="text-xs text-ama-500 font-medium flex items-center gap-1">
                 <BellOff size={12} /> Lette tutte
               </button>
             )}
-            <button onClick={onClose} className="text-gray-400"><X size={16} /></button>
+            <button onClick={onClose} className="text-n-300"><X size={16} /></button>
           </div>
         </div>
         <div className="overflow-y-auto flex-1">
           {notifiche.length === 0 ? (
-            <div className="py-10 text-center text-gray-400">
+            <div className="py-10 text-center text-n-300">
               <Bell size={28} className="mx-auto mb-2 opacity-30" />
               <p className="text-sm">Nessuna notifica</p>
             </div>
           ) : notifiche.map(n => (
             <div key={n.id}
               onClick={() => !n.letto && onLetto(n.id)}
-              className={`px-4 py-3 border-b last:border-0 cursor-pointer ${n.letto ? 'bg-white' : 'bg-indigo-50'}`}>
+              className={`px-4 py-3 border-b last:border-0 cursor-pointer ${n.letto ? 'bg-white' : 'bg-ama-100'}`}>
               <div className="flex items-start gap-2">
                 <div className="flex-1">
-                  <p className="text-xs text-gray-800 leading-snug">{n.messaggio}</p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-n-900 leading-snug">{n.messaggio}</p>
+                  <p className="text-xs text-n-300 mt-1">
                     {new Date(n.created_at).toLocaleDateString('it-IT', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
                   </p>
                 </div>
-                {!n.letto && <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1 shrink-0" />}
+                {!n.letto && <div className="w-2 h-2 bg-ama-500 rounded-full mt-1 shrink-0" />}
               </div>
             </div>
           ))}
@@ -84,16 +84,16 @@ function ModalChiusure({ chiusure, onClose }) {
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <div className="flex items-center gap-2">
             <CalendarOff size={18} className="text-orange-500" />
-            <h2 className="text-base font-semibold text-gray-900">Chiusure annuali</h2>
+            <h2 className="text-base font-semibold text-n-900">Chiusure annuali</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400"><X size={20} /></button>
+          <button onClick={onClose} className="text-n-300"><X size={20} /></button>
         </div>
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           {chiusure.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">Nessuna chiusura impostata.</p>
+            <p className="text-sm text-n-300 text-center py-8">Nessuna chiusura impostata.</p>
           ) : anni.map(anno => (
             <div key={anno}>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{anno}</p>
+              <p className="text-xs font-semibold text-n-600 uppercase mb-2">{anno}</p>
               <div className="bg-white border rounded-xl divide-y divide-gray-50 overflow-hidden">
                 {perAnno[anno].map(c => (
                   <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
@@ -101,8 +101,8 @@ function ModalChiusure({ chiusure, onClose }) {
                       <CalendarOff size={14} className="text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{fmtDataChiusura(c.data)}</p>
-                      {c.descrizione && <p className="text-xs text-gray-400">{c.descrizione}</p>}
+                      <p className="text-sm font-medium text-n-900">{fmtDataChiusura(c.data)}</p>
+                      {c.descrizione && <p className="text-xs text-n-300">{c.descrizione}</p>}
                     </div>
                   </div>
                 ))}
@@ -177,7 +177,7 @@ export default function DashboardAllievo() {
   if (loading) return (
     <AllievoLayout>
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
       </div>
     </AllievoLayout>
   );
@@ -189,11 +189,11 @@ export default function DashboardAllievo() {
       {/* Header */}
       <div className="pt-6 pb-4 flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">Benvenuto</p>
-          <h1 className="text-2xl font-bold text-gray-900">{profilo?.nome || '—'}</h1>
+          <p className="text-sm text-n-600">Benvenuto</p>
+          <h1 className="text-2xl font-bold text-n-900">{profilo?.nome || '—'}</h1>
         </div>
         <button onClick={() => setShowNotifiche(true)} className="relative p-2">
-          <Bell size={24} className="text-gray-600" />
+          <Bell size={24} className="text-n-600" />
           {nonLette > 0 && (
             <span className="absolute top-1 right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
               {nonLette > 9 ? '9+' : nonLette}
@@ -204,7 +204,7 @@ export default function DashboardAllievo() {
 
       {/* Card prossima lezione */}
       <div onClick={() => navigate('/allievo/lezioni')}
-        className="bg-indigo-600 text-white rounded-2xl p-5 mb-4 cursor-pointer active:opacity-90">
+        className="bg-ama-500 text-white rounded-2xl p-5 mb-4 cursor-pointer active:opacity-90">
         <div className="flex items-center gap-2 mb-3 opacity-80">
           <Calendar size={16} />
           <span className="text-sm font-medium">Prossima lezione</span>
@@ -226,7 +226,7 @@ export default function DashboardAllievo() {
       {/* Riepilogo anno accademico */}
       {riepilogo && (
         <div className="mb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Anno accademico {annoAcc}</p>
+          <p className="text-xs font-semibold text-n-600 uppercase mb-2">Anno accademico {annoAcc}</p>
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: 'Svolte',    n: parseInt(riepilogo.svolte||0),    cls: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
@@ -235,7 +235,7 @@ export default function DashboardAllievo() {
             ].map(({ label, n, cls, bg }) => (
               <div key={label} className={`border rounded-xl p-3 text-center ${bg}`}>
                 <p className={`text-2xl font-bold ${cls}`}>{n}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                <p className="text-xs text-n-600 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
@@ -254,13 +254,13 @@ export default function DashboardAllievo() {
                 <CreditCard size={20} className={pagamentoMese.pagato ? 'text-emerald-600' : 'text-amber-600'} />
               </div>
               <div>
-                <p className="font-semibold text-gray-900">Quota {nomiMesi[pagamentoMese.mese]}</p>
+                <p className="font-semibold text-n-900">Quota {nomiMesi[pagamentoMese.mese]}</p>
                 <p className={`text-sm font-medium ${pagamentoMese.pagato ? 'text-emerald-600' : 'text-amber-600'}`}>
                   {pagamentoMese.pagato ? 'Pagata ✓' : `Non ancora pagata · €${pagamentoMese.quota}`}
                 </p>
               </div>
             </div>
-            <ChevronRight size={18} className="text-gray-400" />
+            <ChevronRight size={18} className="text-n-300" />
           </div>
         </div>
       )}
@@ -268,17 +268,17 @@ export default function DashboardAllievo() {
       {/* Link rapidi */}
       <div className="grid grid-cols-3 gap-3 mt-2">
         <button onClick={() => navigate('/allievo/lezioni')}
-          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-gray-50">
-          <BookOpen size={22} className="text-indigo-500" />
+          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-n-50">
+          <BookOpen size={22} className="text-ama-500" />
           <span className="text-xs font-medium text-gray-700 text-center">Le mie lezioni</span>
         </button>
         <button onClick={() => navigate('/allievo/pagamenti')}
-          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-gray-50">
-          <CreditCard size={22} className="text-indigo-500" />
+          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-n-50">
+          <CreditCard size={22} className="text-ama-500" />
           <span className="text-xs font-medium text-gray-700 text-center">Pagamenti</span>
         </button>
         <button onClick={() => setShowChiusure(true)}
-          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-gray-50">
+          className="bg-white border rounded-xl p-4 flex flex-col items-center gap-2 active:bg-n-50">
           <CalendarOff size={22} className="text-orange-400" />
           <span className="text-xs font-medium text-gray-700 text-center">Chiusure</span>
         </button>
@@ -293,7 +293,7 @@ export default function DashboardAllievo() {
               await apiFetch('/api/allievo/push-test', { method: 'POST' });
             } catch {}
           }}
-          className="mt-4 w-full text-xs text-gray-400 py-2 underline"
+          className="mt-4 w-full text-xs text-n-300 py-2 underline"
         >
           Testa notifiche push
         </button>

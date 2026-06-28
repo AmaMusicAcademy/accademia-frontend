@@ -11,13 +11,13 @@ const PageHeader = ({ title, backTo, action }) => {
         {backTo !== false && (
           <button
             onClick={() => backTo ? navigate(backTo) : navigate(-1)}
-            className="p-1 -ml-1 text-gray-500 active:text-gray-800"
+            className="p-1 -ml-1 text-n-600 active:text-n-900"
             aria-label="Indietro"
           >
             <ChevronLeft size={22} />
           </button>
         )}
-        <h1 className="flex-1 text-base font-semibold text-gray-900 truncate">{title}</h1>
+        <h1 className="flex-1 text-base font-semibold text-n-900 truncate">{title}</h1>
         {action && <div className="shrink-0">{action}</div>}
       </div>
     </div>

@@ -122,7 +122,7 @@ const ListaAllievi = ({ allievi, toggleAttivo, eliminaAllievo, apiBaseUrl, aggio
                     </button>
                     <button
                       onClick={() => setEspandiDettagli(prev => prev === a.id ? null : a.id)}
-                      className="px-3 py-1 text-sm rounded bg-gray-100 text-primary border border-primary"
+                      className="px-3 py-1 text-sm rounded bg-n-100 text-primary border border-primary"
                     >
                       📊 Dettagli
                     </button>

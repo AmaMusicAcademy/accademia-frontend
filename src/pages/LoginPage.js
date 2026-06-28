@@ -121,7 +121,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-n-100 p-4">
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-full max-w-sm">
         <h1 className="text-xl font-bold mb-4">Login</h1>
 
@@ -170,7 +170,7 @@ function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white p-2 rounded flex items-center justify-center gap-2"
+          className="w-full bg-ama-1000 hover:bg-ama-500 disabled:opacity-60 text-white p-2 rounded flex items-center justify-center gap-2"
         >
           {loading && (
             <span className="inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -178,13 +178,13 @@ function LoginPage() {
           {loading ? 'Accesso in corso…' : 'Accedi'}
         </button>
 
-        <p className="text-xs text-gray-500 mt-3">
+        <p className="text-xs text-n-600 mt-3">
           Il nome utente non distingue tra maiuscole e minuscole.
         </p>
 
-        <p className="text-xs text-center text-gray-400 mt-4">
+        <p className="text-xs text-center text-n-300 mt-4">
           Vuoi iscriverti?{' '}
-          <a href="/iscrizione" className="text-blue-600 font-medium underline">
+          <a href="/iscrizione" className="text-ama-500 font-medium underline">
             Compila il modulo di iscrizione
           </a>
         </p>

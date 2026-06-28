@@ -22,8 +22,8 @@ const formatOra = (t) => (t ? String(t).slice(0, 5) : '');
 
 function StatCard({ icon: Icon, label, value, color = 'blue' }) {
   const colors = {
-    blue:    'bg-blue-50 text-blue-600',
-    indigo:  'bg-indigo-50 text-indigo-600',
+    blue:    'bg-ama-100 text-ama-500',
+    indigo:  'bg-ama-100 text-ama-500',
     emerald: 'bg-emerald-50 text-emerald-600',
     amber:   'bg-amber-50 text-amber-600',
   };
@@ -33,8 +33,8 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }) {
         <Icon size={19} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+        <p className="text-2xl font-bold text-n-900 leading-none">{value}</p>
+        <p className="text-xs text-n-600 mt-0.5">{label}</p>
       </div>
     </div>
   );
@@ -42,11 +42,11 @@ function StatCard({ icon: Icon, label, value, color = 'blue' }) {
 
 function LezioneRow({ lezione, onAnnullaPresenza }) {
   const badge = {
-    appuntamentata: 'bg-blue-100 text-blue-700',
+    appuntamentata: 'bg-ama-100 text-blue-700',
     svolta:         'bg-emerald-100 text-emerald-700',
     rimandata:      'bg-amber-100 text-amber-700',
     annullata:      'bg-red-100 text-red-700',
-  }[lezione.stato] || 'bg-gray-100 text-gray-700';
+  }[lezione.stato] || 'bg-n-100 text-gray-700';
 
   const labels = {
     appuntamentata: 'da fare',
@@ -58,15 +58,15 @@ function LezioneRow({ lezione, onAnnullaPresenza }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b last:border-0">
       <div className="text-center w-12 shrink-0">
-        <p className="text-sm font-bold text-gray-900">{formatOra(lezione.ora_inizio)}</p>
-        <p className="text-[10px] text-gray-400">{formatOra(lezione.ora_fine)}</p>
+        <p className="text-sm font-bold text-n-900">{formatOra(lezione.ora_inizio)}</p>
+        <p className="text-[10px] text-n-300">{formatOra(lezione.ora_fine)}</p>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">
+        <p className="font-medium text-n-900 truncate">
           {lezione.nome_allievo} {lezione.cognome_allievo}
         </p>
         {lezione.aula && (
-          <p className="text-xs text-gray-500 flex items-center gap-1">
+          <p className="text-xs text-n-600 flex items-center gap-1">
             <MapPin size={10} /> {lezione.aula}
           </p>
         )}
@@ -96,7 +96,7 @@ function AulaCard({ aula, lezioniAula }) {
         <DoorOpen size={17} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 truncate">{aula.nome}</p>
+        <p className="text-sm font-semibold text-n-900 truncate">{aula.nome}</p>
         {occupata ? (
           lezioniAula.map((l, i) => (
             <p key={i} className="text-xs text-red-600 truncate">
@@ -217,7 +217,7 @@ export default function DashboardInsegnante() {
     return (
       <InsegnanteLayout>
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
         </div>
       </InsegnanteLayout>
     );
@@ -230,10 +230,10 @@ export default function DashboardInsegnante() {
         {/* Intestazione */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-sm text-gray-500">Ciao,</p>
-            <h1 className="text-2xl font-bold text-gray-900">{profilo?.nome || '—'}</h1>
+            <p className="text-sm text-n-600">Ciao,</p>
+            <h1 className="text-2xl font-bold text-n-900">{profilo?.nome || '—'}</h1>
           </div>
-          <button onClick={carica} className="p-2 text-gray-400" aria-label="Aggiorna">
+          <button onClick={carica} className="p-2 text-n-300" aria-label="Aggiorna">
             <RefreshCw size={18} />
           </button>
         </div>
@@ -247,7 +247,7 @@ export default function DashboardInsegnante() {
         </div>
 
         {/* Tab */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+        <div className="flex bg-n-100 rounded-xl p-1 mb-5">
           {[
             { id: 'oggi',   label: 'Oggi' },
             { id: 'rimand', label: 'Da riprog.', badge: daRiprogrammare.length },
@@ -257,7 +257,7 @@ export default function DashboardInsegnante() {
               key={id}
               onClick={() => setSezione(id)}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors relative ${
-                sezione === id ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'
+                sezione === id ? 'bg-white text-ama-500 shadow-sm' : 'text-n-600'
               }`}
             >
               {label}
@@ -274,17 +274,17 @@ export default function DashboardInsegnante() {
         {sezione === 'oggi' && (
           <>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-900">{formatDataBreve(dataOggi)}</h2>
+              <h2 className="font-semibold text-n-900">{formatDataBreve(dataOggi)}</h2>
               <button
                 onClick={() => navigate('/insegnante/calendario')}
-                className="text-sm text-blue-600 flex items-center gap-1"
+                className="text-sm text-ama-500 flex items-center gap-1"
               >
                 Calendario <ChevronRight size={14} />
               </button>
             </div>
 
             {lezioniOggi.length === 0 ? (
-              <div className="bg-gray-50 border border-dashed rounded-xl p-6 text-center text-gray-400 mb-5">
+              <div className="bg-n-50 border border-dashed rounded-xl p-6 text-center text-n-300 mb-5">
                 <Calendar size={28} className="mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Nessuna lezione oggi</p>
               </div>
@@ -305,8 +305,8 @@ export default function DashboardInsegnante() {
 
             {prossima && (
               <>
-                <h2 className="font-semibold text-gray-900 mb-3">Prossima lezione</h2>
-                <div className="bg-blue-600 text-white rounded-2xl p-5 mb-2">
+                <h2 className="font-semibold text-n-900 mb-3">Prossima lezione</h2>
+                <div className="bg-ama-500 text-white rounded-2xl p-5 mb-2">
                   <p className="text-sm opacity-80 mb-1">{formatDataBreve(prossima.data?.slice(0,10))}</p>
                   <p className="text-xl font-bold mb-0.5">
                     {prossima.nome_allievo} {prossima.cognome_allievo}
@@ -344,12 +344,12 @@ export default function DashboardInsegnante() {
         {sezione === 'rimand' && (
           <>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-900">Da riprogrammare</h2>
-              <span className="text-xs text-gray-400">{daRiprogrammare.length} {daRiprogrammare.length === 1 ? 'lezione' : 'lezioni'}</span>
+              <h2 className="font-semibold text-n-900">Da riprogrammare</h2>
+              <span className="text-xs text-n-300">{daRiprogrammare.length} {daRiprogrammare.length === 1 ? 'lezione' : 'lezioni'}</span>
             </div>
 
             {daRiprogrammare.length === 0 ? (
-              <div className="bg-gray-50 border border-dashed rounded-xl p-6 text-center text-gray-400">
+              <div className="bg-n-50 border border-dashed rounded-xl p-6 text-center text-n-300">
                 <RotateCcw size={28} className="mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Nessuna lezione in attesa di riprogrammazione</p>
               </div>
@@ -362,10 +362,10 @@ export default function DashboardInsegnante() {
                   >
                     <div className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
+                      <p className="text-sm font-semibold text-n-900 truncate">
                         {l.nome_allievo} {l.cognome_allievo}
                       </p>
-                      <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                      <p className="text-xs text-n-600 flex items-center gap-2 mt-0.5">
                         <span className="flex items-center gap-1"><Calendar size={10} /> {formatDataBreve(l.data?.slice(0,10))}</span>
                         <span className="flex items-center gap-1"><Clock size={10} /> {formatOra(l.ora_inizio)}–{formatOra(l.ora_fine)}</span>
                         {l.aula && <span className="flex items-center gap-1"><MapPin size={10} /> {l.aula}</span>}
@@ -391,7 +391,7 @@ export default function DashboardInsegnante() {
         {sezione === 'aule' && (
           <>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-900">Occupazione aule</h2>
+              <h2 className="font-semibold text-n-900">Occupazione aule</h2>
               <input
                 type="date"
                 value={dataAule}
@@ -401,7 +401,7 @@ export default function DashboardInsegnante() {
             </div>
 
             {aule.length === 0 ? (
-              <div className="bg-gray-50 border border-dashed rounded-xl p-6 text-center text-gray-400">
+              <div className="bg-n-50 border border-dashed rounded-xl p-6 text-center text-n-300">
                 <DoorOpen size={28} className="mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Nessuna aula trovata</p>
               </div>

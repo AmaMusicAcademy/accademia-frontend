@@ -129,7 +129,7 @@ const Allievi = () => {
           mostraForm ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
-        <form onSubmit={handleSubmit} className="bg-gray-50 p-4 rounded-lg shadow space-y-4 mb-6">
+        <form onSubmit={handleSubmit} className="bg-n-50 p-4 rounded-lg shadow space-y-4 mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               name="nome"

@@ -18,7 +18,7 @@ const CalcoloRimborso = () => {
   if (!insegnanteId) {
     // nessun token o token senza claim: chiedo di riloggarsi
     return (
-      <div className="min-h-screen bg-gray-100 flex flex-col">
+      <div className="min-h-screen bg-n-100 flex flex-col">
         <PageHeader title="Calcolo Rimborso" />
         <div className="p-6 text-sm text-red-600">
           Sessione non valida. Effettua di nuovo il login.
@@ -28,7 +28,7 @@ const CalcoloRimborso = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
+    <div className="min-h-screen bg-n-100 flex flex-col justify-between">
       <PageHeader title="Calcolo Rimborso" />
 
       {/* Contenuto */}

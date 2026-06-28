@@ -22,8 +22,8 @@ export default function AssenteModal({ open, onClose, onAnnulla, onRimanda }) {
 
         {/* header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="text-base font-semibold text-gray-900">Allievo assente</h2>
-          <button onClick={handleClose} className="text-gray-400 active:text-gray-700">
+          <h2 className="text-base font-semibold text-n-900">Allievo assente</h2>
+          <button onClick={handleClose} className="text-n-300 active:text-gray-700">
             <X size={20} />
           </button>
         </div>

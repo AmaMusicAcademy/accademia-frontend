@@ -115,7 +115,7 @@ function CambiaPassword() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-n-100">
       <PageHeader title="Cambia Password" backTo="/insegnante/profilo" />
 
       {/* FORM */}
@@ -155,7 +155,7 @@ function CambiaPassword() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-500 text-white p-3 rounded shadow disabled:opacity-60"
+          className="w-full bg-ama-1000 text-white p-3 rounded shadow disabled:opacity-60"
         >
           {loading ? 'Aggiornamento…' : 'Aggiorna Password'}
         </button>

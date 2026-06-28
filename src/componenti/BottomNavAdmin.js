@@ -36,7 +36,7 @@ const BottomNavAdmin = ({ onAdd }) => {
       {showFab && (
         <button
           onClick={onAdd}
-          className="absolute -top-5 right-5 w-11 h-11 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-2xl font-light"
+          className="absolute -top-5 right-5 w-11 h-11 bg-ama-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-2xl font-light"
           aria-label="Aggiungi"
         >
           +
@@ -53,7 +53,7 @@ const BottomNavAdmin = ({ onAdd }) => {
               key={tab.to}
               onClick={() => navigate(tab.to)}
               className={`relative flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${
-                active ? 'text-blue-600' : 'text-gray-400'
+                active ? 'text-ama-500' : 'text-n-300'
               }`}
             >
               <div className="relative">

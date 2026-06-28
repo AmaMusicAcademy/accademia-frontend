@@ -53,7 +53,7 @@ const BottomNav = ({ onLessonCreated }) => {
                 key={tab.to}
                 onClick={() => navigate(tab.to)}
                 className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${
-                  active ? 'text-blue-600' : 'text-gray-400'
+                  active ? 'text-ama-500' : 'text-n-300'
                 }`}
               >
                 <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
