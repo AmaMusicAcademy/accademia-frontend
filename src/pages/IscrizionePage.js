@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import SignatureCanvas from 'react-signature-canvas';
-import { Check, ChevronRight, ChevronLeft, X, Upload, FileText, Shield, Camera, Pen } from 'lucide-react';
+import { Check, ChevronRight, ChevronLeft, X, Upload, FileText, Shield, Camera, Pen, CreditCard, AlertCircle } from 'lucide-react';
 import { API_BASE } from '../utils/api';
 
 const STRUMENTI = [
@@ -204,11 +204,12 @@ function StepBar({ step, minore }) {
 
 // ── Pagina principale ─────────────────────────────────────────────────────
 export default function IscrizionePage() {
-  const [step, setStep]     = useState(0); // 0=dati, 1=genitore (se minore), 2=consensi, 3=docs, 4=firma, 5=invio
+  const [step, setStep]       = useState(0); // 0=dati, 1=genitore (se minore), 2=consensi, 3=docs, 4=firma, 5=invio
   const [loading, setLoading] = useState(false);
   const [successo, setSuccesso] = useState(false);
-  const [errore, setErrore] = useState('');
-  const [modal, setModal]   = useState(null); // quale modale è aperta
+  const [errore, setErrore]   = useState('');
+  const [modal, setModal]     = useState(null); // quale modale è aperta
+  const [showAvviso, setShowAvviso] = useState(true);
 
   const sigRef = useRef(null);
 
@@ -523,6 +524,52 @@ export default function IscrizionePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* Popup avviso documenti */}
+      {showAvviso && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="bg-indigo-600 px-5 py-4 flex items-center gap-3">
+              <AlertCircle size={22} className="text-white shrink-0" />
+              <h2 className="text-white font-bold text-base">Prima di iniziare</h2>
+            </div>
+            <div className="px-5 py-5">
+              <p className="text-sm text-gray-700 mb-4">
+                Per completare la domanda di iscrizione avrai bisogno di:
+              </p>
+              <ul className="space-y-3 mb-5">
+                <li className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                    <CreditCard size={18} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Carta d'identità</p>
+                    <p className="text-xs text-gray-500">dell'allievo (e del genitore se minorenne)</p>
+                  </div>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                    <FileText size={18} className="text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Codice fiscale</p>
+                    <p className="text-xs text-gray-500">dell'allievo (e del genitore se minorenne)</p>
+                  </div>
+                </li>
+              </ul>
+              <p className="text-xs text-gray-400 mb-5">
+                Sarà richiesto di fotografare o caricare i documenti e apporre la firma digitale.
+              </p>
+              <button
+                onClick={() => setShowAvviso(false)}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm active:bg-indigo-700">
+                Ho i documenti, procedi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b px-5 py-4 flex items-center gap-3">
         <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
