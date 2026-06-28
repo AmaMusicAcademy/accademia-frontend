@@ -424,7 +424,10 @@ export default function AdminIscrizioni() {
     try {
       const rows = await apiFetch(`/api/admin/iscrizioni?stato=${stato}`);
       setLista(rows);
-    } catch {}
+    } catch (e) {
+      console.error('Errore carica iscrizioni:', e);
+      setLista([]);
+    }
     setLoading(false);
   };
 
