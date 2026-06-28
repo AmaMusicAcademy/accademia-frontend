@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, CalendarDays, Users, GraduationCap,
+  User, CalendarDays, CreditCard, Users, GraduationCap,
   ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, ClipboardList,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
@@ -108,11 +108,11 @@ export default function ProfiloAdmin() {
                 onClick={() => navigate('/admin/calendario')}
               />
               <KpiCard
-                icon={ClipboardList}
-                label="Iscrizioni in attesa"
-                value={kpi?.iscrizioniAttesa}
-                color={kpi?.iscrizioniAttesa > 0 ? 'amber' : 'emerald'}
-                onClick={() => navigate('/admin/iscrizioni')}
+                icon={CreditCard}
+                label="Quote non pagate"
+                value={kpi?.pagamentiMancanti}
+                color={kpi?.pagamentiMancanti > 0 ? 'red' : 'emerald'}
+                onClick={() => navigate('/admin/pagamenti')}
               />
               <KpiCard
                 icon={GraduationCap}
@@ -134,7 +134,7 @@ export default function ProfiloAdmin() {
               <MenuRow icon={Users}        label="Insegnanti"  onClick={() => navigate('/admin/insegnanti')} />
               <MenuRow icon={School}       label="Aule"        onClick={() => navigate('/admin/aule')} />
               <MenuRow icon={CalendarOff} label="Chiusure"    onClick={() => navigate('/admin/chiusure')} />
-              <MenuRow icon={ClipboardList} label="Iscrizioni"  onClick={() => navigate('/admin/iscrizioni')} />
+              <MenuRow icon={CreditCard}   label="Pagamenti"   onClick={() => navigate('/admin/pagamenti')} />
             </div>
           </>
         )}
