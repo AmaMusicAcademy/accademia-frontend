@@ -303,6 +303,11 @@ export default function IscrizionePage() {
       if (Object.keys(errori).length > 0) return;
     }
 
+    // Validazione step 2 — consensi obbligatori
+    if (stepOrder[step] === 2) {
+      if (!form.acc_tesseramento || !form.acc_regolamento || !form.acc_privacy) return;
+    }
+
     setErroriStep({});
     // Se siamo sullo step firma (real step 4), salva prima di navigare
     if (stepOrder[step] === 4 && sigRef.current && !sigRef.current.isEmpty()) {
@@ -479,8 +484,10 @@ export default function IscrizionePage() {
         linkLabel="leggi le finalità"
         onLeggi={() => setModal('immagini')} />
 
-      {!form.acc_privacy && (
-        <p className="text-xs text-red-500 mt-2">Il consenso al trattamento dei dati personali è obbligatorio.</p>
+      {(!form.acc_tesseramento || !form.acc_regolamento || !form.acc_privacy) && (
+        <p className="text-xs text-red-500 mt-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          I primi tre consensi sono obbligatori per procedere.
+        </p>
       )}
     </div>
   );
@@ -707,7 +714,7 @@ export default function IscrizionePage() {
           )}
           {isUltimoStep ? (
             <button onClick={handleSubmit}
-              disabled={loading || !form.acc_privacy}
+              disabled={loading || !form.acc_tesseramento || !form.acc_regolamento || !form.acc_privacy}
               className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               {loading
                 ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
