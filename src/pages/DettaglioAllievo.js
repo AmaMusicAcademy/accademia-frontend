@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Check, X, UserX, UserCheck, Key, Trash2 } from 'lucide-react';
+import { Pencil, Check, X, UserX, UserCheck, Key, Trash2, FileDown } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -64,15 +64,18 @@ export default function DettaglioAllievo() {
   const [accountLoad, setAccLoad]   = useState(false);
 
   const [showElimina, setShowElimina] = useState(false);
+  const [pdfToken, setPdfToken]       = useState(null);
 
   const carica = async () => {
     setLoading(true);
     try {
-      const [a, ins, tuttiI] = await Promise.all([
+      const [a, ins, tuttiI, pdfRes] = await Promise.all([
         apiFetch(`/api/allievi/${id}`),
         apiFetch(`/api/allievi/${id}/insegnanti`),
         apiFetch('/api/insegnanti'),
+        apiFetch(`/api/allievi/${id}/iscrizione-pdf`).catch(() => ({})),
       ]);
+      setPdfToken(pdfRes?.token || null);
       setAllievo(a);
       setInsAssegnati(Array.isArray(ins) ? ins : []);
       setTuttiIns(Array.isArray(tuttiI) ? tuttiI : []);
@@ -294,6 +297,13 @@ export default function DettaglioAllievo() {
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium disabled:opacity-40">
             <Key size={15} /> {accountLoad ? 'Creazione…' : 'Crea / reimposta credenziali'}
           </button>
+          {pdfToken && (
+            <a href={`${process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com'}/api/iscrizione/${pdfToken}/pdf`}
+              target="_blank" rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-medium">
+              <FileDown size={15} /> Scarica modulo iscrizione PDF
+            </a>
+          )}
           {accountMsg && (
             <div className={`text-xs rounded-xl px-3 py-2.5 ${accountMsg.ok ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
               {accountMsg.text}

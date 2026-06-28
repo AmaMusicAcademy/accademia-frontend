@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut, Pencil } from 'lucide-react';
+import { User, Phone, Calendar, Users, FileText, ShieldCheck, ChevronDown, ChevronUp, Check, X, LogOut, Pencil, FileDown } from 'lucide-react';
 import AllievoLayout from '../../componenti/AllievoLayout';
 import { apiFetch } from '../../utils/api';
 
@@ -113,8 +113,10 @@ export default function ProfiloAllievo() {
   const [salvando, setSalvando] = useState(false);
   const [errore, setErrore]     = useState('');
   const [showReg, setShowReg]   = useState(false);
+  const [pdfToken, setPdfToken] = useState(null);
 
   const carica = () => {
+    apiFetch('/api/allievo/iscrizione-pdf').then(r => setPdfToken(r?.token || null)).catch(() => {});
     apiFetch('/api/allievo/me').then(d => {
       setDati(d);
       setForm({
@@ -231,6 +233,13 @@ export default function ProfiloAllievo() {
             </div>
             <Riga label="Data iscrizione" value={fmtData(dati?.data_iscrizione)} />
             <Riga label="Minore di 18 anni" value={dati?.minore ? 'Sì' : 'No'} />
+            {pdfToken && (
+              <a href={`${process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com'}/api/iscrizione/${pdfToken}/pdf`}
+                target="_blank" rel="noopener noreferrer"
+                className="mt-3 flex items-center justify-center gap-2 py-2.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-medium w-full">
+                <FileDown size={15} /> Scarica modulo iscrizione PDF
+              </a>
+            )}
           </div>
 
           {/* Regolamento (sempre visibile, non in edit) */}
