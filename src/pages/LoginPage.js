@@ -170,7 +170,7 @@ function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-ama-1000 hover:bg-ama-500 disabled:opacity-60 text-white p-2 rounded flex items-center justify-center gap-2"
+          className="w-full bg-ama-500 hover:bg-ama-700 active:bg-ama-700 disabled:opacity-60 text-white p-2 rounded-xl flex items-center justify-center gap-2 transition-colors"
         >
           {loading && (
             <span className="inline-block h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
