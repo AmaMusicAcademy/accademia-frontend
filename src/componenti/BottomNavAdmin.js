@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, CalendarDays, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, ClipboardList } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 const TABS = [
-  { label: 'Home',       icon: LayoutDashboard, to: '/admin',           exact: true  },
-  { label: 'Allievi',    icon: Users,           to: '/admin/allievi',   exact: false },
-  { label: 'Calendario', icon: CalendarDays,    to: '/admin/calendario',exact: false },
-  { label: 'Pagamenti',  icon: CreditCard,      to: '/admin/pagamenti', exact: false },
+  { label: 'Home',        icon: LayoutDashboard, to: '/admin',              exact: true  },
+  { label: 'Allievi',     icon: Users,           to: '/admin/allievi',      exact: false },
+  { label: 'Calendario',  icon: CalendarDays,    to: '/admin/calendario',   exact: false },
+  { label: 'Iscrizioni',  icon: ClipboardList,   to: '/admin/iscrizioni',   exact: false },
 ];
 
 const SHOW_FAB_ON = ['/admin/allievi', '/admin/insegnanti', '/admin/aule'];
@@ -14,6 +15,13 @@ const SHOW_FAB_ON = ['/admin/allievi', '/admin/insegnanti', '/admin/aule'];
 const BottomNavAdmin = ({ onAdd }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [attesa, setAttesa] = useState(0);
+
+  useEffect(() => {
+    apiFetch('/api/admin/dashboard')
+      .then(d => setAttesa(d.iscrizioniAttesa || 0))
+      .catch(() => {});
+  }, [pathname]);
 
   const isActive = ({ to, exact }) =>
     exact ? pathname === to : pathname.startsWith(to);
@@ -39,15 +47,23 @@ const BottomNavAdmin = ({ onAdd }) => {
         {TABS.map((tab) => {
           const active = isActive(tab);
           const Icon = tab.icon;
+          const showBadge = tab.to === '/admin/iscrizioni' && attesa > 0;
           return (
             <button
               key={tab.to}
               onClick={() => navigate(tab.to)}
-              className={`flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${
+              className={`relative flex flex-col items-center gap-0.5 flex-1 py-1 transition-colors ${
                 active ? 'text-blue-600' : 'text-gray-400'
               }`}
             >
-              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+              <div className="relative">
+                <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
+                {showBadge && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5">
+                    {attesa > 9 ? '9+' : attesa}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           );
