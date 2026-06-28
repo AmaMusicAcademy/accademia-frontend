@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, X, ChevronLeft, Eye, UserCheck, UserX, Pen } from 'lucide-react';
+import {
+  Check, X, ChevronLeft, Eye, UserCheck, UserX, Pen,
+  ChevronRight, AlertCircle, FileCheck, ClipboardList,
+} from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
-import { apiFetch, API_BASE } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -26,16 +29,86 @@ function Badge({ stato }) {
   );
 }
 
+// ── Modale rifiuto con motivazione ────────────────────────────────────────────
+function ModalRifiuto({ isc, onClose, onRifiuta }) {
+  const [motivazione, setMotivazione] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const conferma = async () => {
+    setLoading(true);
+    try {
+      await apiFetch(`/api/admin/iscrizioni/${isc.id}/rifiuta`, {
+        method: 'PATCH',
+        body: JSON.stringify({ motivazione }),
+      });
+      onRifiuta();
+      onClose();
+    } catch (e) {
+      alert('Errore: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl w-full max-w-sm p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <AlertCircle size={18} className="text-red-500" />
+          <h3 className="font-bold text-gray-900">Rifiuta domanda</h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-3">
+          Stai per rifiutare la domanda di <strong>{isc.nome} {isc.cognome}</strong>.
+          Indica facoltativamente un motivo.
+        </p>
+        <textarea
+          value={motivazione}
+          onChange={e => setMotivazione(e.target.value)}
+          placeholder="Motivazione (facoltativa)..."
+          rows={3}
+          className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2.5 outline-none focus:border-red-300 resize-none mb-4"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold">
+            Annulla
+          </button>
+          <button onClick={conferma} disabled={loading}
+            className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-bold flex items-center justify-center gap-2">
+            {loading
+              ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <><UserX size={15} /> Rifiuta</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal principale ───────────────────────────────────────────────────────────
 function ModalDettaglio({ isc, onClose, onAccetta, onRifiuta }) {
   const sigRef = useRef(null);
-  const [showFirma, setShowFirma] = useState(false);
-  const [loading, setLoading]    = useState(false);
+  const [step, setStep] = useState(1); // 1=verifica, 2=firma
+  const [firmaAcquisita, setFirmaAcquisita] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showRifiuto, setShowRifiuto] = useState(false);
+
+  // Conformità: checklist obbligatoria prima di procedere alla firma
+  const [checks, setChecks] = useState({
+    dati_corretti: false,
+    consensi_validi: false,
+    documento_valido: false,
+    firma_presente: false,
+  });
+  const tuttiChecked = Object.values(checks).every(Boolean);
+  const toggleCheck = k => setChecks(prev => ({ ...prev, [k]: !prev[k] }));
+
+  const handleFirmaChange = () => {
+    setFirmaAcquisita(sigRef.current && !sigRef.current.isEmpty());
+  };
 
   const handleAccetta = async () => {
-    if (!sigRef.current || sigRef.current.isEmpty()) {
-      alert('Apponi la firma del presidente prima di accettare.');
-      return;
-    }
+    if (!firmaAcquisita) return;
     setLoading(true);
     const firma_presidente = sigRef.current.toDataURL('image/png');
     try {
@@ -52,20 +125,6 @@ function ModalDettaglio({ isc, onClose, onAccetta, onRifiuta }) {
     }
   };
 
-  const handleRifiuta = async () => {
-    if (!window.confirm(`Rifiutare la domanda di ${isc.nome} ${isc.cognome}?`)) return;
-    setLoading(true);
-    try {
-      await apiFetch(`/api/admin/iscrizioni/${isc.id}/rifiuta`, { method: 'PATCH' });
-      onRifiuta();
-      onClose();
-    } catch (e) {
-      alert('Errore: ' + e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const riga = (label, val) => (
     <div className="flex items-start gap-2 py-1.5 border-b border-gray-50 last:border-0">
       <span className="text-xs text-gray-400 w-36 shrink-0">{label}</span>
@@ -73,143 +132,291 @@ function ModalDettaglio({ isc, onClose, onAccetta, onRifiuta }) {
     </div>
   );
 
+  const CheckItem = ({ id, label, note }) => (
+    <button onClick={() => toggleCheck(id)}
+      className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-colors text-left
+        ${checks[id] ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
+      <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 border-2 transition-colors
+        ${checks[id] ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`}>
+        {checks[id] && <Check size={12} className="text-white" strokeWidth={3} />}
+      </div>
+      <div>
+        <p className={`text-sm font-medium ${checks[id] ? 'text-emerald-800' : 'text-gray-700'}`}>{label}</p>
+        {note && <p className="text-xs text-gray-400 mt-0.5">{note}</p>}
+      </div>
+    </button>
+  );
+
+  // Step indicator
+  const StepBar = () => (
+    <div className="flex items-center gap-2 px-5 py-3 bg-gray-50 border-b">
+      {[
+        { n: 1, label: 'Verifica dati' },
+        { n: 2, label: 'Firma direzione' },
+      ].map(({ n, label }, i, arr) => (
+        <React.Fragment key={n}>
+          <div className="flex items-center gap-1.5">
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+              ${step >= n ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+              {step > n ? <Check size={12} strokeWidth={3} /> : n}
+            </div>
+            <span className={`text-xs font-medium ${step >= n ? 'text-indigo-600' : 'text-gray-400'}`}>{label}</span>
+          </div>
+          {i < arr.length - 1 && <ChevronRight size={14} className="text-gray-300 shrink-0" />}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[95vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
-          <div>
-            <h2 className="font-bold text-gray-900">{isc.nome} {isc.cognome}</h2>
-            <p className="text-xs text-gray-500">{fmtData(isc.created_at)}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge stato={isc.stato} />
-            <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
-          </div>
-        </div>
+    <>
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+        <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[95vh] flex flex-col">
 
-        <div className="overflow-y-auto flex-1 px-5 py-4">
-          {/* Dati allievo */}
-          <p className="text-xs font-bold text-gray-500 uppercase mb-2">Dati allievo</p>
-          <div className="bg-gray-50 rounded-xl px-4 py-2 mb-4">
-            {riga('Codice Fiscale', isc.codice_fiscale)}
-            {riga('Data di nascita', fmtData(isc.data_nascita))}
-            {riga('Luogo di nascita', isc.luogo_nascita)}
-            {riga('Indirizzo', `${isc.indirizzo || ''} ${isc.cap || ''} ${isc.citta || ''} ${isc.provincia ? `(${isc.provincia})` : ''}`)}
-            {riga('Telefono', isc.telefono)}
-            {riga('Email', isc.email)}
-            {riga('Strumento', isc.strumento)}
-            {isc.note && riga('Note', isc.note)}
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+            <div>
+              <h2 className="font-bold text-gray-900">{isc.nome} {isc.cognome}</h2>
+              <p className="text-xs text-gray-500">Domanda del {fmtData(isc.created_at)}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge stato={isc.stato} />
+              <button onClick={onClose}><X size={20} className="text-gray-400" /></button>
+            </div>
           </div>
 
-          {/* Dati genitore */}
-          {isc.minore && (
-            <>
-              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Genitore/Tutore</p>
+          {/* Step bar (solo se in_attesa) */}
+          {isc.stato === 'in_attesa' && <StepBar />}
+
+          {/* ── STEP 1: VERIFICA DATI ── */}
+          {(step === 1 || isc.stato !== 'in_attesa') && (
+            <div className="overflow-y-auto flex-1 px-5 py-4">
+
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Dati allievo</p>
               <div className="bg-gray-50 rounded-xl px-4 py-2 mb-4">
-                {riga('Nome', `${isc.genitore_nome || ''} ${isc.genitore_cognome || ''}`)}
-                {riga('Codice Fiscale', isc.genitore_cf)}
-                {riga('Data di nascita', fmtData(isc.genitore_data_nascita))}
-                {riga('Telefono', isc.genitore_telefono)}
-                {riga('Email', isc.genitore_email)}
+                {riga('Nome e Cognome', `${isc.nome} ${isc.cognome}`)}
+                {riga('Codice Fiscale', isc.codice_fiscale)}
+                {riga('Data di nascita', fmtData(isc.data_nascita))}
+                {riga('Luogo di nascita', isc.luogo_nascita)}
+                {riga('Indirizzo', [isc.indirizzo, isc.cap, isc.citta, isc.provincia ? `(${isc.provincia})` : ''].filter(Boolean).join(' '))}
+                {riga('Telefono', isc.telefono)}
+                {riga('Email', isc.email)}
+                {riga('Strumento', isc.strumento)}
+                {isc.note && riga('Note', isc.note)}
               </div>
-            </>
-          )}
 
-          {/* Consensi */}
-          <p className="text-xs font-bold text-gray-500 uppercase mb-2">Consensi</p>
-          <div className="bg-gray-50 rounded-xl px-4 py-2 mb-4 text-xs space-y-1">
-            <p>{isc.acc_tesseramento ? '✓' : '✗'} Domanda di tesseramento</p>
-            <p>{isc.acc_regolamento  ? '✓' : '✗'} Regolamento interno</p>
-            <p>{isc.acc_privacy      ? '✓' : '✗'} Trattamento dati personali</p>
-            <p>{isc.acc_immagini     ? '✓' : '✗'} Uso immagini</p>
-          </div>
-
-          {/* Documenti */}
-          {(isc.doc_allievo_fronte || isc.doc_allievo_retro) && (
-            <>
-              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Documento allievo</p>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {isc.doc_allievo_fronte && (
-                  <img src={isc.doc_allievo_fronte} alt="Fronte" className="w-full h-28 object-cover rounded-xl border" />
-                )}
-                {isc.doc_allievo_retro && (
-                  <img src={isc.doc_allievo_retro} alt="Retro" className="w-full h-28 object-cover rounded-xl border" />
-                )}
-              </div>
-            </>
-          )}
-          {isc.minore && (isc.doc_genitore_fronte || isc.doc_genitore_retro) && (
-            <>
-              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Documento genitore</p>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {isc.doc_genitore_fronte && (
-                  <img src={isc.doc_genitore_fronte} alt="Fronte" className="w-full h-28 object-cover rounded-xl border" />
-                )}
-                {isc.doc_genitore_retro && (
-                  <img src={isc.doc_genitore_retro} alt="Retro" className="w-full h-28 object-cover rounded-xl border" />
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Firma allievo */}
-          {isc.firma_allievo && (
-            <>
-              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Firma allievo/genitore</p>
-              <img src={isc.firma_allievo} alt="Firma" className="h-20 border rounded-xl bg-white mb-4" />
-            </>
-          )}
-
-          {/* Firma presidente (se in attesa) */}
-          {isc.stato === 'in_attesa' && (
-            <>
-              {!showFirma ? (
-                <button onClick={() => setShowFirma(true)}
-                  className="w-full mb-4 py-3 border-2 border-dashed border-indigo-300 rounded-xl text-indigo-600 text-sm font-medium flex items-center justify-center gap-2">
-                  <Pen size={16} /> Apponi firma del presidente
-                </button>
-              ) : (
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Firma presidente</p>
-                  <div className="bg-white border-2 border-indigo-300 rounded-xl overflow-hidden">
-                    <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b">
-                      <span className="text-xs text-gray-600 flex items-center gap-1"><Pen size={12} /> Firma qui</span>
-                      <button onClick={() => sigRef.current?.clear()} className="text-xs text-red-500">Cancella</button>
-                    </div>
-                    <SignatureCanvas ref={sigRef} penColor="#1e3a5f"
-                      canvasProps={{ className: 'w-full', style: { height: '140px', touchAction: 'none' } }} />
+              {isc.minore && (
+                <>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Genitore / Tutore</p>
+                  <div className="bg-gray-50 rounded-xl px-4 py-2 mb-4">
+                    {riga('Nome e Cognome', `${isc.genitore_nome || ''} ${isc.genitore_cognome || ''}`)}
+                    {riga('Codice Fiscale', isc.genitore_cf)}
+                    {riga('Data di nascita', fmtData(isc.genitore_data_nascita))}
+                    {riga('Luogo di nascita', isc.genitore_luogo_nascita)}
+                    {riga('Indirizzo', isc.genitore_indirizzo)}
+                    {riga('Telefono', isc.genitore_telefono)}
+                    {riga('Email', isc.genitore_email)}
                   </div>
+                </>
+              )}
+
+              <p className="text-xs font-bold text-gray-500 uppercase mb-2">Consensi</p>
+              <div className="bg-gray-50 rounded-xl px-4 py-2 mb-4 space-y-1">
+                {[
+                  { key: 'acc_tesseramento', label: 'Domanda di tesseramento' },
+                  { key: 'acc_regolamento',  label: 'Regolamento interno' },
+                  { key: 'acc_privacy',      label: 'Trattamento dati personali' },
+                  { key: 'acc_immagini',     label: 'Uso immagini (facoltativo)' },
+                ].map(({ key, label }) => (
+                  <div key={key} className="flex items-center gap-2 py-1 text-xs">
+                    {isc[key]
+                      ? <Check size={14} className="text-emerald-500 shrink-0" strokeWidth={3} />
+                      : <X size={14} className="text-red-400 shrink-0" />}
+                    <span className={isc[key] ? 'text-gray-800' : 'text-gray-400'}>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {(isc.doc_allievo_fronte || isc.doc_allievo_retro) && (
+                <>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Documento identità allievo</p>
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {isc.doc_allievo_fronte && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Fronte</p>
+                        <img src={isc.doc_allievo_fronte} alt="Fronte" className="w-full h-32 object-cover rounded-xl border" />
+                      </div>
+                    )}
+                    {isc.doc_allievo_retro && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Retro</p>
+                        <img src={isc.doc_allievo_retro} alt="Retro" className="w-full h-32 object-cover rounded-xl border" />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {isc.minore && (isc.doc_genitore_fronte || isc.doc_genitore_retro) && (
+                <>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Documento identità genitore</p>
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    {isc.doc_genitore_fronte && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Fronte</p>
+                        <img src={isc.doc_genitore_fronte} alt="Fronte" className="w-full h-32 object-cover rounded-xl border" />
+                      </div>
+                    )}
+                    {isc.doc_genitore_retro && (
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">Retro</p>
+                        <img src={isc.doc_genitore_retro} alt="Retro" className="w-full h-32 object-cover rounded-xl border" />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {isc.firma_allievo && (
+                <>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">
+                    Firma {isc.minore ? 'genitore/tutore' : 'allievo'}
+                  </p>
+                  <div className="bg-white border rounded-xl p-3 mb-4 inline-block">
+                    <img src={isc.firma_allievo} alt="Firma allievo" className="h-20" />
+                  </div>
+                </>
+              )}
+
+              {/* Firma presidente (se già accettata) */}
+              {isc.firma_presidente && (
+                <>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Firma della direzione</p>
+                  <div className="bg-white border rounded-xl p-3 mb-4 inline-block">
+                    <img src={isc.firma_presidente} alt="Firma direzione" className="h-20" />
+                  </div>
+                  <p className="text-xs text-gray-400 mb-4">Accettata il {fmtData(isc.accettata_il)}</p>
+                </>
+              )}
+
+              {/* Checklist conformità (solo in_attesa) */}
+              {isc.stato === 'in_attesa' && (
+                <>
+                  <div className="flex items-center gap-2 mb-3 mt-2">
+                    <ClipboardList size={15} className="text-indigo-500" />
+                    <p className="text-xs font-bold text-gray-700 uppercase">Verifica conformità</p>
+                  </div>
+                  <div className="space-y-2 mb-2">
+                    <CheckItem id="dati_corretti"   label="Dati anagrafici corretti e completi"
+                      note="Nome, cognome, CF, data/luogo nascita, indirizzo verificati" />
+                    <CheckItem id="consensi_validi" label="Consensi obbligatori presenti"
+                      note="Tesseramento, regolamento e privacy accettati" />
+                    <CheckItem id="documento_valido" label="Documento di identità valido"
+                      note="Documento leggibile, non scaduto, corrispondente ai dati" />
+                    <CheckItem id="firma_presente"  label="Firma autografa acquisita"
+                      note="Firma dell'allievo o del genitore/tutore presente" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── STEP 2: FIRMA DIREZIONE ── */}
+          {step === 2 && isc.stato === 'in_attesa' && (
+            <div className="overflow-y-auto flex-1 px-5 py-4">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-5 flex gap-3">
+                <FileCheck size={18} className="text-indigo-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-indigo-800">
+                  La verifica della domanda è stata completata. Apponi la firma della direzione
+                  per procedere all'accettazione ufficiale.
+                </p>
+              </div>
+
+              <p className="text-xs font-bold text-gray-500 uppercase mb-3">Firma della direzione</p>
+              <div className="bg-white border-2 border-indigo-300 rounded-xl overflow-hidden mb-3">
+                <div className="flex justify-between items-center px-4 py-2.5 bg-gray-50 border-b">
+                  <span className="text-xs text-gray-600 flex items-center gap-1.5">
+                    <Pen size={13} className="text-indigo-500" /> Firma qui sotto
+                  </span>
+                  <button onClick={() => { sigRef.current?.clear(); setFirmaAcquisita(false); }}
+                    className="text-xs text-red-500 font-medium">
+                    Cancella
+                  </button>
+                </div>
+                <SignatureCanvas
+                  ref={sigRef}
+                  penColor="#1e3a5f"
+                  onEnd={handleFirmaChange}
+                  canvasProps={{ className: 'w-full', style: { height: '180px', touchAction: 'none' } }}
+                />
+              </div>
+              {!firmaAcquisita && (
+                <p className="text-xs text-amber-600 flex items-center gap-1.5 mb-2">
+                  <AlertCircle size={13} /> Firma richiesta per procedere all'accettazione
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── FOOTER AZIONI ── */}
+          {isc.stato === 'in_attesa' && (
+            <div className="px-5 pb-6 pt-3 border-t shrink-0">
+              {step === 1 ? (
+                <div className="flex gap-3">
+                  <button onClick={() => setShowRifiuto(true)}
+                    className="py-3 px-4 rounded-xl border border-red-200 text-red-600 text-sm font-semibold flex items-center gap-2">
+                    <UserX size={16} /> Rifiuta
+                  </button>
+                  <button
+                    onClick={() => setStep(2)}
+                    disabled={!tuttiChecked}
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors
+                      ${tuttiChecked
+                        ? 'bg-indigo-600 text-white active:bg-indigo-700'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                    Procedi alla firma <ChevronRight size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(1)}
+                    className="py-3 px-4 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold">
+                    Indietro
+                  </button>
+                  <button
+                    onClick={handleAccetta}
+                    disabled={!firmaAcquisita || loading}
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors
+                      ${firmaAcquisita && !loading
+                        ? 'bg-emerald-600 text-white active:bg-emerald-700'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                    {loading
+                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <><UserCheck size={16} /> Accetta iscrizione</>}
+                  </button>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
-
-        {/* Azioni */}
-        {isc.stato === 'in_attesa' && (
-          <div className="px-5 pb-6 pt-3 border-t flex gap-3 shrink-0">
-            <button onClick={handleRifiuta} disabled={loading}
-              className="flex-1 py-3 rounded-xl border border-red-300 text-red-600 text-sm font-semibold flex items-center justify-center gap-2">
-              <UserX size={16} /> Rifiuta
-            </button>
-            <button onClick={handleAccetta} disabled={loading}
-              className="flex-1 py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold flex items-center justify-center gap-2">
-              {loading
-                ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                : <><UserCheck size={16} /> Accetta</>}
-            </button>
-          </div>
-        )}
       </div>
-    </div>
+
+      {showRifiuto && (
+        <ModalRifiuto
+          isc={isc}
+          onClose={() => setShowRifiuto(false)}
+          onRifiuta={() => { onRifiuta(); onClose(); }}
+        />
+      )}
+    </>
   );
 }
 
+// ── Pagina principale ──────────────────────────────────────────────────────────
 export default function AdminIscrizioni() {
-  const [lista, setLista]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [tab, setTab]           = useState('in_attesa');
-  const [dettaglio, setDettaglio] = useState(null);
+  const [lista, setLista]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [tab, setTab]             = useState('in_attesa');
   const [dettaglioData, setDettaglioData] = useState(null);
 
   const carica = async (stato = tab) => {
@@ -227,7 +434,6 @@ export default function AdminIscrizioni() {
     try {
       const d = await apiFetch(`/api/admin/iscrizioni/${id}`);
       setDettaglioData(d);
-      setDettaglio(id);
     } catch {}
   };
 
@@ -247,8 +453,8 @@ export default function AdminIscrizioni() {
             { id: 'rifiutata', label: 'Rifiutate' },
           ].map(({ id, label }) => (
             <button key={id} onClick={() => setTab(id)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                tab === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}>
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
+                ${tab === id ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500'}`}>
               {label}
             </button>
           ))}
@@ -261,7 +467,10 @@ export default function AdminIscrizioni() {
         ) : lista.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <Eye size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Nessuna domanda {tab === 'in_attesa' ? 'in attesa' : tab}</p>
+            <p className="text-sm">
+              {tab === 'in_attesa' ? 'Nessuna domanda in attesa' :
+               tab === 'accettata' ? 'Nessuna domanda accettata' : 'Nessuna domanda rifiutata'}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -277,7 +486,7 @@ export default function AdminIscrizioni() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge stato={isc.stato} />
-                  <Eye size={16} className="text-gray-400" />
+                  <ChevronRight size={16} className="text-gray-300" />
                 </div>
               </button>
             ))}
@@ -285,10 +494,10 @@ export default function AdminIscrizioni() {
         )}
       </div>
 
-      {dettaglio && dettaglioData && (
+      {dettaglioData && (
         <ModalDettaglio
           isc={dettaglioData}
-          onClose={() => { setDettaglio(null); setDettaglioData(null); }}
+          onClose={() => setDettaglioData(null)}
           onAccetta={() => carica(tab)}
           onRifiuta={() => carica(tab)}
         />
