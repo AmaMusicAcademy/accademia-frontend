@@ -87,6 +87,7 @@ export default function CalendarioAdmin() {
     setEditMode("create");
     setEditOpen(true);
   };
+
   const closeModal = () => setEditOpen(false);
   const handleSaved = async () => {
     setEditOpen(false);
@@ -118,7 +119,7 @@ export default function CalendarioAdmin() {
         error={errore}
         nome={teacherId ? (teachers.find(t=>String(t.id)===String(teacherId))?.nome||"") : "Tutti"}
         cognome={teacherId ? (teachers.find(t=>String(t.id)===String(teacherId))?.cognome||"") : "gli insegnanti"}
-        mostraInsegnante={!teacherId} // se filtro singolo, puoi nascondere la colonna docente
+        mostraInsegnante={!teacherId}
       />
 
       {/* Modale unificata (mostra selettori docente/allievo) */}
