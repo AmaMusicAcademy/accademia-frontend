@@ -77,7 +77,7 @@ function exportPdf(dati) {
 
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Tariffa: ${euro(dati.tariffaOraria)}/ora  ·  Lezioni svolte: ${dati.lezioniSvolte}  ·  Ore totali: ${dati.oreTotali}  ·  Totale: ${euro(dati.compensoTotale)}`, 40, 64);
+  doc.text(`Tariffa: ${euro(dati.tariffaOraria)}/ora  ·  Lezioni: ${dati.lezioniSvolte}  ·  Ore totali: ${dati.oreTotali}  ·  Totale: ${euro(dati.compensoTotale)}`, 40, 64);
 
   autoTable(doc, {
     startY: 80,
@@ -169,7 +169,7 @@ export default function CompensoInsegnante({ insegnanteId }) {
           {/* KPI riepilogo */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white border rounded-xl px-4 py-3">
-              <p className="text-xs text-n-300 mb-1">Lezioni svolte</p>
+              <p className="text-xs text-n-300 mb-1">Lezioni conteggiate</p>
               <p className="text-2xl font-bold text-n-900">{dati.lezioniSvolte}</p>
             </div>
             <div className="bg-white border rounded-xl px-4 py-3">
@@ -207,7 +207,7 @@ export default function CompensoInsegnante({ insegnanteId }) {
           {/* Lista lezioni */}
           {dati.lezioni.length === 0 ? (
             <div className="bg-white border border-dashed rounded-xl p-8 text-center text-n-300 text-sm">
-              Nessuna lezione svolta in {nomeMese(dati.mese)}.
+              Nessuna lezione da conteggiare in {nomeMese(dati.mese)}.
             </div>
           ) : (
             <div>
