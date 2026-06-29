@@ -81,18 +81,19 @@ function exportPdf(dati) {
 
   autoTable(doc, {
     startY: 80,
-    head: [['Data', 'Orario', 'Allievo', 'Aula', 'Ore', 'Compenso']],
+    head: [['Data', 'Orario', 'Allievo', 'Aula', 'Stato', 'Ore', 'Compenso']],
     body: dati.lezioni.map(l => [
       fmtData(l.data),
       `${l.ora_inizio}–${l.ora_fine}`,
       l.allievo,
       l.aula,
+      l.stato === 'svolta' ? 'Svolta' : l.stato === 'annullata' ? 'Annullata' : l.stato ?? '—',
       l.ore.toFixed(2),
       euro(l.compenso),
     ]),
-    foot: [['', '', '', 'Totale', dati.oreTotali.toFixed(2), euro(dati.compensoTotale)]],
+    foot: [['', '', '', '', 'Totale', dati.oreTotali.toFixed(2), euro(dati.compensoTotale)]],
     styles: { fontSize: 9, cellPadding: 5 },
-    headStyles: { fillColor: [37, 99, 235] },
+    headStyles: { fillColor: [188, 55, 63] },
     footStyles: { fillColor: [241, 245, 249], textColor: [30, 30, 30], fontStyle: 'bold' },
     theme: 'striped',
     margin: { left: 40, right: 40 },
