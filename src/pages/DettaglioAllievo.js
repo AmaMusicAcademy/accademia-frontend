@@ -498,7 +498,7 @@ export default function DettaglioAllievo() {
       {/* Modal lista lezioni per stato */}
       {modalLezioni && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setModalLezioni(null)}>
-          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col"
+          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col pb-20"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <p className="font-semibold text-n-900 text-sm capitalize">
