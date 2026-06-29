@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CalendarDays, CreditCard, Users, GraduationCap,
-  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, ClipboardList,
+  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, ClipboardList, RefreshCw, X,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
+import { apiFetch } from '../utils/api';
 
 const API = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
@@ -51,6 +52,9 @@ export default function ProfiloAdmin() {
   const username = localStorage.getItem('username') || 'admin';
   const [kpi, setKpi] = useState(null);
   const [sezione, setSezione] = useState('panoramica');
+  const [drawerRiprog, setDrawerRiprog] = useState(false);
+  const [lezioniRiprog, setLezioniRiprog] = useState([]);
+  const [loadingRiprog, setLoadingRiprog] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -58,6 +62,22 @@ export default function ProfiloAdmin() {
     fetch(`${API}/api/admin/dashboard`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json()).then(setKpi).catch(() => {});
   }, []);
+
+  const fmtData = (d) => {
+    if (!d) return '—';
+    const [y, m, dd] = String(d).slice(0, 10).split('-');
+    return new Date(Date.UTC(+y,+m-1,+dd)).toLocaleDateString('it-IT', { day:'numeric', month:'short', year:'numeric' });
+  };
+
+  const apriDrawerRiprog = async () => {
+    setDrawerRiprog(true);
+    setLoadingRiprog(true);
+    try {
+      const lista = await apiFetch('/api/admin/lezioni-da-riprogrammare');
+      setLezioniRiprog(Array.isArray(lista) ? lista : []);
+    } catch { setLezioniRiprog([]); }
+    finally { setLoadingRiprog(false); }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -128,6 +148,13 @@ export default function ProfiloAdmin() {
                 color="amber"
                 onClick={() => navigate('/admin/insegnanti')}
               />
+              <KpiCard
+                icon={RefreshCw}
+                label="Da riprogrammare"
+                value={kpi?.daRiprogrammare}
+                color={kpi?.daRiprogrammare > 0 ? 'red' : 'emerald'}
+                onClick={apriDrawerRiprog}
+              />
             </div>
 
             <div className="bg-white border rounded-xl px-4 mb-4">
@@ -148,6 +175,45 @@ export default function ProfiloAdmin() {
         )}
 
       </div>
+
+      {/* Drawer lezioni da riprogrammare */}
+      {drawerRiprog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setDrawerRiprog(false)}>
+          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col pb-20"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+              <p className="font-semibold text-n-900 text-sm">Lezioni da riprogrammare</p>
+              <button onClick={() => setDrawerRiprog(false)}><X size={18} className="text-n-300" /></button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {loadingRiprog ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-6 h-6 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : lezioniRiprog.length === 0 ? (
+                <p className="text-center text-sm text-n-300 py-10">Nessuna lezione da riprogrammare.</p>
+              ) : (
+                <div className="divide-y">
+                  {lezioniRiprog.map(l => (
+                    <div key={l.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-n-900">{l.cognome_allievo} {l.nome_allievo}</span>
+                        <span className="text-xs text-n-300">{fmtData(l.data)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-n-300">{l.ora_inizio?.slice(0,5)}–{l.ora_fine?.slice(0,5)}</span>
+                        {l.nome_insegnante && <span className="text-xs text-n-300">· {l.nome_insegnante} {l.cognome_insegnante}</span>}
+                        {l.aula && <span className="text-xs text-n-300">· {l.aula}</span>}
+                      </div>
+                      {l.motivazione && <p className="text-xs text-amber-600 mt-0.5">{l.motivazione}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNavAdmin />
     </div>
