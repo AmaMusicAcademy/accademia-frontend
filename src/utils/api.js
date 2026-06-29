@@ -1,5 +1,9 @@
 // src/utils/api.js
-export const API_BASE = "http://localhost:3000";
+export const API_BASE = process.env.REACT_APP_API_URL || (
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000'
+    : 'https://app-docenti.onrender.com'
+);
 
 export function getToken() {
   try { return localStorage.getItem('token') || ''; } catch { return ''; }
