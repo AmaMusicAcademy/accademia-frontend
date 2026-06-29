@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Plus, Search, X, Check } from 'lucide-react';
+import { ChevronRight, Plus, Search, X } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -19,10 +19,9 @@ export default function AdminAllievi() {
 
   const [allievi, setAllievi]       = useState([]);
   const [insegnanti, setInsegnanti] = useState([]);
-  const [inAttesa, setInAttesa]     = useState([]);
   const [loading, setLoading]       = useState(true);
 
-  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi' | 'attesa'
+  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi'
   const [search, setSearch] = useState('');
 
   // Modal nuovo allievo
@@ -36,14 +35,12 @@ export default function AdminAllievi() {
   const carica = async () => {
     setLoading(true);
     try {
-      const [all, ins, att] = await Promise.all([
+      const [all, ins] = await Promise.all([
         apiFetch('/api/allievi'),
         apiFetch('/api/insegnanti'),
-        apiFetch('/api/allievi/iscrizioni-attesa'),
       ]);
       setAllievi(Array.isArray(all) ? all : []);
       setInsegnanti(Array.isArray(ins) ? ins : []);
-      setInAttesa(Array.isArray(att) ? att : []);
     } catch {}
     setLoading(false);
   };
@@ -82,14 +79,6 @@ export default function AdminAllievi() {
       carica();
     } catch (e) { setErrore(e.message || 'Errore.'); }
     finally { setSaving(false); }
-  };
-
-  const handleIscrizione = async (id, stato) => {
-    try {
-      await apiFetch(`/api/allievi/${id}/iscrizione`, { method: 'PATCH', body: JSON.stringify({ stato }) });
-      setInAttesa(prev => prev.filter(a => a.id !== id));
-      if (stato === 'attivo') carica();
-    } catch { alert('Errore durante l\'aggiornamento'); }
   };
 
   const Riga = ({ a }) => (
@@ -137,21 +126,18 @@ export default function AdminAllievi() {
       <div className="sticky top-0 z-20 bg-white border-b flex">
         <TabButton id="attivi"     label="Attivi" />
         <TabButton id="non_attivi" label="Non attivi" />
-        <TabButton id="attesa"     label="In attesa" badge={inAttesa.length} />
       </div>
 
       <div className="max-w-xl mx-auto px-4 pt-4 space-y-4">
 
         {/* Ricerca */}
-        {tab !== 'attesa' && (
-          <div className="relative">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cerca allievo…"
-              className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300"><X size={14} /></button>}
-          </div>
-        )}
+        <div className="relative">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cerca allievo…"
+            className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300"><X size={14} /></button>}
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -189,39 +175,6 @@ export default function AdminAllievi() {
               </>
             )}
 
-            {tab === 'attesa' && (
-              inAttesa.length === 0 ? (
-                <div className="bg-white border border-dashed rounded-xl p-10 text-center">
-                  <p className="text-2xl mb-2">✅</p>
-                  <p className="text-sm text-n-300">Nessuna iscrizione in attesa.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {inAttesa.map(a => (
-                    <div key={a.id} className="bg-white border rounded-xl p-4 shadow-sm">
-                      <div className="flex items-start justify-between mb-1">
-                        <div>
-                          <p className="font-semibold text-n-900 text-sm">{a.nome} {a.cognome}</p>
-                          {a.email && <p className="text-xs text-n-300 mt-0.5">{a.email}</p>}
-                          {a.telefono && <p className="text-xs text-n-300">{a.telefono}</p>}
-                        </div>
-                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium shrink-0 ml-2">In attesa</span>
-                      </div>
-                      <div className="flex gap-3 text-xs text-n-300 mb-3">
-                        {a.strumento && <span>{a.strumento}</span>}
-                        {a.data_nascita && <span>{fmtData(a.data_nascita)}</span>}
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleIscrizione(a.id, 'attivo')}
-                          className="flex-1 bg-emerald-500 text-white text-sm font-semibold py-2.5 rounded-xl">✓ Accetta</button>
-                        <button onClick={() => handleIscrizione(a.id, 'rifiutato')}
-                          className="flex-1 bg-red-50 text-red-600 text-sm font-semibold py-2.5 rounded-xl border border-red-100">✕ Rifiuta</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
           </>
         )}
       </div>
