@@ -44,6 +44,7 @@ function exportExcel(dati) {
     'Fine': l.ora_fine,
     Allievo: l.allievo,
     Aula: l.aula,
+    Stato: l.stato === 'svolta' ? 'Svolta' : l.stato === 'annullata' ? 'Annullata' : l.stato ?? '—',
     'Ore': l.ore,
     'Compenso (€)': l.compenso,
   }));
@@ -55,12 +56,13 @@ function exportExcel(dati) {
     Fine: '',
     Allievo: 'TOTALE',
     Aula: '',
+    Stato: '',
     Ore: dati.oreTotali,
     'Compenso (€)': dati.compensoTotale,
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [10,8,8,22,10,6,12].map(w => ({ wch: w }));
+  ws['!cols'] = [10,8,8,22,10,12,6,12].map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, nomeMese(dati.mese));
   XLSX.writeFile(wb, `rimborso_${dati.mese}.xlsx`);
