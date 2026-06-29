@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Check, X, UserX, UserCheck, Key, Trash2, FileDown } from 'lucide-react';
+import { Pencil, Check, X, UserX, UserCheck, Key, Trash2, FileDown, ChevronDown, ChevronUp } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -66,15 +66,22 @@ export default function DettaglioAllievo() {
   const [showElimina, setShowElimina] = useState(false);
   const [pdfToken, setPdfToken]       = useState(null);
 
+  const [statsOpen, setStatsOpen]       = useState(false);
+  const [conteggioLezioni, setConteggio] = useState(null);
+  const [modalLezioni, setModalLezioni] = useState(null); // { stato, lista }
+  const [loadingLezioni, setLoadingLezioni] = useState(false);
+
   const carica = async () => {
     setLoading(true);
     try {
-      const [a, ins, tuttiI, pdfRes] = await Promise.all([
+      const [a, ins, tuttiI, pdfRes, conteggio] = await Promise.all([
         apiFetch(`/api/allievi/${id}`),
         apiFetch(`/api/allievi/${id}/insegnanti`),
         apiFetch('/api/insegnanti'),
         apiFetch(`/api/allievi/${id}/iscrizione-pdf`).catch(() => ({})),
+        apiFetch(`/api/allievi/${id}/conteggio-lezioni`).catch(() => null),
       ]);
+      setConteggio(conteggio);
       setPdfToken(pdfRes?.token || null);
       setAllievo(a);
       setInsAssegnati(Array.isArray(ins) ? ins : []);
@@ -164,6 +171,16 @@ export default function DettaglioAllievo() {
     finally { setAccLoad(false); }
   };
 
+  const apriModalLezioni = async (stato) => {
+    setLoadingLezioni(true);
+    setModalLezioni({ stato, lista: [] });
+    try {
+      const lista = await apiFetch(`/api/allievi/${id}/lezioni-per-stato?stato=${stato}`);
+      setModalLezioni({ stato, lista: Array.isArray(lista) ? lista : [] });
+    } catch { setModalLezioni({ stato, lista: [] }); }
+    finally { setLoadingLezioni(false); }
+  };
+
   const handleElimina = async () => {
     try {
       await apiFetch(`/api/allievi/${id}`, { method:'DELETE' });
@@ -207,6 +224,33 @@ export default function DettaglioAllievo() {
             <span className="text-xs text-n-300">Fine: {fmtData(allievo.data_fine)}</span>
           )}
         </div>
+
+        {/* Statistiche lezioni */}
+        {conteggioLezioni && (
+          <div className="bg-white border rounded-xl overflow-hidden">
+            <button
+              onClick={() => setStatsOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3">
+              <p className="text-sm font-semibold text-n-900">Storico lezioni</p>
+              {statsOpen ? <ChevronUp size={16} className="text-n-300" /> : <ChevronDown size={16} className="text-n-300" />}
+            </button>
+            {statsOpen && (
+              <div className="grid grid-cols-3 divide-x border-t">
+                {[
+                  { stato: 'svolta',    label: 'Svolte',    count: conteggioLezioni.svolte,    color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                  { stato: 'annullata', label: 'Annullate', count: conteggioLezioni.annullate,  color: 'text-red-500',     bg: 'bg-red-50' },
+                  { stato: 'rimandata', label: 'Rimandate', count: conteggioLezioni.rimandate,  color: 'text-amber-600',   bg: 'bg-amber-50' },
+                ].map(({ stato, label, count, color, bg }) => (
+                  <button key={stato} onClick={() => apriModalLezioni(stato)}
+                    className={`flex flex-col items-center py-4 gap-1 active:opacity-70 ${bg}`}>
+                    <span className={`text-2xl font-bold ${color}`}>{count ?? 0}</span>
+                    <span className="text-xs text-n-300">{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Anagrafica */}
         <div className="bg-white border rounded-xl overflow-hidden">
@@ -446,6 +490,46 @@ export default function DettaglioAllievo() {
                 className="flex-1 py-2.5 bg-n-100 text-gray-700 rounded-xl text-sm font-medium">Annulla</button>
               <button onClick={handleElimina}
                 className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium">Elimina</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal lista lezioni per stato */}
+      {modalLezioni && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setModalLezioni(null)}>
+          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+              <p className="font-semibold text-n-900 text-sm capitalize">
+                Lezioni {modalLezioni.stato === 'svolta' ? 'svolte' : modalLezioni.stato === 'annullata' ? 'annullate' : 'rimandate'}
+              </p>
+              <button onClick={() => setModalLezioni(null)}><X size={18} className="text-n-300" /></button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {loadingLezioni ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-6 h-6 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : modalLezioni.lista.length === 0 ? (
+                <p className="text-center text-sm text-n-300 py-10">Nessuna lezione.</p>
+              ) : (
+                <div className="divide-y">
+                  {modalLezioni.lista.map(l => (
+                    <div key={l.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-n-900">{fmtData(l.data)}</span>
+                        <span className="text-xs text-n-300">{l.ora_inizio?.slice(0,5)}–{l.ora_fine?.slice(0,5)}</span>
+                      </div>
+                      {(l.nome_insegnante || l.cognome_insegnante) && (
+                        <p className="text-xs text-n-300 mt-0.5">{l.nome_insegnante} {l.cognome_insegnante}</p>
+                      )}
+                      {l.aula && <p className="text-xs text-n-300">Aula: {l.aula}</p>}
+                      {l.motivazione && <p className="text-xs text-amber-600 mt-0.5">{l.motivazione}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
