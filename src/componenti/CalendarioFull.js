@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { MapPin, User, Clock, Pencil, UserCheck, UserX } from "lucide-react";
+import { MapPin, User, Clock, Pencil, UserCheck, UserX, RotateCcw } from "lucide-react";
 import EditLessonModal from "./EditLessonModal";
 import AssenteModal from "./AssenteModal";
 import "./calendario.css";
@@ -73,6 +73,14 @@ async function patchPresente(id, token) {
   if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Errore (${res.status})`);
   return res.json();
 }
+async function patchAnnullaPresenza(id, token) {
+  const res = await fetch(`${API_BASE}/api/lezioni/${id}/annulla-presenza`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Errore (${res.status})`);
+  return res.json();
+}
 async function patchAnnulla(id, motivazione, token) {
   const res = await fetch(`${API_BASE}/api/lezioni/${id}/annulla`, {
     method: "PATCH",
@@ -86,6 +94,7 @@ async function patchAnnulla(id, motivazione, token) {
 // ── componente ─────────────────────────────────────────────────────────────
 export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
   const token = getToken();
+  const isAdmin = (localStorage.getItem('ruolo') || '') === 'admin';
 
   const [eventi, setEventi]               = useState([]);
   const [chiusure, setChiusure]           = useState([]); // [{data, descrizione}]
@@ -150,6 +159,17 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
     try {
       patchLocalEvent(ev, { stato: "svolta" });
       await patchPresente(realId, token);
+    } catch (e) { alert(e.message); }
+    finally { setAzioneLoading(null); }
+  };
+
+  const onAnnullaPresenza = async (ev) => {
+    const realId = ev.id ?? ev.extendedProps?.id;
+    if (!realId) return;
+    setAzioneLoading(realId);
+    try {
+      patchLocalEvent(ev, { stato: "appuntamentata" });
+      await patchAnnullaPresenza(realId, token);
     } catch (e) { alert(e.message); }
     finally { setAzioneLoading(null); }
   };
@@ -369,6 +389,9 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                           )}
                           {isRimandata && (
                             <ActionBtn icon={<Pencil size={13} />} label="Riprogramma" color="amber" onClick={() => openEdit(ev, "reschedule")} />
+                          )}
+                          {isSvolta && isAdmin && (
+                            <ActionBtn icon={<RotateCcw size={13} />} label="Ripristina" color="gray" onClick={() => onAnnullaPresenza(ev)} />
                           )}
                         </div>
                       )}
