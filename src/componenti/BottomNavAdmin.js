@@ -36,7 +36,7 @@ const BottomNavAdmin = ({ onAdd }) => {
       {showFab && (
         <button
           onClick={onAdd}
-          className="absolute -top-5 right-5 w-11 h-11 bg-ama-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-2xl font-light"
+          className="absolute -top-7 right-5 w-11 h-11 bg-ama-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-2xl font-light"
           aria-label="Aggiungi"
         >
           +
