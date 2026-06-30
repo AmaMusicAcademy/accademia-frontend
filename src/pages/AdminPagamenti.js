@@ -348,22 +348,33 @@ function TassaAnnuale({ token }) {
 
 const MESI_NOME_SHORT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
+function fmtMesiRegistrati(mesi_registrati, tipo) {
+  if (!mesi_registrati) return '—';
+  const list = typeof mesi_registrati === 'string' ? JSON.parse(mesi_registrati) : mesi_registrati;
+  if (!list?.length) return '—';
+  if (tipo === 'associativa') return `Tassa ${list[0].anno}`;
+  return list.map(({ anno, mese }) => `${MESI_NOME_SHORT[mese - 1]} ${anno}`).join(', ');
+}
+
 function SyncQonto({ token }) {
   const [syncing, setSyncing]           = useState(false);
   const [result, setResult]             = useState(null);
   const [nonAbbinate, setNonAbbinate]   = useState([]);
   const [storico, setStorico]           = useState([]);
   const [loadingList, setLoadingList]   = useState(true);
-  const [view, setView]                 = useState('nonAbbinate'); // 'nonAbbinate' | 'storico'
-  const [modal, setModal]               = useState(null); // transazione da abbinare
+  const [view, setView]                 = useState('nonAbbinate');
+  const [modal, setModal]               = useState(null);
   const [allievi, setAllievi]           = useState([]);
   const [abbinando, setAbbinando]       = useState(false);
+  const [scartando, setScartando]       = useState({});
+  const [annullando, setAnnullando]     = useState({});
 
-  // form abbinamento manuale
+  // form abbinamento manuale — supporta più mesi
+  const now = new Date();
   const [formAllievo, setFormAllievo]   = useState('');
   const [formTipo, setFormTipo]         = useState('mensile');
-  const [formAnno, setFormAnno]         = useState(new Date().getFullYear());
-  const [formMese, setFormMese]         = useState(new Date().getMonth() + 1);
+  const [formAnno, setFormAnno]         = useState(now.getFullYear());
+  const [formMesi, setFormMesi]         = useState([now.getMonth() + 1]); // array di mesi selezionati
 
   const hdr = { Authorization: `Bearer ${token}` };
 
@@ -382,7 +393,6 @@ function SyncQonto({ token }) {
 
   useEffect(() => {
     carica();
-    fetch(`${BASE_URL}/api/insegnanti`, { headers: hdr }).then(r => r.json()).catch(() => []).then(() => {});
     fetch(`${BASE_URL}/api/allievi`, { headers: hdr })
       .then(r => r.json())
       .then(d => setAllievi(Array.isArray(d) ? d : []))
@@ -404,29 +414,51 @@ function SyncQonto({ token }) {
     setModal(tx);
     setFormAllievo('');
     setFormTipo('mensile');
-    setFormAnno(new Date().getFullYear());
-    setFormMese(new Date().getMonth() + 1);
+    setFormAnno(now.getFullYear());
+    setFormMesi([now.getMonth() + 1]);
+  };
+
+  const toggleMese = (m) => {
+    setFormMesi(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m].sort((a, b) => a - b));
   };
 
   const confermaAbbina = async () => {
     if (!formAllievo) return;
     setAbbinando(true);
     try {
+      const mesi = formTipo === 'mensile'
+        ? formMesi.map(m => ({ anno: formAnno, mese: m }))
+        : [{ anno: formAnno }];
       await fetch(`${BASE_URL}/api/qonto/abbina`, {
         method: 'POST',
         headers: { ...hdr, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          qonto_tx_id:   modal.qonto_tx_id,
-          allievo_id:    formAllievo,
-          tipo_pagamento: formTipo,
-          anno:          formAnno,
-          mese:          formTipo === 'mensile' ? formMese : undefined,
-        }),
+        body: JSON.stringify({ qonto_tx_id: modal.qonto_tx_id, allievo_id: formAllievo, tipo_pagamento: formTipo, mesi }),
       });
       setModal(null);
       await carica();
     } catch { /* ignora */ }
     finally { setAbbinando(false); }
+  };
+
+  const scartaNonAbbinata = async (tx) => {
+    if (!window.confirm(`Scartare il bonifico di ${euro(tx.importo)} da "${tx.mittente}"? Verrà rimosso dalla lista.`)) return;
+    setScartando(s => ({ ...s, [tx.id]: true }));
+    try {
+      await fetch(`${BASE_URL}/api/qonto/non-abbinate/${tx.id}`, { method: 'DELETE', headers: hdr });
+      await carica();
+    } catch { /* ignora */ }
+    finally { setScartando(s => ({ ...s, [tx.id]: false })); }
+  };
+
+  const annullaAbbinamento = async (tx) => {
+    const label = fmtMesiRegistrati(tx.mesi_registrati, tx.tipo_pagamento);
+    if (!window.confirm(`Annullare l'abbinamento di ${euro(tx.importo)} da "${tx.mittente}" (${label})?\nI pagamenti registrati verranno rimossi.`)) return;
+    setAnnullando(s => ({ ...s, [tx.id]: true }));
+    try {
+      await fetch(`${BASE_URL}/api/qonto/abbina/${tx.id}`, { method: 'DELETE', headers: hdr });
+      await carica();
+    } catch { /* ignora */ }
+    finally { setAnnullando(s => ({ ...s, [tx.id]: false })); }
   };
 
   const fmtData = (d) => {
@@ -453,7 +485,7 @@ function SyncQonto({ token }) {
           </button>
         </div>
         <p className="text-xs text-n-300 mb-2">
-          Scarica le transazioni in entrata dal conto Qonto e le abbina automaticamente agli allievi per nome mittente o causale.
+          Scarica le transazioni in entrata dal conto Qonto e le abbina automaticamente per nome mittente o causale. I bonifici multi-mese vengono divisi automaticamente.
         </p>
         {result && (
           result.error ? (
@@ -497,20 +529,24 @@ function SyncQonto({ token }) {
         ) : (
           <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
             {nonAbbinate.map(tx => (
-              <div key={tx.id} className="px-4 py-3 space-y-1">
+              <div key={tx.id} className="px-4 py-3 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-n-900 truncate">{tx.mittente || '—'}</p>
                     <p className="text-xs text-n-300 truncate">{tx.causale || 'Nessuna causale'}</p>
                     <p className="text-xs text-n-400">{fmtData(tx.data)}</p>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-bold text-emerald-700">{euro(tx.importo)}</p>
-                    <button onClick={() => apriAbbina(tx)}
-                      className="mt-1 text-xs text-ama-500 font-medium underline">
-                      Abbina
-                    </button>
-                  </div>
+                  <p className="text-sm font-bold text-emerald-700 shrink-0">{euro(tx.importo)}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => apriAbbina(tx)}
+                    className="flex-1 py-1.5 rounded-lg bg-ama-500 text-white text-xs font-medium">
+                    Abbina
+                  </button>
+                  <button onClick={() => scartaNonAbbinata(tx)} disabled={!!scartando[tx.id]}
+                    className="flex-1 py-1.5 rounded-lg border border-n-200 text-n-500 text-xs font-medium disabled:opacity-40">
+                    {scartando[tx.id] ? '…' : 'Scarta'}
+                  </button>
                 </div>
               </div>
             ))}
@@ -524,20 +560,21 @@ function SyncQonto({ token }) {
         ) : (
           <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
             {storico.map(tx => (
-              <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-n-900 truncate">
-                    {tx.nome} {tx.cognome}
-                  </p>
-                  <p className="text-xs text-n-300 truncate">{tx.mittente}</p>
-                  <p className="text-xs text-n-400">
-                    {fmtData(tx.data)} ·{' '}
-                    {tx.tipo_pagamento === 'mensile'
-                      ? `${MESI_NOME_SHORT[tx.mese - 1]} ${tx.anno}`
-                      : `Tassa ${tx.anno}`}
-                  </p>
+              <div key={tx.id} className="px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-n-900 truncate">{tx.nome} {tx.cognome}</p>
+                    <p className="text-xs text-n-300 truncate">{tx.mittente}</p>
+                    <p className="text-xs text-n-400">
+                      {fmtData(tx.data)} · {fmtMesiRegistrati(tx.mesi_registrati, tx.tipo_pagamento)}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-emerald-700 shrink-0">{euro(tx.importo)}</p>
                 </div>
-                <p className="text-sm font-bold text-emerald-700 shrink-0">{euro(tx.importo)}</p>
+                <button onClick={() => annullaAbbinamento(tx)} disabled={!!annullando[tx.id]}
+                  className="w-full py-1.5 rounded-lg border border-red-100 text-red-500 text-xs font-medium disabled:opacity-40">
+                  {annullando[tx.id] ? '…' : 'Annulla abbinamento'}
+                </button>
               </div>
             ))}
           </div>
@@ -547,7 +584,7 @@ function SyncQonto({ token }) {
       {/* Modal abbinamento manuale */}
       {modal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
-          <div className="bg-white w-full rounded-t-2xl p-5 space-y-4 pb-10">
+          <div className="bg-white w-full rounded-t-2xl p-5 space-y-4 pb-10 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <p className="font-semibold text-n-900">Abbina transazione</p>
               <button onClick={() => setModal(null)}><X size={18} className="text-n-400" /></button>
@@ -577,25 +614,40 @@ function SyncQonto({ token }) {
                   <option value="associativa">Tassa associativa</option>
                 </select>
               </div>
-              <div className={`grid gap-3 ${formTipo === 'mensile' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                <div>
-                  <label className="block text-xs text-n-600 mb-1">Anno</label>
-                  <input type="number" value={formAnno} onChange={e => setFormAnno(parseInt(e.target.value))}
-                    className="w-full border rounded-xl px-3 py-2.5 text-sm" />
-                </div>
-                {formTipo === 'mensile' && (
-                  <div>
-                    <label className="block text-xs text-n-600 mb-1">Mese</label>
-                    <select value={formMese} onChange={e => setFormMese(parseInt(e.target.value))}
-                      className="w-full border rounded-xl px-3 py-2.5 text-sm">
-                      {MESI_NOME.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
-                    </select>
-                  </div>
-                )}
+              <div>
+                <label className="block text-xs text-n-600 mb-1">Anno</label>
+                <input type="number" value={formAnno} onChange={e => setFormAnno(parseInt(e.target.value))}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm" />
               </div>
+              {formTipo === 'mensile' && (
+                <div>
+                  <label className="block text-xs text-n-600 mb-2">Mesi coperti (seleziona uno o più)</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {MESI_NOME_SHORT.map((m, i) => {
+                      const mNum = i + 1;
+                      const sel = formMesi.includes(mNum);
+                      return (
+                        <button key={mNum} type="button" onClick={() => toggleMese(mNum)}
+                          className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                            sel ? 'bg-ama-500 text-white border-ama-500' : 'bg-white text-n-600 border-n-200'
+                          }`}>
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {formMesi.length > 0 && (
+                    <p className="text-xs text-n-400 mt-1">
+                      Selezionati: {formMesi.map(m => MESI_NOME_SHORT[m - 1]).join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
-            <button onClick={confermaAbbina} disabled={!formAllievo || abbinando}
+            <button
+              onClick={confermaAbbina}
+              disabled={!formAllievo || abbinando || (formTipo === 'mensile' && formMesi.length === 0)}
               className="w-full bg-ama-500 text-white py-3 rounded-xl text-sm font-semibold disabled:opacity-40">
               {abbinando ? 'Salvataggio…' : 'Conferma abbinamento'}
             </button>
