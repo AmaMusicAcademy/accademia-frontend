@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, RefreshCw } from 'lucide-react';
+import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import CompensoInsegnante from '../componenti/CompensoInsegnante';
@@ -346,6 +346,266 @@ function TassaAnnuale({ token }) {
   );
 }
 
+const MESI_NOME_SHORT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+function SyncQonto({ token }) {
+  const [syncing, setSyncing]           = useState(false);
+  const [result, setResult]             = useState(null);
+  const [nonAbbinate, setNonAbbinate]   = useState([]);
+  const [storico, setStorico]           = useState([]);
+  const [loadingList, setLoadingList]   = useState(true);
+  const [view, setView]                 = useState('nonAbbinate'); // 'nonAbbinate' | 'storico'
+  const [modal, setModal]               = useState(null); // transazione da abbinare
+  const [allievi, setAllievi]           = useState([]);
+  const [abbinando, setAbbinando]       = useState(false);
+
+  // form abbinamento manuale
+  const [formAllievo, setFormAllievo]   = useState('');
+  const [formTipo, setFormTipo]         = useState('mensile');
+  const [formAnno, setFormAnno]         = useState(new Date().getFullYear());
+  const [formMese, setFormMese]         = useState(new Date().getMonth() + 1);
+
+  const hdr = { Authorization: `Bearer ${token}` };
+
+  const carica = useCallback(async () => {
+    setLoadingList(true);
+    try {
+      const [na, st] = await Promise.all([
+        fetch(`${BASE_URL}/api/qonto/non-abbinate`, { headers: hdr }).then(r => r.json()),
+        fetch(`${BASE_URL}/api/qonto/storico`,       { headers: hdr }).then(r => r.json()),
+      ]);
+      setNonAbbinate(Array.isArray(na) ? na : []);
+      setStorico(Array.isArray(st) ? st : []);
+    } catch { /* ignora */ }
+    finally { setLoadingList(false); }
+  }, [token]);
+
+  useEffect(() => {
+    carica();
+    fetch(`${BASE_URL}/api/insegnanti`, { headers: hdr }).then(r => r.json()).catch(() => []).then(() => {});
+    fetch(`${BASE_URL}/api/allievi`, { headers: hdr })
+      .then(r => r.json())
+      .then(d => setAllievi(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, [carica]);
+
+  const sync = async () => {
+    setSyncing(true); setResult(null);
+    try {
+      const r = await fetch(`${BASE_URL}/api/qonto/sync`, { method: 'POST', headers: hdr });
+      const d = await r.json();
+      setResult(d);
+      if (d.ok) await carica();
+    } catch (e) { setResult({ error: e.message }); }
+    finally { setSyncing(false); }
+  };
+
+  const apriAbbina = (tx) => {
+    setModal(tx);
+    setFormAllievo('');
+    setFormTipo('mensile');
+    setFormAnno(new Date().getFullYear());
+    setFormMese(new Date().getMonth() + 1);
+  };
+
+  const confermaAbbina = async () => {
+    if (!formAllievo) return;
+    setAbbinando(true);
+    try {
+      await fetch(`${BASE_URL}/api/qonto/abbina`, {
+        method: 'POST',
+        headers: { ...hdr, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          qonto_tx_id:   modal.qonto_tx_id,
+          allievo_id:    formAllievo,
+          tipo_pagamento: formTipo,
+          anno:          formAnno,
+          mese:          formTipo === 'mensile' ? formMese : undefined,
+        }),
+      });
+      setModal(null);
+      await carica();
+    } catch { /* ignora */ }
+    finally { setAbbinando(false); }
+  };
+
+  const fmtData = (d) => {
+    if (!d) return '—';
+    const [y, m, g] = d.slice(0, 10).split('-');
+    return `${g}/${m}/${y}`;
+  };
+
+  const euro = (n) => `€ ${parseFloat(n).toFixed(2)}`;
+
+  return (
+    <div className="space-y-4">
+      {/* Pannello sync */}
+      <div className="bg-white border rounded-xl px-4 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Link2 size={15} className="text-blue-500" />
+            <p className="text-sm font-semibold text-n-900">Sincronizzazione Qonto</p>
+          </div>
+          <button onClick={sync} disabled={syncing}
+            className="flex items-center gap-1.5 text-xs text-ama-500 font-medium disabled:opacity-40">
+            <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
+            {syncing ? 'Sync…' : 'Sincronizza ora'}
+          </button>
+        </div>
+        <p className="text-xs text-n-300 mb-2">
+          Scarica le transazioni in entrata dal conto Qonto e le abbina automaticamente agli allievi per nome mittente o causale.
+        </p>
+        {result && (
+          result.error ? (
+            <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">
+              <AlertCircle size={13} /> {result.error}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+              <CheckCircle2 size={13} />
+              {result.nuove} nuove · {result.abbinate} abbinate · {result.nonAbbinate} da verificare
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Toggle lista */}
+      <div className="flex bg-white border rounded-xl overflow-hidden">
+        {[
+          { id: 'nonAbbinate', label: `Da abbinare${nonAbbinate.length ? ` (${nonAbbinate.length})` : ''}` },
+          { id: 'storico',     label: 'Storico abbinate' },
+        ].map(({ id, label }) => (
+          <button key={id} onClick={() => setView(id)}
+            className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+              view === id ? 'bg-ama-500 text-white' : 'text-n-600'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      {loadingList ? (
+        <div className="flex justify-center py-8">
+          <div className="w-6 h-6 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : view === 'nonAbbinate' ? (
+        nonAbbinate.length === 0 ? (
+          <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+            Nessuna transazione da abbinare.
+          </div>
+        ) : (
+          <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+            {nonAbbinate.map(tx => (
+              <div key={tx.id} className="px-4 py-3 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-n-900 truncate">{tx.mittente || '—'}</p>
+                    <p className="text-xs text-n-300 truncate">{tx.causale || 'Nessuna causale'}</p>
+                    <p className="text-xs text-n-400">{fmtData(tx.data)}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-emerald-700">{euro(tx.importo)}</p>
+                    <button onClick={() => apriAbbina(tx)}
+                      className="mt-1 text-xs text-ama-500 font-medium underline">
+                      Abbina
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        storico.length === 0 ? (
+          <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+            Nessuna transazione abbinata.
+          </div>
+        ) : (
+          <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+            {storico.map(tx => (
+              <div key={tx.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-n-900 truncate">
+                    {tx.nome} {tx.cognome}
+                  </p>
+                  <p className="text-xs text-n-300 truncate">{tx.mittente}</p>
+                  <p className="text-xs text-n-400">
+                    {fmtData(tx.data)} ·{' '}
+                    {tx.tipo_pagamento === 'mensile'
+                      ? `${MESI_NOME_SHORT[tx.mese - 1]} ${tx.anno}`
+                      : `Tassa ${tx.anno}`}
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-emerald-700 shrink-0">{euro(tx.importo)}</p>
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Modal abbinamento manuale */}
+      {modal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
+          <div className="bg-white w-full rounded-t-2xl p-5 space-y-4 pb-10">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-n-900">Abbina transazione</p>
+              <button onClick={() => setModal(null)}><X size={18} className="text-n-400" /></button>
+            </div>
+            <div className="bg-n-50 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-sm font-medium text-n-900">{modal.mittente}</p>
+              <p className="text-xs text-n-300">{modal.causale || 'Nessuna causale'}</p>
+              <p className="text-sm font-bold text-emerald-700">{euro(modal.importo)} · {fmtData(modal.data)}</p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-n-600 mb-1">Allievo</label>
+                <select value={formAllievo} onChange={e => setFormAllievo(e.target.value)}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm">
+                  <option value="">— Seleziona —</option>
+                  {allievi.map(a => (
+                    <option key={a.id} value={a.id}>{a.cognome} {a.nome}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-n-600 mb-1">Tipo pagamento</label>
+                <select value={formTipo} onChange={e => setFormTipo(e.target.value)}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm">
+                  <option value="mensile">Quota mensile</option>
+                  <option value="associativa">Tassa associativa</option>
+                </select>
+              </div>
+              <div className={`grid gap-3 ${formTipo === 'mensile' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <div>
+                  <label className="block text-xs text-n-600 mb-1">Anno</label>
+                  <input type="number" value={formAnno} onChange={e => setFormAnno(parseInt(e.target.value))}
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm" />
+                </div>
+                {formTipo === 'mensile' && (
+                  <div>
+                    <label className="block text-xs text-n-600 mb-1">Mese</label>
+                    <select value={formMese} onChange={e => setFormMese(parseInt(e.target.value))}
+                      className="w-full border rounded-xl px-3 py-2.5 text-sm">
+                      {MESI_NOME.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button onClick={confermaAbbina} disabled={!formAllievo || abbinando}
+              className="w-full bg-ama-500 text-white py-3 rounded-xl text-sm font-semibold disabled:opacity-40">
+              {abbinando ? 'Salvataggio…' : 'Conferma abbinamento'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPagamenti() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem('token'), []);
@@ -373,6 +633,7 @@ export default function AdminPagamenti() {
           { id: 'allievi',    label: 'Quote mensili' },
           { id: 'tassa',      label: 'Tassa annuale' },
           { id: 'insegnanti', label: 'Compensi' },
+          { id: 'qonto',      label: 'Qonto' },
         ].map(({ id, label }) => (
           <button
             key={id}
@@ -400,6 +661,10 @@ export default function AdminPagamenti() {
             <PannelloNotifiche token={token} />
             <TassaAnnuale token={token} />
           </div>
+        )}
+
+        {tab === 'qonto' && (
+          <SyncQonto token={token} />
         )}
 
         {tab === 'insegnanti' && (
