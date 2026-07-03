@@ -24,6 +24,8 @@ function* weeklyGenerator(startYmd, endYmd) {
 
 export default function NewLessonModal({ open, onClose, onCreated }) {
   const [allievi, setAllievi] = useState([]);
+  const [gruppi, setGruppi]   = useState([]);
+  const [tipoLezione, setTipoLezione] = useState('individuale'); // 'individuale' | 'collettiva'
   const [aule, setAule] = useState(AULE_PREDEFINITE);
   const [form, setForm] = useState({
     data: "",
@@ -31,6 +33,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     ora_fine: "",
     aula: "",
     id_allievo: "",
+    gruppo_id: "",
     motivazione: "",
   });
 
@@ -66,10 +69,14 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     if (!open || !insegnanteId) return;
     setErrore(null);
     try {
-      const data = await apiFetch(`/api/insegnanti/${insegnanteId}/allievi`);
-      setAllievi(Array.isArray(data) ? data : []);
+      const [all, grp] = await Promise.all([
+        apiFetch(`/api/insegnanti/${insegnanteId}/allievi`),
+        apiFetch('/api/gruppi'),
+      ]);
+      setAllievi(Array.isArray(all) ? all : []);
+      const idNum = parseInt(insegnanteId, 10);
+      setGruppi((Array.isArray(grp) ? grp : []).filter(g => g.insegnante_id === idNum));
     } catch (err) {
-      // se 401/403 probabilmente token scaduto: qui NON forziamo logout (lo farà il parent)
       setErrore(err.message || "Errore nel recupero allievi assegnati");
       setAllievi([]);
     }
@@ -135,8 +142,12 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       setErrore("Compila data e orari");
       return false;
     }
-    if (!form.id_allievo) {
+    if (tipoLezione === 'individuale' && !form.id_allievo) {
       setErrore("Seleziona un allievo");
+      return false;
+    }
+    if (tipoLezione === 'collettiva' && !form.gruppo_id) {
+      setErrore("Seleziona un gruppo");
       return false;
     }
     if (!form.aula) {
@@ -177,16 +188,27 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     try {
       if (!insegnanteId) throw new Error("ID insegnante non disponibile");
 
-      const basePayload = {
-        id_insegnante: insegnanteId,              // 👈 docente vincolato al proprio id
-        id_allievo: Number(form.id_allievo),
-        data: form.data,                          // YYYY-MM-DD
-        ora_inizio: form.ora_inizio,
-        ora_fine: form.ora_fine,
-        aula: form.aula,
-        motivazione: form.motivazione || null,
-        stato: "appuntamentata",
-      };
+      const basePayload = tipoLezione === 'collettiva'
+        ? {
+            id_insegnante: insegnanteId,
+            gruppo_id: Number(form.gruppo_id),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+            motivazione: form.motivazione || null,
+            stato: "appuntamentata",
+          }
+        : {
+            id_insegnante: insegnanteId,
+            id_allievo: Number(form.id_allievo),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+            motivazione: form.motivazione || null,
+            stato: "appuntamentata",
+          };
 
       if (!isRecurring) {
         const created = await createOne(basePayload);
@@ -221,8 +243,10 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       ora_fine: "",
       aula: (aule[0] || ""),
       id_allievo: "",
+      gruppo_id: "",
       motivazione: "",
     });
+    setTipoLezione('individuale');
     setIsRecurring(false);
     setUntilDate("");
     setConflittoAula(null);
@@ -323,22 +347,63 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
             </div>
           )}
 
-          <div>
-            <label className="block text-xs text-n-600 mb-1">Allievo</label>
-            <select
-              className="w-full rounded-lg border px-3 py-2"
-              value={form.id_allievo}
-              onChange={(e) => cambia("id_allievo", e.target.value)}
-              required
-            >
-              <option value="">Seleziona allievo…</option>
-              {allievi.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.cognome} {a.nome}
-                </option>
-              ))}
-            </select>
+          {/* Tipo lezione */}
+          <div className="flex bg-n-100 rounded-xl p-1">
+            {[
+              { id: 'individuale', label: 'Individuale' },
+              { id: 'collettiva',  label: 'Collettiva' },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTipoLezione(id)}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  tipoLezione === id ? 'bg-white text-ama-500 shadow-sm' : 'text-n-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {tipoLezione === 'individuale' ? (
+            <div>
+              <label className="block text-xs text-n-600 mb-1">Allievo</label>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={form.id_allievo}
+                onChange={(e) => cambia("id_allievo", e.target.value)}
+                required
+              >
+                <option value="">Seleziona allievo…</option>
+                {allievi.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.cognome} {a.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs text-n-600 mb-1">Gruppo</label>
+              <select
+                className="w-full rounded-lg border px-3 py-2"
+                value={form.gruppo_id}
+                onChange={(e) => cambia("gruppo_id", e.target.value)}
+                required
+              >
+                <option value="">Seleziona gruppo…</option>
+                {gruppi.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nome} ({g.num_allievi} partecipanti)
+                  </option>
+                ))}
+              </select>
+              {gruppi.length === 0 && (
+                <p className="text-xs text-n-300 mt-1">Nessun gruppo assegnato.</p>
+              )}
+            </div>
+          )}
 
           {/* RICORRENZA */}
           <div className="border rounded-xl p-3 space-y-2">
