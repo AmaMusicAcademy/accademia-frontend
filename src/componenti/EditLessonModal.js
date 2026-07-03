@@ -59,10 +59,14 @@ export default function EditLessonModal({
 
   /** se lockedTeacherId è presente, il filtro allievi è sempre by-teacher */
   const [filterByTeacher, setFilterByTeacher] = useState(!!lockedTeacherId);
+  const [tipoLezione, setTipoLezione] = useState('individuale'); // 'individuale' | 'collettiva'
+  const [gruppi, setGruppi] = useState([]);
+  const [loadingGruppi, setLoadingGruppi] = useState(false);
 
   const [form, setForm] = useState({
     id_insegnante: lockedTeacherId || lesson?.id_insegnante || "",
     id_allievo: lesson?.id_allievo || "",
+    gruppo_id: lesson?.gruppo_id || "",
     data: (lesson?.data || "").slice(0, 10),
     ora_inizio: (lesson?.ora_inizio || "").slice(0, 5),
     ora_fine: (lesson?.ora_fine || "").slice(0, 5),
@@ -72,9 +76,12 @@ export default function EditLessonModal({
   // reset su open/lesson o quando si blocca l'insegnante
   useEffect(() => {
     if (!open) return;
+    const tipo = lesson?.tipo || 'individuale';
+    setTipoLezione(tipo);
     setForm({
       id_insegnante: lockedTeacherId || lesson?.id_insegnante || "",
       id_allievo: lesson?.id_allievo || "",
+      gruppo_id: lesson?.gruppo_id || "",
       data: (lesson?.data || "").slice(0, 10),
       ora_inizio: (lesson?.ora_inizio || "").slice(0, 5),
       ora_fine: (lesson?.ora_fine || "").slice(0, 5),
@@ -84,6 +91,23 @@ export default function EditLessonModal({
     setError("");
     setFilterByTeacher(!!lockedTeacherId);
   }, [open, lesson, lockedTeacherId]);
+
+  // carica gruppi
+  useEffect(() => {
+    if (!open) return;
+    let cancel = false;
+    (async () => {
+      try {
+        setLoadingGruppi(true);
+        const list = await fetchJSON(`${API_BASE}/api/gruppi`, token);
+        if (cancel) return;
+        setGruppi(Array.isArray(list) ? list : []);
+      } finally {
+        if (!cancel) setLoadingGruppi(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [open, token]);
 
   // carica insegnanti (serve anche solo per mostrare il nome quando locked)
   useEffect(() => {
@@ -176,8 +200,9 @@ export default function EditLessonModal({
 
   const hasMinData = useMemo(() => {
     const teacher = lockedTeacherId || form.id_insegnante;
-    return teacher && form.id_allievo && form.data && form.ora_inizio && form.ora_fine && form.aula;
-  }, [form, lockedTeacherId]);
+    const soggetto = tipoLezione === 'collettiva' ? form.gruppo_id : form.id_allievo;
+    return teacher && soggetto && form.data && form.ora_inizio && form.ora_fine && form.aula;
+  }, [form, lockedTeacherId, tipoLezione]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -188,14 +213,23 @@ export default function EditLessonModal({
     }
     try {
       setSaving(true);
-      const payload = {
-        id_insegnante: Number(lockedTeacherId || form.id_insegnante),
-        id_allievo: Number(form.id_allievo),
-        data: form.data,
-        ora_inizio: form.ora_inizio,
-        ora_fine: form.ora_fine,
-        aula: form.aula,
-      };
+      const payload = tipoLezione === 'collettiva'
+        ? {
+            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
+            gruppo_id: Number(form.gruppo_id),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+          }
+        : {
+            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
+            id_allievo: Number(form.id_allievo),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+          };
 
       const isEdit = Boolean(lesson?.id);
       const url = isEdit
@@ -257,7 +291,24 @@ export default function EditLessonModal({
             </div>
           )}
 
-          {/* INSEGNANTE / ALLIEVO */}
+          {/* TIPO LEZIONE — solo su nuova lezione */}
+          {!lesson?.id && (
+            <div className="flex rounded-xl border overflow-hidden">
+              {[
+                { id: 'individuale', label: 'Individuale' },
+                { id: 'collettiva',  label: 'Di gruppo' },
+              ].map(({ id, label }) => (
+                <button key={id} type="button" onClick={() => setTipoLezione(id)}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                    tipoLezione === id ? 'bg-ama-500 text-white' : 'text-n-600 bg-white'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* INSEGNANTE / ALLIEVO o GRUPPO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Insegnante *">
               {lockedTeacherId ? (
@@ -280,30 +331,47 @@ export default function EditLessonModal({
               )}
             </Field>
 
-            <Field label="Allievo *">
-              <select
-                name="id_allievo"
-                value={form.id_allievo}
-                onChange={onChange}
-                className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
-                disabled={loadingStudents}
-              >
-                <option value="">{loadingStudents ? "Caricamento…" : "Seleziona allievo"}</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
-                ))}
-              </select>
-              <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
-                <input
-                  type="checkbox"
-                  checked={filterByTeacher}
-                  onChange={(e) => setFilterByTeacher(e.target.checked)}
-                  disabled={!!lockedTeacherId || !form.id_insegnante}
-                />
-                Solo allievi di questo insegnante
-              </label>
-              {studentsErr && <p className="text-xs text-red-500 mt-1">{studentsErr}</p>}
-            </Field>
+            {tipoLezione === 'collettiva' ? (
+              <Field label="Gruppo *">
+                <select
+                  name="gruppo_id"
+                  value={form.gruppo_id}
+                  onChange={onChange}
+                  className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                  disabled={loadingGruppi}
+                >
+                  <option value="">{loadingGruppi ? "Caricamento…" : "Seleziona gruppo"}</option>
+                  {gruppi.map((g) => (
+                    <option key={g.id} value={g.id}>{g.nome} ({g.num_allievi} p.)</option>
+                  ))}
+                </select>
+              </Field>
+            ) : (
+              <Field label="Allievo *">
+                <select
+                  name="id_allievo"
+                  value={form.id_allievo}
+                  onChange={onChange}
+                  className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                  disabled={loadingStudents}
+                >
+                  <option value="">{loadingStudents ? "Caricamento…" : "Seleziona allievo"}</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
+                  ))}
+                </select>
+                <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
+                  <input
+                    type="checkbox"
+                    checked={filterByTeacher}
+                    onChange={(e) => setFilterByTeacher(e.target.checked)}
+                    disabled={!!lockedTeacherId || !form.id_insegnante}
+                  />
+                  Solo allievi di questo insegnante
+                </label>
+                {studentsErr && <p className="text-xs text-red-500 mt-1">{studentsErr}</p>}
+              </Field>
+            )}
           </div>
 
           {/* DATA / ORARI */}

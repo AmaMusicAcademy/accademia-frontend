@@ -26,6 +26,7 @@ import AdminPagamenti from './pages/AdminPagamenti';
 import AllieviEdit from './pages/AllievoEditPage';
 import AuleAdmin from './pages/AdminAulePage';
 import GiorniChiusura from './pages/GiorniChiusura';
+import { AdminGruppiList, AdminGruppoDettaglio } from './pages/AdminGruppi';
 import DashboardAllievo from './pages/allievo/DashboardAllievo';
 import LezioniAllievo from './pages/allievo/LezioniAllievo';
 import PagamentiAllievo from './pages/allievo/PagamentiAllievo';
@@ -138,6 +139,12 @@ function App() {
   } />
   <Route path="/admin/chiusure" element={
     <ProtectedRoute element={<GiorniChiusura />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/gruppi" element={
+    <ProtectedRoute element={<AdminGruppiList />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/gruppi/:id" element={
+    <ProtectedRoute element={<AdminGruppoDettaglio />} allowedRoles={['admin']} />
   } />
   <Route path="/admin/iscrizioni" element={
     <ProtectedRoute element={<AdminIscrizioni />} allowedRoles={['admin']} />

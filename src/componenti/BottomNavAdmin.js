@@ -10,7 +10,7 @@ const TABS = [
   { label: 'Iscrizioni',  icon: ClipboardList,   to: '/admin/iscrizioni',   exact: false },
 ];
 
-const SHOW_FAB_ON = ['/admin/allievi', '/admin/insegnanti', '/admin/aule', '/admin/calendario'];
+const SHOW_FAB_ON = ['/admin/allievi', '/admin/insegnanti', '/admin/aule', '/admin/calendario', '/admin/gruppi'];
 
 const BottomNavAdmin = ({ onAdd }) => {
   const navigate = useNavigate();
