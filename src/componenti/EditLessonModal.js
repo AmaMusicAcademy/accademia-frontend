@@ -92,7 +92,7 @@ export default function EditLessonModal({
     setFilterByTeacher(!!lockedTeacherId);
   }, [open, lesson, lockedTeacherId]);
 
-  // carica gruppi
+  // carica gruppi (filtrati per insegnante se locked)
   useEffect(() => {
     if (!open) return;
     let cancel = false;
@@ -101,13 +101,17 @@ export default function EditLessonModal({
         setLoadingGruppi(true);
         const list = await fetchJSON(`${API_BASE}/api/gruppi`, token);
         if (cancel) return;
-        setGruppi(Array.isArray(list) ? list : []);
+        const all = Array.isArray(list) ? list : [];
+        setGruppi(lockedTeacherId
+          ? all.filter(g => String(g.insegnante_id) === String(lockedTeacherId))
+          : all
+        );
       } finally {
         if (!cancel) setLoadingGruppi(false);
       }
     })();
     return () => { cancel = true; };
-  }, [open, token]);
+  }, [open, token, lockedTeacherId]);
 
   // carica insegnanti (serve anche solo per mostrare il nome quando locked)
   useEffect(() => {
@@ -360,15 +364,17 @@ export default function EditLessonModal({
                     <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
                   ))}
                 </select>
-                <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
-                  <input
-                    type="checkbox"
-                    checked={filterByTeacher}
-                    onChange={(e) => setFilterByTeacher(e.target.checked)}
-                    disabled={!!lockedTeacherId || !form.id_insegnante}
-                  />
-                  Solo allievi di questo insegnante
-                </label>
+                {!lockedTeacherId && (
+                  <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
+                    <input
+                      type="checkbox"
+                      checked={filterByTeacher}
+                      onChange={(e) => setFilterByTeacher(e.target.checked)}
+                      disabled={!form.id_insegnante}
+                    />
+                    Solo allievi di questo insegnante
+                  </label>
+                )}
                 {studentsErr && <p className="text-xs text-red-500 mt-1">{studentsErr}</p>}
               </Field>
             )}

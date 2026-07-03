@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, CalendarDays, Users, User, Plus } from 'lucide-react';
-import NewLessonModal from './NewLessonModal';
+import EditLessonModal from './EditLessonModal';
+import { getInsegnanteId } from '../utils/api';
 
 const TABS = [
   { label: 'Home',      icon: Home,         to: '/insegnante',           exact: true  },
@@ -14,15 +15,16 @@ const BottomNav = ({ onLessonCreated }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [showModal, setShowModal] = useState(false);
+  const insegnanteId = useMemo(() => getInsegnanteId(), []);
 
   const isActive = ({ to, exact }) =>
     exact ? pathname === to : pathname.startsWith(to);
 
   const onCalendar = pathname.startsWith('/insegnante/calendario');
 
-  const handleCreated = useCallback((created) => {
+  const handleSaved = useCallback(() => {
     setShowModal(false);
-    if (onLessonCreated) onLessonCreated(created);
+    if (onLessonCreated) onLessonCreated();
   }, [onLessonCreated]);
 
   return (
@@ -64,10 +66,12 @@ const BottomNav = ({ onLessonCreated }) => {
         </div>
       </nav>
 
-      <NewLessonModal
+      <EditLessonModal
         open={showModal}
         onClose={() => setShowModal(false)}
-        onCreated={handleCreated}
+        onSaved={handleSaved}
+        lesson={null}
+        lockedTeacherId={insegnanteId}
       />
     </>
   );
