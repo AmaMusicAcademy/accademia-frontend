@@ -27,9 +27,16 @@ function LezioneCard({ lezione }) {
           <Calendar size={15} className="text-ama-300 shrink-0" />
           {formatData(lezione.data)}
         </div>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
-          {badge.label}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {lezione.tipo === 'collettiva' && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+              {lezione.nome_gruppo || 'Collettiva'}
+            </span>
+          )}
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badge.cls}`}>
+            {badge.label}
+          </span>
+        </div>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-n-600 mt-1">
         <span className="flex items-center gap-1">

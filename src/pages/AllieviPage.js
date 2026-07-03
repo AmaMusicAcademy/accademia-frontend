@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Clock, CalendarDays, MapPin, X, SlidersHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Clock, CalendarDays, MapPin, X, SlidersHorizontal, ChevronDown, ChevronRight, Users } from 'lucide-react';
 import BottomNav from '../componenti/BottomNav';
 import SchedaAllievo from '../componenti/SchedaAllievo';
 import { apiFetch, getInsegnanteId } from '../utils/api';
@@ -224,6 +224,7 @@ export default function AllieviPage() {
   const [tab, setTab]               = useState('allievi');
   const [allievi, setAllievi]       = useState([]);
   const [lezioni, setLezioni]       = useState([]);
+  const [gruppi, setGruppi]         = useState([]);
   const [schedaAllievo, setSchedaAllievo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -244,12 +245,16 @@ export default function AllieviPage() {
     if (!id) { navigate('/login'); return; }
     setLoading(true);
     try {
-      const [all, lez] = await Promise.all([
+      const [all, lez, grp] = await Promise.all([
         apiFetch(`/api/insegnanti/${id}/allievi`),
         apiFetch(`/api/insegnanti/${id}/lezioni`),
+        apiFetch('/api/gruppi'),
       ]);
       setAllievi(Array.isArray(all) ? all : []);
       setLezioni(Array.isArray(lez) ? lez : []);
+      // mostra solo i gruppi assegnati a questo insegnante
+      const idNum = parseInt(id, 10);
+      setGruppi((Array.isArray(grp) ? grp : []).filter(g => g.insegnante_id === idNum));
     } catch (e) {
       if (e?.status === 401 || e?.status === 403) navigate('/login');
       else setError(e.message || 'Errore di caricamento.');
@@ -296,6 +301,7 @@ export default function AllieviPage() {
     { id: 'allievi', label: 'Lista',        count: allievi.length },
     { id: 'passate', label: 'Lez. passate', count: lezioni.filter(l => ymd(l.data) < oggi).length },
     { id: 'future',  label: 'Lez. future',  count: lezioni.filter(l => ymd(l.data) >= oggi).length },
+    { id: 'gruppi',  label: 'Gruppi',       count: gruppi.length },
   ];
 
   return (
@@ -402,6 +408,32 @@ export default function AllieviPage() {
                   </div>
                 )}
               </>
+            )}
+
+            {/* ── Gruppi ── */}
+            {tab === 'gruppi' && (
+              gruppi.length === 0 ? (
+                <Empty text="Nessun gruppo assegnato." />
+              ) : (
+                <div className="bg-white border rounded-xl overflow-hidden">
+                  {gruppi.map((g, i) => (
+                    <div
+                      key={g.id}
+                      className={`flex items-center gap-3 px-4 py-3 ${i < gruppi.length - 1 ? 'border-b border-gray-50' : ''}`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                        <Users size={16} className="text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-n-900 truncate">{g.nome}</p>
+                        <p className="text-xs text-n-300">
+                          {g.num_allievi} {g.num_allievi === 1 ? 'partecipante' : 'partecipanti'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
 
             {/* ── Lezioni future ── */}
