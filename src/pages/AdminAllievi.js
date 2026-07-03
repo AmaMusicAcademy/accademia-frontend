@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Plus, Search, X, Check } from 'lucide-react';
+import { ChevronRight, Plus, Search, X, Check, Users } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -21,7 +21,7 @@ export default function AdminAllievi() {
   const [insegnanti, setInsegnanti] = useState([]);
   const [loading, setLoading]       = useState(true);
 
-  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi'
+  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi' | 'gruppi'
   const [search, setSearch] = useState('');
 
   // Modal nuovo allievo
@@ -32,7 +32,14 @@ export default function AdminAllievi() {
   const [saving, setSaving]       = useState(false);
   const [errore, setErrore]       = useState('');
 
-  const carica = async () => {
+  // Gruppi
+  const [gruppi, setGruppi]           = useState([]);
+  const [gruppiLoading, setGruppiLoading] = useState(false);
+  const [showModalGruppo, setShowModalGruppo] = useState(false);
+  const [formGruppo, setFormGruppo]   = useState({ nome: '', id_insegnante: '' });
+  const [savingGruppo, setSavingGruppo] = useState(false);
+
+  const carica = useCallback(async () => {
     setLoading(true);
     try {
       const [all, ins] = await Promise.all([
@@ -43,9 +50,19 @@ export default function AdminAllievi() {
       setInsegnanti(Array.isArray(ins) ? ins : []);
     } catch {}
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { carica(); }, []);
+  const caricaGruppi = useCallback(async () => {
+    setGruppiLoading(true);
+    try {
+      const g = await apiFetch('/api/gruppi');
+      setGruppi(Array.isArray(g) ? g : []);
+    } catch {}
+    setGruppiLoading(false);
+  }, []);
+
+  useEffect(() => { carica(); }, [carica]);
+  useEffect(() => { if (tab === 'gruppi') caricaGruppi(); }, [tab, caricaGruppi]);
 
   const attivi    = useMemo(() => allievi.filter(a => a.attivo !== false), [allievi]);
   const nonAttivi = useMemo(() => allievi.filter(a => a.attivo === false), [allievi]);
@@ -79,6 +96,21 @@ export default function AdminAllievi() {
       carica();
     } catch (e) { setErrore(e.message || 'Errore.'); }
     finally { setSaving(false); }
+  };
+
+  const handleSalvaGruppo = async () => {
+    if (!formGruppo.nome.trim()) return;
+    setSavingGruppo(true);
+    try {
+      await apiFetch('/api/gruppi', {
+        method: 'POST',
+        body: JSON.stringify({ nome: formGruppo.nome, id_insegnante: formGruppo.id_insegnante || null }),
+      });
+      setShowModalGruppo(false);
+      setFormGruppo({ nome: '', id_insegnante: '' });
+      caricaGruppi();
+    } catch {}
+    finally { setSavingGruppo(false); }
   };
 
   const Riga = ({ a }) => (
@@ -115,10 +147,17 @@ export default function AdminAllievi() {
       <PageHeader
         title="Allievi"
         action={
-          <button onClick={() => { setShowModal(true); setErrore(''); }}
-            className="flex items-center gap-1.5 text-sm font-medium text-ama-500">
-            <Plus size={16} /> Nuovo
-          </button>
+          tab === 'gruppi' ? (
+            <button onClick={() => setShowModalGruppo(true)}
+              className="flex items-center gap-1.5 text-sm font-medium text-ama-500">
+              <Plus size={16} /> Nuovo
+            </button>
+          ) : (
+            <button onClick={() => { setShowModal(true); setErrore(''); }}
+              className="flex items-center gap-1.5 text-sm font-medium text-ama-500">
+              <Plus size={16} /> Nuovo
+            </button>
+          )
         }
       />
 
@@ -126,18 +165,21 @@ export default function AdminAllievi() {
       <div className="sticky top-0 z-20 bg-white border-b flex">
         <TabButton id="attivi"     label="Attivi" />
         <TabButton id="non_attivi" label="Non attivi" />
+        <TabButton id="gruppi"     label="Gruppi" />
       </div>
 
       <div className="max-w-xl mx-auto px-4 pt-4 space-y-4">
 
         {/* Ricerca */}
-        <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Cerca allievo…"
-            className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300"><X size={14} /></button>}
-        </div>
+        {tab !== 'gruppi' && (
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cerca allievo…"
+              className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300"><X size={14} /></button>}
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center py-12">
@@ -173,6 +215,37 @@ export default function AdminAllievi() {
                   </div>
                 )}
               </>
+            )}
+
+            {tab === 'gruppi' && (
+              gruppiLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : gruppi.length === 0 ? (
+                <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+                  Nessun gruppo. Creane uno con il tasto +.
+                </div>
+              ) : (
+                <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+                  {gruppi.map(g => (
+                    <button key={g.id} onClick={() => navigate(`/admin/gruppi/${g.id}`)}
+                      className="flex items-center gap-3 px-4 py-3 w-full text-left active:bg-n-50">
+                      <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                        <Users size={16} className="text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-n-900 truncate">{g.nome}</p>
+                        <p className="text-xs text-n-300">
+                          {g.insegnante_nome ? `${g.insegnante_nome} ${g.insegnante_cognome} · ` : ''}
+                          {g.num_allievi} {g.num_allievi === 1 ? 'partecipante' : 'partecipanti'}
+                        </p>
+                      </div>
+                      <ChevronRight size={16} className="text-n-300 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )
             )}
 
           </>
@@ -238,6 +311,40 @@ export default function AdminAllievi() {
                 Annulla
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nuovo gruppo */}
+      {showModalGruppo && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center">
+          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl p-5 pb-10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-n-900">Nuovo gruppo</h2>
+              <button onClick={() => setShowModalGruppo(false)} className="text-n-300"><X size={20} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-n-600 mb-1">Nome gruppo *</label>
+                <input value={formGruppo.nome} onChange={e => setFormGruppo(f => ({ ...f, nome: e.target.value }))}
+                  placeholder="es. Coro Adulti"
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="block text-xs text-n-600 mb-1">Insegnante</label>
+                <select value={formGruppo.id_insegnante} onChange={e => setFormGruppo(f => ({ ...f, id_insegnante: e.target.value }))}
+                  className="w-full border rounded-xl px-3 py-2.5 text-sm">
+                  <option value="">— Nessuno —</option>
+                  {insegnanti.filter(i => i.attivo !== false).map(i => (
+                    <option key={i.id} value={i.id}>{i.cognome} {i.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button onClick={handleSalvaGruppo} disabled={!formGruppo.nome.trim() || savingGruppo}
+              className="w-full py-3 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
+              {savingGruppo ? 'Creazione…' : 'Crea gruppo'}
+            </button>
           </div>
         </div>
       )}
