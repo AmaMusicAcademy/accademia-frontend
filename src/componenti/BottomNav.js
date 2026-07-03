@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, CalendarDays, Users, User, Plus } from 'lucide-react';
+import { Home, CalendarDays, Users, User } from 'lucide-react';
 import EditLessonModal from './EditLessonModal';
+import DraggableFAB from './DraggableFAB';
 import { getInsegnanteId } from '../utils/api';
 
 const TABS = [
@@ -35,15 +36,9 @@ const BottomNav = ({ onLessonCreated }) => {
         role="navigation"
         aria-label="Navigazione insegnante"
       >
-        {/* FAB nuova lezione — visibile solo sul calendario */}
+        {/* FAB draggable — visibile solo sul calendario */}
         {onCalendar && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="absolute -top-5 right-5 w-11 h-11 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform"
-            aria-label="Nuova lezione"
-          >
-            <Plus size={22} strokeWidth={2.5} />
-          </button>
+          <DraggableFAB onClick={() => setShowModal(true)} color="bg-emerald-500" />
         )}
 
         <div className="max-w-xl mx-auto h-[56px] flex items-center justify-around px-1">

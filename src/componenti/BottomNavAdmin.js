@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, CalendarDays, ClipboardList } from 'lucide-react';
+import DraggableFAB from './DraggableFAB';
 import { apiFetch } from '../utils/api';
 
 const TABS = [
@@ -33,15 +34,7 @@ const BottomNavAdmin = ({ onAdd }) => {
       className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {showFab && (
-        <button
-          onClick={onAdd}
-          className="absolute -top-7 right-5 w-11 h-11 bg-ama-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-transform text-2xl font-light"
-          aria-label="Aggiungi"
-        >
-          +
-        </button>
-      )}
+      {showFab && <DraggableFAB onClick={onAdd} color="bg-ama-500" />}
 
       <div className="max-w-xl mx-auto h-[56px] flex items-center justify-around px-1">
         {TABS.map((tab) => {
