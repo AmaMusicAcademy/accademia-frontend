@@ -63,7 +63,9 @@ function LezioneRow({ lezione, onAnnullaPresenza }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-medium text-n-900 truncate">
-          {lezione.nome_allievo} {lezione.cognome_allievo}
+          {lezione.tipo === 'collettiva'
+            ? (lezione.nome_gruppo || 'Gruppo')
+            : `${lezione.nome_allievo || ''} ${lezione.cognome_allievo || ''}`}
         </p>
         {lezione.aula && (
           <p className="text-xs text-n-600 flex items-center gap-1">
@@ -309,7 +311,9 @@ export default function DashboardInsegnante() {
                 <div className="bg-ama-500 text-white rounded-2xl p-5 mb-2">
                   <p className="text-sm opacity-80 mb-1">{formatDataBreve(prossima.data?.slice(0,10))}</p>
                   <p className="text-xl font-bold mb-0.5">
-                    {prossima.nome_allievo} {prossima.cognome_allievo}
+                    {prossima.tipo === 'collettiva'
+                      ? (prossima.nome_gruppo || 'Gruppo')
+                      : `${prossima.nome_allievo || ''} ${prossima.cognome_allievo || ''}`}
                   </p>
                   <p className="text-sm opacity-80">
                     {formatOra(prossima.ora_inizio)} — {formatOra(prossima.ora_fine)}
