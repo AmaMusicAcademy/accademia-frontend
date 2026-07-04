@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, Users, GraduationCap, Banknote,
-  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
+  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X, Archive,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
@@ -115,6 +115,9 @@ export default function ProfiloAdmin() {
   const [drawerRiprog, setDrawerRiprog] = useState(false);
   const [lezioniRiprog, setLezioniRiprog] = useState([]);
   const [loadingRiprog, setLoadingRiprog] = useState(false);
+  const [showTerminaDialog, setShowTerminaDialog] = useState(false);
+  const [terminaLoading, setTerminaLoading] = useState(false);
+  const [terminaRisultato, setTerminaRisultato] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -137,6 +140,18 @@ export default function ProfiloAdmin() {
       setLezioniRiprog(Array.isArray(lista) ? lista : []);
     } catch { setLezioniRiprog([]); }
     finally { setLoadingRiprog(false); }
+  };
+
+  const handleTerminaAnno = async () => {
+    setTerminaLoading(true);
+    try {
+      const res = await apiFetch('/api/admin/termina-anno-accademico', { method: 'POST' });
+      setTerminaRisultato(res);
+    } catch {
+      setTerminaRisultato({ error: 'Errore durante la chiusura dell\'anno.' });
+    } finally {
+      setTerminaLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -216,9 +231,11 @@ export default function ProfiloAdmin() {
 
         {sezione === 'account' && (
           <div className="bg-white border rounded-xl px-4 mb-4">
-            <MenuRow icon={Info}     label="Informazioni Account" onClick={() => navigate('/admin/account')} />
-            <MenuRow icon={KeyRound} label="Cambia password"      onClick={() => navigate('/admin/password')} />
-            <MenuRow icon={LogOut}   label="Esci"                 onClick={handleLogout} danger />
+            <MenuRow icon={Info}     label="Informazioni Account"     onClick={() => navigate('/admin/account')} />
+            <MenuRow icon={KeyRound} label="Cambia password"          onClick={() => navigate('/admin/password')} />
+            <MenuRow icon={Archive}  label="Archivio anni accademici" onClick={() => navigate('/admin/archivio')} />
+            <MenuRow icon={CalendarOff} label="Termina anno accademico" onClick={() => { setShowTerminaDialog(true); setTerminaRisultato(null); }} danger />
+            <MenuRow icon={LogOut}   label="Esci"                     onClick={handleLogout} danger />
           </div>
         )}
 
@@ -259,6 +276,58 @@ export default function ProfiloAdmin() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog termina anno accademico */}
+      {showTerminaDialog && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center px-4" onClick={() => !terminaLoading && setShowTerminaDialog(false)}>
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl p-5" onClick={e => e.stopPropagation()}>
+            {!terminaRisultato ? (
+              <>
+                <h2 className="text-base font-bold text-n-900 mb-2">Termina anno accademico</h2>
+                <p className="text-sm text-n-600 mb-4">
+                  Questa operazione archivia tutti i dati correnti (lezioni, pagamenti, iscrizioni)
+                  nell'anno accademico in corso. I record rimarranno consultabili nell'archivio storico.
+                  <br /><br />
+                  <span className="font-semibold text-red-600">L'operazione non è reversibile.</span> Procedi solo a fine anno accademico.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowTerminaDialog(false)}
+                    className="flex-1 py-2.5 rounded-xl border text-sm font-medium text-n-700"
+                    disabled={terminaLoading}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={handleTerminaAnno}
+                    disabled={terminaLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    {terminaLoading ? 'In corso...' : 'Conferma chiusura'}
+                  </button>
+                </div>
+              </>
+            ) : terminaRisultato.error ? (
+              <>
+                <h2 className="text-base font-bold text-red-600 mb-2">Errore</h2>
+                <p className="text-sm text-n-600 mb-4">{terminaRisultato.error}</p>
+                <button onClick={() => setShowTerminaDialog(false)} className="w-full py-2.5 rounded-xl border text-sm font-medium">Chiudi</button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-base font-bold text-emerald-700 mb-2">Anno {terminaRisultato.anno} archiviato</h2>
+                <div className="text-sm text-n-700 space-y-1 mb-4">
+                  <p>Lezioni archiviate: <span className="font-semibold">{terminaRisultato.riepilogo?.lezioni}</span></p>
+                  <p>Pagamenti archiviati: <span className="font-semibold">{terminaRisultato.riepilogo?.pagamenti}</span></p>
+                  <p>Quote associative: <span className="font-semibold">{terminaRisultato.riepilogo?.quote_associative}</span></p>
+                  <p>Iscrizioni: <span className="font-semibold">{terminaRisultato.riepilogo?.iscrizioni}</span></p>
+                </div>
+                <button onClick={() => setShowTerminaDialog(false)} className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Fatto</button>
+              </>
+            )}
           </div>
         </div>
       )}
