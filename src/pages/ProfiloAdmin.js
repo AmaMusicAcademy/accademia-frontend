@@ -79,30 +79,30 @@ function QuoteCard({ onClick }) {
   const red = nonPagati > 0;
 
   return (
-    <div className="flex items-stretch gap-1">
-      <button onClick={prev}
-        className="w-7 flex items-center justify-center rounded-xl bg-white border text-n-400 active:bg-n-50 shrink-0">
-        <ChevronLeft size={14} />
-      </button>
-      <button onClick={onClick}
-        className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 flex-1 min-w-0">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
-          <CreditCard size={19} />
+    <button onClick={onClick}
+      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full">
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
+        <CreditCard size={19} />
+      </div>
+      <div className="flex-1 min-w-0">
+        {loading
+          ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin mb-1" />
+          : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
+        }
+        <p className="text-xs text-n-600 mt-0.5">Quote non pagate</p>
+      </div>
+      <div className="flex flex-col items-center gap-0.5" onClick={e => e.stopPropagation()}>
+        <span className="text-[10px] text-n-400 leading-none">{MESI_NOME[mese - 1].slice(0,3)} {anno}</span>
+        <div className="flex gap-1 mt-0.5">
+          <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
+            <ChevronLeft size={13} />
+          </button>
+          <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
+            <ChevronRight size={13} />
+          </button>
         </div>
-        <div className="min-w-0">
-          {loading
-            ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin mb-1" />
-            : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
-          }
-          <p className="text-xs text-n-600 mt-0.5 truncate">Quote non pagate</p>
-          <p className="text-[10px] text-n-300 truncate">{MESI_NOME[mese - 1]} {anno}</p>
-        </div>
-      </button>
-      <button onClick={next}
-        className="w-7 flex items-center justify-center rounded-xl bg-white border text-n-400 active:bg-n-50 shrink-0">
-        <ChevronRight size={14} />
-      </button>
-    </div>
+      </div>
+    </button>
   );
 }
 
