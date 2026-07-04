@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, Users, GraduationCap, Banknote,
@@ -55,8 +55,6 @@ function QuoteCard({ onClick }) {
   const [mese, setMese] = useState(now.getMonth() + 1);
   const [nonPagati, setNonPagati] = useState(null);
   const [loading, setLoading] = useState(false);
-  const swipeRef = useRef(null);
-  const startX = useRef(null);
 
   useEffect(() => {
     setLoading(true);
@@ -69,53 +67,36 @@ function QuoteCard({ onClick }) {
       .finally(() => setLoading(false));
   }, [anno, mese]);
 
-  const prev = () => mese === 1 ? (setAnno(a => a - 1), setMese(12)) : setMese(m => m - 1);
-  const next = () => mese === 12 ? (setAnno(a => a + 1), setMese(1)) : setMese(m => m + 1);
-
-  const onPointerDown = (e) => { startX.current = e.clientX; };
-  const onPointerUp   = (e) => {
-    if (startX.current === null) return;
-    const dx = e.clientX - startX.current;
-    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
-    startX.current = null;
-  };
+  const prev = (e) => { e.stopPropagation(); mese === 1 ? (setAnno(a => a - 1), setMese(12)) : setMese(m => m - 1); };
+  const next = (e) => { e.stopPropagation(); mese === 12 ? (setAnno(a => a + 1), setMese(1)) : setMese(m => m + 1); };
 
   const red = nonPagati > 0;
 
   return (
-    <button
-      onClick={onClick}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      ref={swipeRef}
-      className={`bg-white border rounded-xl p-4 flex flex-col gap-2 text-left active:bg-n-50 w-full select-none col-span-2`}
-    >
-      <div className="flex items-center justify-between w-full">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
-          <CreditCard size={17} />
+    <div className="flex items-stretch gap-1">
+      <button onClick={prev}
+        className="w-7 flex items-center justify-center rounded-xl bg-white border text-n-400 active:bg-n-50 shrink-0">
+        <ChevronLeft size={14} />
+      </button>
+      <button onClick={onClick}
+        className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 flex-1 min-w-0">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
+          <CreditCard size={19} />
         </div>
-        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-          <button onPointerDown={e => e.stopPropagation()} onClick={prev}
-            className="w-7 h-7 flex items-center justify-center rounded-lg bg-n-50 text-n-600 active:bg-n-100">
-            <ChevronLeft size={14} />
-          </button>
-          <span className="text-xs font-medium text-n-600 w-24 text-center">
-            {MESI_NOME[mese - 1]} {anno}
-          </span>
-          <button onPointerDown={e => e.stopPropagation()} onClick={next}
-            className="w-7 h-7 flex items-center justify-center rounded-lg bg-n-50 text-n-600 active:bg-n-100">
-            <ChevronRight size={14} />
-          </button>
+        <div className="min-w-0">
+          {loading
+            ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin mb-1" />
+            : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
+          }
+          <p className="text-xs text-n-600 mt-0.5 truncate">Quote non pagate</p>
+          <p className="text-[10px] text-n-300 truncate">{MESI_NOME[mese - 1]} {anno}</p>
         </div>
-      </div>
-      <div>
-        {loading
-          ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin" />
-          : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
-        }
-        <p className="text-xs text-n-600 mt-0.5">Quote non pagate</p>
-      </div>
-    </button>
+      </button>
+      <button onClick={next}
+        className="w-7 flex items-center justify-center rounded-xl bg-white border text-n-400 active:bg-n-50 shrink-0">
+        <ChevronRight size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -206,6 +187,7 @@ export default function ProfiloAdmin() {
                 color="emerald"
                 onClick={() => navigate('/admin/allievi')}
               />
+              <QuoteCard onClick={() => navigate('/admin/pagamenti')} />
               <KpiCard
                 icon={Users}
                 label="Insegnanti"
@@ -213,7 +195,6 @@ export default function ProfiloAdmin() {
                 color="amber"
                 onClick={() => navigate('/admin/insegnanti')}
               />
-              <QuoteCard onClick={() => navigate('/admin/pagamenti')} />
             </div>
 
             <div className="bg-white border rounded-xl px-4 mb-4">
