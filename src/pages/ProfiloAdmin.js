@@ -67,8 +67,14 @@ function QuoteCard({ onClick }) {
       .finally(() => setLoading(false));
   }, [anno, mese]);
 
-  const prev = (e) => { e.stopPropagation(); mese === 1 ? (setAnno(a => a - 1), setMese(12)) : setMese(m => m - 1); };
-  const next = (e) => { e.stopPropagation(); mese === 12 ? (setAnno(a => a + 1), setMese(1)) : setMese(m => m + 1); };
+  const prev = (e) => {
+    e.stopPropagation();
+    if (mese === 1) { setAnno(a => a - 1); setMese(12); } else { setMese(m => m - 1); }
+  };
+  const next = (e) => {
+    e.stopPropagation();
+    if (mese === 12) { setAnno(a => a + 1); setMese(1); } else { setMese(m => m + 1); }
+  };
 
   const red = nonPagati > 0;
 
