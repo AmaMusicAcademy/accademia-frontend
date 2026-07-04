@@ -21,7 +21,7 @@ function KpiCard({ icon: Icon, label, value, color, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full"
+      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full h-full"
     >
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${colors[color] || 'bg-n-50 text-n-300'}`}>
         <Icon size={19} />
@@ -91,7 +91,7 @@ function QuoteCard({ onClick }) {
     <button
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
-      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full select-none"
+      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full h-full select-none"
     >
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
         <CreditCard size={19} />
