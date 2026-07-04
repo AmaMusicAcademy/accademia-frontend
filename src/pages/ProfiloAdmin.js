@@ -89,14 +89,13 @@ function QuoteCard({ onClick }) {
           ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin mb-1" />
           : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
         }
-        <p className="text-xs text-n-600 mt-0.5">Quote non pagate</p>
-        <div className="flex items-center gap-1 mt-1.5" onClick={e => e.stopPropagation()}>
-          <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
-            <ChevronLeft size={13} />
+        <div className="flex items-center mt-0.5" onClick={e => e.stopPropagation()}>
+          <button onClick={prev} className="w-4 h-4 flex items-center justify-center text-n-300 active:text-n-600 shrink-0">
+            <ChevronLeft size={12} />
           </button>
-          <span className="text-[10px] text-n-400">{MESI_NOME[mese - 1].slice(0,3)} {anno}</span>
-          <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
-            <ChevronRight size={13} />
+          <p className="flex-1 text-xs text-n-600 text-center">{MESI_NOME[mese - 1].slice(0,3)} {anno}</p>
+          <button onClick={next} className="w-4 h-4 flex items-center justify-center text-n-300 active:text-n-600 shrink-0">
+            <ChevronRight size={12} />
           </button>
         </div>
       </div>
