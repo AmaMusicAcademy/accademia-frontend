@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, CalendarDays, CreditCard, Users, GraduationCap,
-  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, ClipboardList, RefreshCw, X,
+  User, CreditCard, Users, GraduationCap, Banknote,
+  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
@@ -121,11 +121,11 @@ export default function ProfiloAdmin() {
           <>
             <div className="grid grid-cols-2 gap-3 mb-4">
               <KpiCard
-                icon={CalendarDays}
-                label="Lezioni questa settimana"
-                value={kpi?.lezioniSettimana}
-                color="blue"
-                onClick={() => navigate('/admin/calendario')}
+                icon={RefreshCw}
+                label="Da riprogrammare"
+                value={kpi?.daRiprogrammare}
+                color={kpi?.daRiprogrammare > 0 ? 'red' : 'emerald'}
+                onClick={apriDrawerRiprog}
               />
               <KpiCard
                 icon={CreditCard}
@@ -148,20 +148,14 @@ export default function ProfiloAdmin() {
                 color="amber"
                 onClick={() => navigate('/admin/insegnanti')}
               />
-              <KpiCard
-                icon={RefreshCw}
-                label="Da riprogrammare"
-                value={kpi?.daRiprogrammare}
-                color={kpi?.daRiprogrammare > 0 ? 'red' : 'emerald'}
-                onClick={apriDrawerRiprog}
-              />
             </div>
 
             <div className="bg-white border rounded-xl px-4 mb-4">
-              <MenuRow icon={Users}        label="Insegnanti"  onClick={() => navigate('/admin/insegnanti')} />
-              <MenuRow icon={School}       label="Aule"        onClick={() => navigate('/admin/aule')} />
+              <MenuRow icon={Users}       label="Insegnanti"  onClick={() => navigate('/admin/insegnanti')} />
+              <MenuRow icon={School}      label="Aule"        onClick={() => navigate('/admin/aule')} />
               <MenuRow icon={CalendarOff} label="Chiusure"    onClick={() => navigate('/admin/chiusure')} />
-              <MenuRow icon={CreditCard}   label="Pagamenti"   onClick={() => navigate('/admin/pagamenti')} />
+              <MenuRow icon={CreditCard}  label="Pagamenti"   onClick={() => navigate('/admin/pagamenti')} />
+              <MenuRow icon={Banknote}    label="Compensi"    onClick={() => navigate('/admin/compensi')} />
             </div>
           </>
         )}
@@ -176,10 +170,10 @@ export default function ProfiloAdmin() {
 
       </div>
 
-      {/* Drawer lezioni da riprogrammare */}
+      {/* Popup lezioni da riprogrammare */}
       {drawerRiprog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setDrawerRiprog(false)}>
-          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col pb-20"
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center px-4" onClick={() => setDrawerRiprog(false)}>
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <p className="font-semibold text-n-900 text-sm">Lezioni da riprogrammare</p>
