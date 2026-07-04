@@ -171,7 +171,7 @@ function ModalDettaglio({ isc, onClose, onAccetta, onRifiuta }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 z-[60] bg-black/50 flex items-end sm:items-center justify-center">
         <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[95vh] flex flex-col">
 
           {/* Header */}
