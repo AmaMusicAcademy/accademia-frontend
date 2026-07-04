@@ -377,8 +377,8 @@ export default function DettaglioAllievo() {
 
       {/* Modal pagamenti */}
       {showPag && (
-        <div className="fixed inset-0 z-[60] bg-black/40 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
               <h2 className="text-base font-semibold text-n-900">Pagamenti mensili</h2>
               <button onClick={() => setShowPag(false)} className="text-n-300"><X size={20} /></button>
@@ -405,7 +405,7 @@ export default function DettaglioAllievo() {
                 </div>
               ))}
             </div>
-            <div className="px-5 pt-2 shrink-0 border-t" style={{ paddingBottom: 'calc(1.5rem + 56px + env(safe-area-inset-bottom))' }}>
+            <div className="px-5 py-4 shrink-0 border-t">
               <button onClick={handleSavePag} disabled={savingPag}
                 className="w-full py-3 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
                 {savingPag ? 'Salvataggio…' : 'Salva modifiche'}
@@ -417,8 +417,8 @@ export default function DettaglioAllievo() {
 
       {/* Modal insegnanti */}
       {showIns && (
-        <div className="fixed inset-0 z-[60] bg-black/40 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[70vh] flex flex-col">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl max-h-[70vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
               <h2 className="text-base font-semibold text-n-900">Assegna insegnanti</h2>
               <button onClick={() => setShowIns(false)} className="text-n-300"><X size={20} /></button>
@@ -437,7 +437,7 @@ export default function DettaglioAllievo() {
                 );
               })}
             </div>
-            <div className="px-5 pt-2 shrink-0 border-t" style={{ paddingBottom: 'calc(1.5rem + 56px + env(safe-area-inset-bottom))' }}>
+            <div className="px-5 py-4 shrink-0 border-t">
               <button onClick={handleSaveIns}
                 className="w-full py-3 bg-ama-500 text-white rounded-xl text-sm font-medium">
                 Salva assegnazioni
@@ -449,7 +449,7 @@ export default function DettaglioAllievo() {
 
       {/* Modal termina */}
       {showTermina && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <h2 className="text-base font-semibold text-n-900">Termina iscrizione</h2>
@@ -480,7 +480,7 @@ export default function DettaglioAllievo() {
 
       {/* Modal elimina */}
       {showElimina && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl p-6 text-center">
             <Trash2 size={28} className="text-red-500 mx-auto mb-3" />
             <p className="text-sm font-semibold text-n-900 mb-1">Eliminare questo allievo?</p>
@@ -497,8 +497,8 @@ export default function DettaglioAllievo() {
 
       {/* Modal lista lezioni per stato */}
       {modalLezioni && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-end" onClick={() => setModalLezioni(null)}>
-          <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col pb-20"
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center px-4" onClick={() => setModalLezioni(null)}>
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl max-h-[80vh] flex flex-col"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <p className="font-semibold text-n-900 text-sm capitalize">
