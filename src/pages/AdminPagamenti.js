@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
-import CompensoInsegnante from '../componenti/CompensoInsegnante';
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
@@ -661,19 +660,7 @@ function SyncQonto({ token }) {
 export default function AdminPagamenti() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem('token'), []);
-  const [tab, setTab] = useState('allievi'); // 'allievi' | 'tassa' | 'insegnanti'
-  const [insegnanti, setInsegnanti] = useState([]);
-  const [insegnanteId, setInsegnanteId] = useState('');
-
-  useEffect(() => {
-    let abort = false;
-    if (!token) return;
-    fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((js) => { if (!abort) setInsegnanti(Array.isArray(js) ? js : []); })
-      .catch(() => { if (!abort) setInsegnanti([]); });
-    return () => { abort = true; };
-  }, [token]);
+  const [tab, setTab] = useState('allievi'); // 'allievi' | 'tassa' | 'qonto'
 
   return (
     <div className="min-h-screen bg-n-100 flex flex-col justify-between pb-16">
@@ -682,10 +669,9 @@ export default function AdminPagamenti() {
       {/* Tab switcher */}
       <div className="flex bg-white border-b">
         {[
-          { id: 'allievi',    label: 'Quote mensili' },
-          { id: 'tassa',      label: 'Tassa annuale' },
-          { id: 'insegnanti', label: 'Compensi' },
-          { id: 'qonto',      label: 'Qonto' },
+          { id: 'allievi', label: 'Quote mensili' },
+          { id: 'tassa',   label: 'Tassa annuale' },
+          { id: 'qonto',   label: 'Qonto' },
         ].map(({ id, label }) => (
           <button
             key={id}
@@ -719,37 +705,6 @@ export default function AdminPagamenti() {
           <SyncQonto token={token} />
         )}
 
-        {tab === 'insegnanti' && (
-          <>
-            <div className="bg-white rounded-xl shadow-sm p-4">
-              <label className="block text-xs text-n-600 mb-1">Seleziona insegnante</label>
-              <select
-                value={insegnanteId}
-                onChange={(e) => setInsegnanteId(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2"
-              >
-                <option value="">— Scegli —</option>
-                {insegnanti.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.cognome ? `${i.cognome} ${i.nome}` : `${i.nome} ${i.cognome || ''}`}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-n-600 mt-2">
-                Seleziona un insegnante per scegliere il mese e generare il PDF.
-              </p>
-            </div>
-            {insegnanteId ? (
-              <div className="bg-transparent">
-                <CompensoInsegnante insegnanteId={insegnanteId} />
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl shadow-sm p-4 text-sm text-n-600">
-                Nessun insegnante selezionato.
-              </div>
-            )}
-          </>
-        )}
       </div>
 
       <BottomNavAdmin />

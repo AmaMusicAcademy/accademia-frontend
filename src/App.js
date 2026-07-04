@@ -23,6 +23,7 @@ import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
 import CalendarioAdmin from './pages/CalendarioAdmin';
 import AdminPagamenti from './pages/AdminPagamenti';
+import AdminCompensi from './pages/AdminCompensi';
 import AllieviEdit from './pages/AllievoEditPage';
 import AuleAdmin from './pages/AdminAulePage';
 import GiorniChiusura from './pages/GiorniChiusura';
@@ -130,6 +131,9 @@ function App() {
   } />
   <Route path="/admin/pagamenti" element={
     <ProtectedRoute element={<AdminPagamenti />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/compensi" element={
+    <ProtectedRoute element={<AdminCompensi />} allowedRoles={['admin']} />
   } />
   <Route path="/admin/allievi/:id/modifica" element={
     <ProtectedRoute element={<AllieviEdit />} allowedRoles={['admin']} />
