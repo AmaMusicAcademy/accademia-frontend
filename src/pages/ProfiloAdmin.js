@@ -90,13 +90,11 @@ function QuoteCard({ onClick }) {
           : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
         }
         <p className="text-xs text-n-600 mt-0.5">Quote non pagate</p>
-      </div>
-      <div className="flex flex-col items-center gap-0.5" onClick={e => e.stopPropagation()}>
-        <span className="text-[10px] text-n-400 leading-none">{MESI_NOME[mese - 1].slice(0,3)} {anno}</span>
-        <div className="flex gap-1 mt-0.5">
+        <div className="flex items-center gap-1 mt-1.5" onClick={e => e.stopPropagation()}>
           <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
             <ChevronLeft size={13} />
           </button>
+          <span className="text-[10px] text-n-400">{MESI_NOME[mese - 1].slice(0,3)} {anno}</span>
           <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded-md bg-n-50 text-n-400 active:bg-n-100">
             <ChevronRight size={13} />
           </button>
