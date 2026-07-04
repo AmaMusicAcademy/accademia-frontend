@@ -3,9 +3,20 @@ import SignatureCanvas from 'react-signature-canvas';
 import { Check, ChevronRight, ChevronLeft, X, Upload, FileText, Shield, Camera, Pen, CreditCard, AlertCircle } from 'lucide-react';
 import { API_BASE } from '../utils/api';
 
-const STRUMENTI = [
-  'Pianoforte','Chitarra','Violino','Violoncello','Flauto','Clarinetto',
-  'Sassofono','Tromba','Trombone','Percussioni','Canto','Basso','Altro',
+const MATERIE = [
+  { nome: 'Canto 45min',           prezzo: 80 },
+  { nome: 'Canto 1h',              prezzo: 100 },
+  { nome: 'Pianoforte 45min',      prezzo: 80 },
+  { nome: 'Pianoforte 1h',         prezzo: 100 },
+  { nome: 'Violino 45min',         prezzo: 80 },
+  { nome: 'Violino 1h',            prezzo: 100 },
+  { nome: 'Chitarra 45min',        prezzo: 80 },
+  { nome: 'Chitarra 1h',           prezzo: 100 },
+  { nome: 'Batteria 45min',        prezzo: 80 },
+  { nome: 'Batteria 1h',           prezzo: 100 },
+  { nome: 'Coro',                  prezzo: 30 },
+  { nome: 'Band',                  prezzo: 30 },
+  { nome: 'Teoria e Solfeggio',    prezzo: 30 },
 ];
 
 const TESTO_TESSERAMENTO = `DOMANDA DI TESSERAMENTO
@@ -221,7 +232,7 @@ export default function IscrizionePage() {
     // allievo
     nome: '', cognome: '', codice_fiscale: '', data_nascita: '', luogo_nascita: '',
     indirizzo: '', cap: '', citta: '', provincia: '', telefono: '', email: '',
-    strumento: '', note: '',
+    materie: [], note: '',
     // minore
     minore: false,
     // genitore
@@ -270,12 +281,12 @@ export default function IscrizionePage() {
         provincia:      'Provincia',
         telefono:       'Telefono',
         email:          'Email',
-        strumento:      'Strumento richiesto',
       };
       const errori = {};
       for (const [k, label] of Object.entries(obbligatori)) {
         if (!form[k]?.toString().trim()) errori[k] = `${label} obbligatorio`;
       }
+      if (!form.materie || form.materie.length === 0) errori.materie = 'Seleziona almeno una materia';
       setErroriStep(errori);
       if (Object.keys(errori).length > 0) return;
 
@@ -425,8 +436,59 @@ export default function IscrizionePage() {
         <Campo label="Telefono" type="tel" value={form.telefono} onChange={v => set('telefono', v)} required error={!!e.telefono} />
         <Campo label="Email" type="email" value={form.email} onChange={v => set('email', v)} required error={!!e.email} />
       </div>
-      <Select label="Strumento richiesto" value={form.strumento}
-        onChange={v => set('strumento', v)} options={STRUMENTI} required error={!!e.strumento} />
+      {/* Selezione materie */}
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-xs text-n-600">
+            Materie richieste<span className="text-red-500 ml-0.5">*</span>
+          </label>
+          {form.materie.length > 0 && (
+            <span className="text-xs font-bold text-ama-500">
+              Totale: €{form.materie.reduce((sum, nome) => {
+                const m = MATERIE.find(x => x.nome === nome);
+                return sum + (m ? m.prezzo : 0);
+              }, 0)}/mese
+            </span>
+          )}
+        </div>
+        {e.materie && (
+          <p className="text-xs text-red-500 mb-2">Seleziona almeno una materia.</p>
+        )}
+        <div className={`border rounded-xl overflow-hidden divide-y ${e.materie ? 'border-red-400' : 'border-n-100'}`}>
+          {MATERIE.map(({ nome, prezzo }) => {
+            const sel = form.materie.includes(nome);
+            const toggle = () => set('materie', sel
+              ? form.materie.filter(m => m !== nome)
+              : [...form.materie, nome]
+            );
+            return (
+              <button type="button" key={nome} onClick={toggle}
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${sel ? 'bg-ama-50' : 'bg-white active:bg-n-50'}`}>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-colors ${sel ? 'bg-ama-500 border-ama-500' : 'border-n-300 bg-white'}`}>
+                    {sel && <Check size={11} className="text-white" strokeWidth={3} />}
+                  </div>
+                  <span className={`text-sm ${sel ? 'font-semibold text-ama-700' : 'text-n-900'}`}>{nome}</span>
+                </div>
+                <span className={`text-sm font-medium shrink-0 ${sel ? 'text-ama-500' : 'text-n-600'}`}>€{prezzo}/mese</span>
+              </button>
+            );
+          })}
+        </div>
+        {form.materie.length > 0 && (
+          <div className="mt-2 bg-ama-50 rounded-xl px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-ama-700 font-medium">
+              {form.materie.length} {form.materie.length === 1 ? 'materia selezionata' : 'materie selezionate'}
+            </span>
+            <span className="text-sm font-bold text-ama-600">
+              €{form.materie.reduce((sum, nome) => {
+                const m = MATERIE.find(x => x.nome === nome);
+                return sum + (m ? m.prezzo : 0);
+              }, 0)}/mese
+            </span>
+          </div>
+        )}
+      </div>
       <div>
         <label className="block text-xs text-n-600 mb-1">Note</label>
         <textarea value={form.note} onChange={e => set('note', e.target.value)} rows={2}
@@ -598,7 +660,22 @@ export default function IscrizionePage() {
       </p>
       <div className="bg-n-50 rounded-2xl p-4 space-y-2 text-sm">
         <div className="flex justify-between"><span className="text-n-600">Nome</span><span className="font-medium">{form.nome} {form.cognome}</span></div>
-        <div className="flex justify-between"><span className="text-n-600">Strumento</span><span className="font-medium">{form.strumento || '—'}</span></div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-n-600">Materie</span>
+          {form.materie.length === 0
+            ? <span className="font-medium">—</span>
+            : form.materie.map(m => <span key={m} className="text-xs font-medium">• {m}</span>)
+          }
+        </div>
+        {form.materie.length > 0 && (
+          <div className="flex justify-between font-semibold text-ama-600">
+            <span>Quota mensile</span>
+            <span>€{form.materie.reduce((sum, nome) => {
+              const mat = MATERIE.find(x => x.nome === nome);
+              return sum + (mat ? mat.prezzo : 0);
+            }, 0)}/mese</span>
+          </div>
+        )}
         <div className="flex justify-between"><span className="text-n-600">Email</span><span className="font-medium">{form.email || '—'}</span></div>
         <div className="flex justify-between"><span className="text-n-600">Telefono</span><span className="font-medium">{form.telefono || '—'}</span></div>
         {form.minore && <div className="flex justify-between"><span className="text-n-600">Genitore</span><span className="font-medium">{form.genitore_nome} {form.genitore_cognome}</span></div>}
