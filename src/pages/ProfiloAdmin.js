@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, Users, GraduationCap, Banknote,
-  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
+  ChevronLeft, ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
+
+const MESI_NOME = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
 const API = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
@@ -43,6 +45,76 @@ function MenuRow({ icon: Icon, label, onClick, danger }) {
       </div>
       <span className="flex-1 text-sm font-medium text-left">{label}</span>
       <ChevronRight size={16} className="text-n-300" />
+    </button>
+  );
+}
+
+function QuoteCard({ onClick }) {
+  const now = new Date();
+  const [anno, setAnno] = useState(now.getFullYear());
+  const [mese, setMese] = useState(now.getMonth() + 1);
+  const [nonPagati, setNonPagati] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const swipeRef = useRef(null);
+  const startX = useRef(null);
+
+  useEffect(() => {
+    setLoading(true);
+    apiFetch(`/api/admin/pagamenti-overview?anno=${anno}&mese=${mese}`)
+      .then(d => {
+        const lista = Array.isArray(d?.allievi) ? d.allievi : Array.isArray(d) ? d : [];
+        setNonPagati(lista.filter(r => !r.pagato).length);
+      })
+      .catch(() => setNonPagati(null))
+      .finally(() => setLoading(false));
+  }, [anno, mese]);
+
+  const prev = () => mese === 1 ? (setAnno(a => a - 1), setMese(12)) : setMese(m => m - 1);
+  const next = () => mese === 12 ? (setAnno(a => a + 1), setMese(1)) : setMese(m => m + 1);
+
+  const onPointerDown = (e) => { startX.current = e.clientX; };
+  const onPointerUp   = (e) => {
+    if (startX.current === null) return;
+    const dx = e.clientX - startX.current;
+    if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
+    startX.current = null;
+  };
+
+  const red = nonPagati > 0;
+
+  return (
+    <button
+      onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      ref={swipeRef}
+      className={`bg-white border rounded-xl p-4 flex flex-col gap-2 text-left active:bg-n-50 w-full select-none col-span-2`}
+    >
+      <div className="flex items-center justify-between w-full">
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
+          <CreditCard size={17} />
+        </div>
+        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+          <button onPointerDown={e => e.stopPropagation()} onClick={prev}
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-n-50 text-n-600 active:bg-n-100">
+            <ChevronLeft size={14} />
+          </button>
+          <span className="text-xs font-medium text-n-600 w-24 text-center">
+            {MESI_NOME[mese - 1]} {anno}
+          </span>
+          <button onPointerDown={e => e.stopPropagation()} onClick={next}
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-n-50 text-n-600 active:bg-n-100">
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+      <div>
+        {loading
+          ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin" />
+          : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
+        }
+        <p className="text-xs text-n-600 mt-0.5">Quote non pagate</p>
+      </div>
     </button>
   );
 }
@@ -128,13 +200,6 @@ export default function ProfiloAdmin() {
                 onClick={apriDrawerRiprog}
               />
               <KpiCard
-                icon={CreditCard}
-                label="Quote non pagate"
-                value={kpi?.pagamentiMancanti}
-                color={kpi?.pagamentiMancanti > 0 ? 'red' : 'emerald'}
-                onClick={() => navigate('/admin/pagamenti')}
-              />
-              <KpiCard
                 icon={GraduationCap}
                 label="Allievi attivi"
                 value={kpi?.allieviAttivi}
@@ -148,6 +213,7 @@ export default function ProfiloAdmin() {
                 color="amber"
                 onClick={() => navigate('/admin/insegnanti')}
               />
+              <QuoteCard onClick={() => navigate('/admin/pagamenti')} />
             </div>
 
             <div className="bg-white border rounded-xl px-4 mb-4">
