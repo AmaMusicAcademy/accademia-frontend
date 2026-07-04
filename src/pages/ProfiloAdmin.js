@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, Users, GraduationCap, Banknote,
-  ChevronLeft, ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
+  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
@@ -67,37 +67,41 @@ function QuoteCard({ onClick }) {
       .finally(() => setLoading(false));
   }, [anno, mese]);
 
-  const prev = (e) => {
-    e.stopPropagation();
-    if (mese === 1) { setAnno(a => a - 1); setMese(12); } else { setMese(m => m - 1); }
-  };
-  const next = (e) => {
-    e.stopPropagation();
-    if (mese === 12) { setAnno(a => a + 1); setMese(1); } else { setMese(m => m + 1); }
+  const startX = useRef(null);
+
+  const onPointerDown = (e) => { startX.current = e.clientX; };
+  const onPointerUp   = (e) => {
+    if (startX.current === null) return;
+    const dx = e.clientX - startX.current;
+    if (Math.abs(dx) > 40) {
+      if (dx < 0) {
+        if (mese === 12) { setAnno(a => a + 1); setMese(1); } else { setMese(m => m + 1); }
+      } else {
+        if (mese === 1) { setAnno(a => a - 1); setMese(12); } else { setMese(m => m - 1); }
+      }
+    } else {
+      onClick();
+    }
+    startX.current = null;
   };
 
   const red = nonPagati > 0;
 
   return (
-    <button onClick={onClick}
-      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full">
+    <button
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      className="bg-white border rounded-xl p-4 flex items-center gap-3 text-left active:bg-n-50 w-full select-none"
+    >
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${red ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-600'}`}>
         <CreditCard size={19} />
       </div>
-      <div className="flex-1 min-w-0">
+      <div>
         {loading
-          ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin mb-1" />
+          ? <div className="w-5 h-5 border-2 border-n-300 border-t-transparent rounded-full animate-spin" />
           : <p className={`text-2xl font-bold leading-none ${red ? 'text-red-600' : 'text-emerald-700'}`}>{nonPagati ?? '—'}</p>
         }
-        <div className="flex items-center mt-0.5" onClick={e => e.stopPropagation()}>
-          <button onClick={prev} className="w-4 h-4 flex items-center justify-center text-n-300 active:text-n-600 shrink-0">
-            <ChevronLeft size={12} />
-          </button>
-          <p className="flex-1 text-xs text-n-600 text-center">{MESI_NOME[mese - 1].slice(0,3)} {anno}</p>
-          <button onClick={next} className="w-4 h-4 flex items-center justify-center text-n-300 active:text-n-600 shrink-0">
-            <ChevronRight size={12} />
-          </button>
-        </div>
+        <p className="text-xs text-n-600 mt-0.5">Quote non pagate · {MESI_NOME[mese - 1].slice(0,3)}</p>
       </div>
     </button>
   );
