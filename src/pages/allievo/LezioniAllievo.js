@@ -78,7 +78,7 @@ export default function LezioniAllievo() {
 
   useEffect(() => { carica(); }, [carica]);
 
-  const futureTot  = lezioni.filter((l) => l.stato === 'futura').length;
+  const futureTot  = lezioni.filter((l) => l.stato === 'appuntamentata').length;
   const svolte     = lezioni.filter((l) => l.stato === 'svolta').length;
   const rimandate  = lezioni.filter((l) => l.stato === 'rimandata').length;
   const annullate  = lezioni.filter((l) => l.stato === 'annullata').length;
