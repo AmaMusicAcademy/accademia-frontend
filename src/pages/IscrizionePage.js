@@ -15,9 +15,14 @@ const MATERIE = [
   { nome: 'Batteria 45min',        prezzo: 80 },
   { nome: 'Batteria 1h',           prezzo: 100 },
   { nome: 'Coro',                  prezzo: 30 },
-  { nome: 'Band',                  prezzo: 30 },
-  { nome: 'Teoria e Solfeggio',    prezzo: 30 },
+  { nome: 'Band',                  prezzo: 30,  richiede_strumento: true },
+  { nome: 'Teoria e Solfeggio',    prezzo: 30,  richiede_strumento: true },
 ];
+
+// Materie che fanno da "strumento base" (tutto tranne Coro, Band, Teoria e Solfeggio)
+const MATERIE_BASE = MATERIE
+  .filter(m => !m.richiede_strumento && m.nome !== 'Coro')
+  .map(m => m.nome);
 
 const TESTO_TESSERAMENTO = `DOMANDA DI TESSERAMENTO
 
@@ -455,20 +460,41 @@ export default function IscrizionePage() {
           <p className="text-xs text-red-500 mb-2">Seleziona almeno una materia.</p>
         )}
         <div className={`border rounded-xl overflow-hidden divide-y ${e.materie ? 'border-red-400' : 'border-n-100'}`}>
-          {MATERIE.map(({ nome, prezzo }) => {
+          {MATERIE.map(({ nome, prezzo, richiede_strumento }) => {
             const sel = form.materie.includes(nome);
-            const toggle = () => set('materie', sel
-              ? form.materie.filter(m => m !== nome)
-              : [...form.materie, nome]
-            );
+            const haBase = form.materie.some(m => MATERIE_BASE.includes(m));
+            const bloccata = richiede_strumento && !haBase && !sel;
+
+            const toggle = () => {
+              if (bloccata) return;
+              if (sel) {
+                // Se sto deselezionando uno strumento base, rimuovi anche le dipendenti
+                let nuove = form.materie.filter(m => m !== nome);
+                const haBaseRimasta = nuove.some(m => MATERIE_BASE.includes(m));
+                if (!haBaseRimasta) {
+                  nuove = nuove.filter(m => !MATERIE.find(x => x.nome === m && x.richiede_strumento));
+                }
+                set('materie', nuove);
+              } else {
+                set('materie', [...form.materie, nome]);
+              }
+            };
+
             return (
               <button type="button" key={nome} onClick={toggle}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${sel ? 'bg-ama-50' : 'bg-white active:bg-n-50'}`}>
+                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors
+                  ${bloccata ? 'opacity-40 cursor-not-allowed bg-white' : sel ? 'bg-ama-50' : 'bg-white active:bg-n-50'}`}>
                 <div className="flex items-center gap-2.5">
-                  <div className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-colors ${sel ? 'bg-ama-500 border-ama-500' : 'border-n-300 bg-white'}`}>
+                  <div className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-colors
+                    ${sel ? 'bg-ama-500 border-ama-500' : 'border-n-300 bg-white'}`}>
                     {sel && <Check size={11} className="text-white" strokeWidth={3} />}
                   </div>
-                  <span className={`text-sm ${sel ? 'font-semibold text-ama-700' : 'text-n-900'}`}>{nome}</span>
+                  <div className="flex flex-col">
+                    <span className={`text-sm ${sel ? 'font-semibold text-ama-700' : bloccata ? 'text-n-300' : 'text-n-900'}`}>{nome}</span>
+                    {bloccata && (
+                      <span className="text-[10px] text-n-300 leading-none">Richiede uno strumento o canto</span>
+                    )}
+                  </div>
                 </div>
                 <span className={`text-sm font-medium shrink-0 ${sel ? 'text-ama-500' : 'text-n-600'}`}>€{prezzo}/mese</span>
               </button>
