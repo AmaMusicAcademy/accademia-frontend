@@ -377,7 +377,7 @@ export default function DettaglioAllievo() {
 
       {/* Modal pagamenti */}
       {showPag && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-end justify-center">
           <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
               <h2 className="text-base font-semibold text-n-900">Pagamenti mensili</h2>
@@ -405,7 +405,7 @@ export default function DettaglioAllievo() {
                 </div>
               ))}
             </div>
-            <div className="px-5 pb-6 pt-2 shrink-0 border-t">
+            <div className="px-5 pt-2 shrink-0 border-t" style={{ paddingBottom: 'calc(1.5rem + 56px + env(safe-area-inset-bottom))' }}>
               <button onClick={handleSavePag} disabled={savingPag}
                 className="w-full py-3 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
                 {savingPag ? 'Salvataggio…' : 'Salva modifiche'}
@@ -417,7 +417,7 @@ export default function DettaglioAllievo() {
 
       {/* Modal insegnanti */}
       {showIns && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center">
+        <div className="fixed inset-0 z-[60] bg-black/40 flex items-end justify-center">
           <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[70vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
               <h2 className="text-base font-semibold text-n-900">Assegna insegnanti</h2>
@@ -437,7 +437,7 @@ export default function DettaglioAllievo() {
                 );
               })}
             </div>
-            <div className="px-5 pb-6 pt-2 shrink-0 border-t">
+            <div className="px-5 pt-2 shrink-0 border-t" style={{ paddingBottom: 'calc(1.5rem + 56px + env(safe-area-inset-bottom))' }}>
               <button onClick={handleSaveIns}
                 className="w-full py-3 bg-ama-500 text-white rounded-xl text-sm font-medium">
                 Salva assegnazioni
@@ -497,7 +497,7 @@ export default function DettaglioAllievo() {
 
       {/* Modal lista lezioni per stato */}
       {modalLezioni && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={() => setModalLezioni(null)}>
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-end" onClick={() => setModalLezioni(null)}>
           <div className="bg-white w-full max-w-xl mx-auto rounded-t-2xl max-h-[80vh] flex flex-col pb-20"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
