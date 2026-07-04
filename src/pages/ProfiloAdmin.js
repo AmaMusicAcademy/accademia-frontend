@@ -142,6 +142,21 @@ export default function ProfiloAdmin() {
     finally { setLoadingRiprog(false); }
   };
 
+  const handleDownload = async (anno, tipo) => {
+    const token = localStorage.getItem('token');
+    const base = process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com';
+    const url = `${base}/api/admin/archivio/${anno}/export-${tipo}`;
+    try {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `AMA_${tipo === 'pdf' ? 'report' : 'backup'}_${anno}.${tipo}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch { alert('Errore durante il download.'); }
+  };
+
   const handleTerminaAnno = async () => {
     setTerminaLoading(true);
     try {
@@ -324,6 +339,21 @@ export default function ProfiloAdmin() {
                   <p>Pagamenti archiviati: <span className="font-semibold">{terminaRisultato.riepilogo?.pagamenti}</span></p>
                   <p>Quote associative: <span className="font-semibold">{terminaRisultato.riepilogo?.quote_associative}</span></p>
                   <p>Iscrizioni: <span className="font-semibold">{terminaRisultato.riepilogo?.iscrizioni}</span></p>
+                </div>
+                <p className="text-xs text-n-500 mb-3">Scarica una copia di backup prima di chiudere:</p>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => handleDownload(terminaRisultato.anno, 'pdf')}
+                    className="flex-1 py-2.5 rounded-xl bg-ama-500 text-white text-sm font-semibold"
+                  >
+                    Scarica PDF
+                  </button>
+                  <button
+                    onClick={() => handleDownload(terminaRisultato.anno, 'json')}
+                    className="flex-1 py-2.5 rounded-xl border border-n-200 text-n-700 text-sm font-semibold"
+                  >
+                    Scarica JSON
+                  </button>
                 </div>
                 <button onClick={() => setShowTerminaDialog(false)} className="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Fatto</button>
               </>
