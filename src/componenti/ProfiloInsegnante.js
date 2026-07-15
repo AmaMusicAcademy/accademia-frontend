@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Info, KeyRound, ImageIcon, Calculator, LogOut, ChevronRight } from 'lucide-react';
+import { User, Info, KeyRound, ImageIcon, Calculator, LogOut, ChevronRight, Thermometer } from 'lucide-react';
 import BottomNav from '../componenti/BottomNav';
 import { apiFetch } from '../utils/api';
 
@@ -74,7 +74,8 @@ const ProfiloInsegnante = () => {
 
         {/* Insegnamento */}
         <div className="bg-white border rounded-xl px-4 mb-4">
-          <MenuRow icon={Calculator} label="Calcolo Rimborso" onClick={() => navigate('/rimborso')} />
+          <MenuRow icon={Calculator}  label="Calcolo Rimborso" onClick={() => navigate('/rimborso')} />
+          <MenuRow icon={Thermometer} label="Controllo Clima"  onClick={() => navigate('/insegnante/clima')} />
         </div>
 
         {/* Logout */}

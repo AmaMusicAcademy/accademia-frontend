@@ -25,6 +25,8 @@ import CalendarioAdmin from './pages/CalendarioAdmin';
 import AdminPagamenti from './pages/AdminPagamenti';
 import AdminCompensi from './pages/AdminCompensi';
 import AdminArchivio from './pages/AdminArchivio';
+import AdminClima from './pages/AdminClima';
+import InsegnanteClima from './pages/InsegnanteClima';
 import AllieviEdit from './pages/AllievoEditPage';
 import AuleAdmin from './pages/AdminAulePage';
 import GiorniChiusura from './pages/GiorniChiusura';
@@ -153,6 +155,12 @@ function App() {
   } />
   <Route path="/admin/archivio" element={
     <ProtectedRoute element={<AdminArchivio />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/clima" element={
+    <ProtectedRoute element={<AdminClima />} allowedRoles={['admin']} />
+  } />
+  <Route path="/insegnante/clima" element={
+    <ProtectedRoute element={<InsegnanteClima />} allowedRoles={['insegnante']} />
   } />
   <Route path="/admin/iscrizioni" element={
     <ProtectedRoute element={<AdminIscrizioni />} allowedRoles={['admin']} />

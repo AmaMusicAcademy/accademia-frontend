@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User, CreditCard, Users, GraduationCap, Banknote,
-  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X, Archive,
+  ChevronRight, LogOut, KeyRound, Info, School, CalendarOff, RefreshCw, X, Archive, Thermometer,
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
@@ -238,8 +238,9 @@ export default function ProfiloAdmin() {
               <MenuRow icon={Users}       label="Insegnanti"  onClick={() => navigate('/admin/insegnanti')} />
               <MenuRow icon={School}      label="Aule"        onClick={() => navigate('/admin/aule')} />
               <MenuRow icon={CalendarOff} label="Chiusure"    onClick={() => navigate('/admin/chiusure')} />
-              <MenuRow icon={CreditCard}  label="Pagamenti"   onClick={() => navigate('/admin/pagamenti')} />
-              <MenuRow icon={Banknote}    label="Compensi"    onClick={() => navigate('/admin/compensi')} />
+              <MenuRow icon={CreditCard}    label="Pagamenti"   onClick={() => navigate('/admin/pagamenti')} />
+              <MenuRow icon={Banknote}      label="Compensi"    onClick={() => navigate('/admin/compensi')} />
+              <MenuRow icon={Thermometer}   label="Clima"       onClick={() => navigate('/admin/clima')} />
             </div>
           </>
         )}
