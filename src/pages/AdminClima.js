@@ -107,15 +107,32 @@ function AulaCard({ aula, dispositivi, ruolo, backTo }) {
 
       {/* Valvole / dispositivi controllabili */}
       {valvole.map(d => {
-        const s     = stati[d.deviceId];
-        const power = s?.power?.toLowerCase?.() ?? s?.deviceMode?.toLowerCase?.() ?? null;
-        const isOn  = power === 'on';
+        const s      = stati[d.deviceId];
+        const power  = s?.power?.toLowerCase?.() ?? s?.mode?.toLowerCase?.() ?? null;
+        const isOn   = power === 'on' || s?.moving === true;
+        // Temperatura target: setPoint per termovalvole, temperature come fallback
+        const target = s?.setPoint ?? s?.targetTemperature ?? s?.temperature ?? null;
+        const [tempInput, setTempInput] = [target, () => {}]; // gestito con inviaComando
+
+        const stepTemp = (delta) => {
+          const cur = Math.round(target ?? 20);
+          const nuova = Math.min(30, Math.max(10, cur + delta));
+          // Comando SwitchBot per termovalvole: setTemperature
+          // Fallback per altri dispositivi: setAllStatus
+          const tipo = (d.deviceType || '').toLowerCase();
+          if (tipo.includes('radiator') || tipo.includes('valve') || tipo.includes('trv')) {
+            inviaComando(d.deviceId, 'setTemperature', nuova);
+          } else {
+            inviaComando(d.deviceId, 'setAllStatus', `${nuova},on,0`);
+          }
+        };
+
         return (
           <div key={d.deviceId} className="border rounded-xl p-3 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-n-500">{d.deviceName}</p>
-                <p className="text-xs font-medium text-n-700">{d.deviceType}</p>
+                <p className="text-xs font-medium text-n-400">{d.deviceType}</p>
               </div>
               {/* Toggle on/off */}
               <button
@@ -129,33 +146,25 @@ function AulaCard({ aula, dispositivi, ruolo, backTo }) {
               </button>
             </div>
 
-            {/* Temperatura target (per valvole/bot con setTemp) */}
-            {(d.deviceType?.includes('Bot') || d.deviceType?.includes('Humidifier')) && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-n-500 flex-1">Temperatura target</span>
-                <button
-                  onClick={() => {
-                    const cur = s?.temperature ?? 20;
-                    inviaComando(d.deviceId, 'setAllStatus', `${Math.max(10, cur - 1)},on,0`);
-                  }}
-                  className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="text-base font-bold text-n-900 w-12 text-center">
-                  {s?.temperature != null ? `${s.temperature}°` : '—'}
-                </span>
-                <button
-                  onClick={() => {
-                    const cur = s?.temperature ?? 20;
-                    inviaComando(d.deviceId, 'setAllStatus', `${Math.min(30, cur + 1)},on,0`);
-                  }}
-                  className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            )}
+            {/* Temperatura target — mostrata per tutti i dispositivi controllabili */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-n-500 flex-1">Temperatura target</span>
+              <button
+                onClick={() => stepTemp(-1)}
+                className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="text-base font-bold text-n-900 w-12 text-center">
+                {target != null ? `${Math.round(target)}°` : '—'}
+              </span>
+              <button
+                onClick={() => stepTemp(+1)}
+                className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
         );
       })}
