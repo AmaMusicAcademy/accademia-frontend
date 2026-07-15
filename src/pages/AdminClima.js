@@ -1,28 +1,36 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Thermometer, Power, Minus, Plus, RefreshCw, AlertCircle } from 'lucide-react';
+import { Thermometer, Power, Minus, Plus, RefreshCw, AlertCircle, Target, Zap } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import PageHeader from '../componenti/PageHeader';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 
-// Tipi dispositivo SwitchBot rilevanti per clima
 const TIPI_TERMOMETRO = ['Meter', 'MeterPlus', 'WoSensorTH', 'Hub 2', 'MeterPro'];
-const TIPI_VALVOLA    = ['Bot', 'Plug', 'Plug Mini (US)', 'Plug Mini (JP)', 'Humidifier', 'Blind Tilt', 'Curtain'];
-
 function isTermometro(d) { return TIPI_TERMOMETRO.some(t => (d.deviceType || '').includes(t)); }
-function isValvola(d)    {
-  const tipo = (d.deviceType || '').toLowerCase();
-  return tipo.includes('bot') || tipo.includes('plug') || tipo.includes('hub') || tipo.includes('meter') || tipo.includes('remote');
-}
 
 // ── Card singola aula ────────────────────────────────────────────────────
-function AulaCard({ aula, dispositivi, ruolo, backTo }) {
+function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
   const termometri = dispositivi.filter(d => d.aula_nome === aula && isTermometro(d));
   const valvole    = dispositivi.filter(d => d.aula_nome === aula && !isTermometro(d));
   const tutti      = dispositivi.filter(d => d.aula_nome === aula);
 
-  const [stati, setStati]     = useState({});
-  const [loading, setLoading] = useState(false);
-  const [errore, setErrore]   = useState(null);
+  const target = targets.find(t => t.aula_nome === aula);
+
+  const [stati, setStati]           = useState({});
+  const [loading, setLoading]       = useState(false);
+  const [errore, setErrore]         = useState(null);
+  const [targetTemp, setTargetTemp] = useState(target?.temperatura_target ?? 20);
+  const [salvando, setSalvando]     = useState(false);
+
+  // Temperatura attuale dal termometro
+  const tempAttuale = termometri.length > 0
+    ? (stati[termometri[0]?.deviceId]?.temperature ?? stati[termometri[0]?.deviceId]?.tempC ?? null)
+    : null;
+
+  // Posizione valvola corrente
+  const valvola = valvole[0];
+  const statoValvola = valvola ? stati[valvola.deviceId] : null;
+  const posizione = target?.posizione_attuale ?? statoValvola?.slidePosition ?? 0;
+  const isAttivo  = target?.attivo ?? false;
 
   const aggiornaStati = useCallback(async () => {
     setLoading(true);
@@ -42,132 +50,211 @@ function AulaCard({ aula, dispositivi, ruolo, backTo }) {
 
   useEffect(() => { if (tutti.length > 0) aggiornaStati(); }, []);
 
-  const inviaComando = async (deviceId, command, parameter = 'default') => {
+  // Imposta target temperatura e attiva il controllo automatico
+  const attivaControllo = async () => {
+    if (!valvola) return;
+    const termoId = termometri[0]?.deviceId ?? null;
+    setSalvando(true);
     try {
-      await apiFetch(`/api/clima/comando/${deviceId}`, {
+      const res = await apiFetch('/api/clima/target', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ commandType: 'command', command, parameter }),
+        body: JSON.stringify({
+          aula_nome: aula,
+          device_id_termometro: termoId,
+          device_id_valvola: valvola.deviceId,
+          temperatura_target: targetTemp,
+          attivo: true,
+        }),
       });
+      onTargetChange(res);
+    } catch (e) { setErrore(e.message); }
+    finally { setSalvando(false); }
+  };
+
+  // Spegni: chiude valvola a 0% e disattiva il controllo automatico
+  const spegni = async () => {
+    if (!valvola) return;
+    setSalvando(true);
+    try {
+      await apiFetch(`/api/clima/valvola/${valvola.deviceId}/spegni`, { method: 'POST' });
+      onTargetChange({ ...target, attivo: false, posizione_attuale: 0 });
       setTimeout(aggiornaStati, 1200);
-    } catch (e) {
-      setErrore(e.message);
-    }
+    } catch (e) { setErrore(e.message); }
+    finally { setSalvando(false); }
+  };
+
+  // Imposta posizione manuale (sovrascrive il cron temporaneamente)
+  const setPositione = async (pos) => {
+    if (!valvola) return;
+    try {
+      await apiFetch(`/api/clima/valvola/${valvola.deviceId}/posizione`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ posizione: pos }),
+      });
+      onTargetChange({ ...target, posizione_attuale: pos });
+    } catch (e) { setErrore(e.message); }
   };
 
   if (tutti.length === 0) return null;
 
+  // Colore indicatore temperatura
+  const deltaTemp = tempAttuale != null ? tempAttuale - targetTemp : null;
+  const colorTemp = deltaTemp == null ? 'text-n-400'
+    : Math.abs(deltaTemp) <= 0.5 ? 'text-emerald-600'
+    : deltaTemp < 0 ? 'text-blue-500'
+    : 'text-red-500';
+
   return (
     <div className="bg-white border rounded-2xl p-4 space-y-4">
+
       {/* Intestazione */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-n-900">{aula}</h3>
-        <button
-          onClick={aggiornaStati}
-          disabled={loading}
-          className="p-1.5 rounded-lg text-n-400 active:bg-n-50"
-        >
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-n-900">{aula}</h3>
+          {isAttivo && (
+            <span className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium">
+              <Zap size={10} /> Auto
+            </span>
+          )}
+        </div>
+        <button onClick={aggiornaStati} disabled={loading} className="p-1.5 rounded-lg text-n-400 active:bg-n-50">
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {errore && (
         <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2">
-          <AlertCircle size={14} />
-          {errore}
+          <AlertCircle size={14} />{errore}
         </div>
       )}
 
-      {/* Termometri */}
-      {termometri.map(d => {
-        const s = stati[d.deviceId];
-        const temp = s?.temperature ?? s?.tempC ?? null;
-        const umid = s?.humidity ?? null;
-        return (
-          <div key={d.deviceId} className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-              <Thermometer size={18} className="text-blue-500" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-n-500">{d.deviceName}</p>
-              {loading && !s ? (
-                <div className="w-4 h-4 border-2 border-n-300 border-t-transparent rounded-full animate-spin mt-1" />
-              ) : s?.error ? (
-                <p className="text-xs text-red-400">Errore lettura</p>
-              ) : (
-                <p className="text-xl font-bold text-n-900 leading-none">
-                  {temp != null ? `${temp}°C` : '—'}
-                  {umid != null && <span className="text-sm font-normal text-n-400 ml-2">{umid}%</span>}
+      {/* Temperatura attuale */}
+      {termometri.length > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+            <Thermometer size={18} className="text-blue-500" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs text-n-500">{termometri[0].deviceName}</p>
+            {loading && !stati[termometri[0].deviceId] ? (
+              <div className="w-4 h-4 border-2 border-n-300 border-t-transparent rounded-full animate-spin mt-1" />
+            ) : stati[termometri[0].deviceId]?.error ? (
+              <p className="text-xs text-red-400">Errore lettura</p>
+            ) : (
+              <div className="flex items-baseline gap-2">
+                <p className={`text-2xl font-bold leading-none ${colorTemp}`}>
+                  {tempAttuale != null ? `${tempAttuale}°C` : '—'}
                 </p>
-              )}
+                {stati[termometri[0].deviceId]?.humidity != null && (
+                  <span className="text-sm text-n-400">{stati[termometri[0].deviceId].humidity}%</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Valvola */}
+      {valvola && (
+        <div className="border rounded-xl p-3 space-y-4">
+
+          {/* Stato valvola + posizione */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-n-500">{valvola.deviceName}</p>
+              <p className="text-xs text-n-400">Apertura: <span className="font-semibold text-n-700">{posizione}%</span></p>
+            </div>
+            {/* Barra apertura */}
+            <div className="w-20 h-2 bg-n-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-ama-500 rounded-full transition-all"
+                style={{ width: `${posizione}%` }}
+              />
             </div>
           </div>
-        );
-      })}
 
-      {/* Valvole / dispositivi controllabili */}
-      {valvole.map(d => {
-        const s      = stati[d.deviceId];
-        const power  = s?.power?.toLowerCase?.() ?? s?.mode?.toLowerCase?.() ?? null;
-        const isOn   = power === 'on' || s?.moving === true;
-        // Temperatura target: setPoint per termovalvole, temperature come fallback
-        const target = s?.setPoint ?? s?.targetTemperature ?? s?.temperature ?? null;
-        const [tempInput, setTempInput] = [target, () => {}]; // gestito con inviaComando
-
-        const stepTemp = (delta) => {
-          const cur = Math.round(target ?? 20);
-          const nuova = Math.min(30, Math.max(10, cur + delta));
-          // Comando SwitchBot per termovalvole: setTemperature
-          // Fallback per altri dispositivi: setAllStatus
-          const tipo = (d.deviceType || '').toLowerCase();
-          if (tipo.includes('radiator') || tipo.includes('valve') || tipo.includes('trv')) {
-            inviaComando(d.deviceId, 'setTemperature', nuova);
-          } else {
-            inviaComando(d.deviceId, 'setAllStatus', `${nuova},on,0`);
-          }
-        };
-
-        return (
-          <div key={d.deviceId} className="border rounded-xl p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-n-500">{d.deviceName}</p>
-                <p className="text-xs font-medium text-n-400">{d.deviceType}</p>
-              </div>
-              {/* Toggle on/off */}
-              <button
-                onClick={() => inviaComando(d.deviceId, isOn ? 'turnOff' : 'turnOn')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  isOn ? 'bg-ama-500 text-white' : 'bg-n-100 text-n-500'
-                }`}
-              >
-                <Power size={13} />
-                {isOn ? 'Acceso' : 'Spento'}
-              </button>
+          {/* Target temperatura */}
+          <div>
+            <div className="flex items-center gap-1 mb-2">
+              <Target size={12} className="text-n-400" />
+              <span className="text-xs text-n-500">Temperatura target</span>
             </div>
-
-            {/* Temperatura target — mostrata per tutti i dispositivi controllabili */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-n-500 flex-1">Temperatura target</span>
               <button
-                onClick={() => stepTemp(-1)}
-                className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
+                onClick={() => setTargetTemp(t => Math.max(10, t - 0.5))}
+                className="w-9 h-9 rounded-full border flex items-center justify-center active:bg-n-50 shrink-0"
               >
-                <Minus size={14} />
+                <Minus size={15} />
               </button>
-              <span className="text-base font-bold text-n-900 w-12 text-center">
-                {target != null ? `${Math.round(target)}°` : '—'}
+              <span className="flex-1 text-center text-xl font-bold text-n-900">
+                {targetTemp.toFixed(1)}°C
               </span>
               <button
-                onClick={() => stepTemp(+1)}
-                className="w-8 h-8 rounded-full border flex items-center justify-center active:bg-n-50"
+                onClick={() => setTargetTemp(t => Math.min(30, t + 0.5))}
+                className="w-9 h-9 rounded-full border flex items-center justify-center active:bg-n-50 shrink-0"
               >
-                <Plus size={14} />
+                <Plus size={15} />
               </button>
             </div>
+
+            {/* Stato raggiungimento target */}
+            {tempAttuale != null && deltaTemp != null && (
+              <p className={`text-xs text-center mt-1 ${colorTemp}`}>
+                {Math.abs(deltaTemp) <= 0.3
+                  ? 'Temperatura raggiunta'
+                  : deltaTemp < 0
+                  ? `${Math.abs(deltaTemp).toFixed(1)}°C sotto il target`
+                  : `${deltaTemp.toFixed(1)}°C sopra il target`}
+              </p>
+            )}
           </div>
-        );
-      })}
+
+          {/* Azioni */}
+          <div className="flex gap-2">
+            <button
+              onClick={attivaControllo}
+              disabled={salvando}
+              className="flex-1 py-2.5 rounded-xl bg-ama-500 text-white text-sm font-semibold disabled:opacity-50"
+            >
+              {isAttivo ? 'Aggiorna target' : 'Attiva controllo auto'}
+            </button>
+            <button
+              onClick={spegni}
+              disabled={salvando || posizione === 0}
+              className="py-2.5 px-3 rounded-xl border border-n-200 text-n-600 disabled:opacity-30"
+              title="Spegni e chiudi valvola"
+            >
+              <Power size={16} />
+            </button>
+          </div>
+
+          {/* Controllo manuale posizione (override temporaneo) */}
+          <details className="group">
+            <summary className="text-xs text-n-400 cursor-pointer select-none list-none flex items-center gap-1">
+              <span className="group-open:hidden">▸</span>
+              <span className="hidden group-open:inline">▾</span>
+              Controllo manuale apertura
+            </summary>
+            <div className="mt-3 flex items-center gap-2">
+              {[0, 25, 50, 75, 100].map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPositione(p)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    posizione === p ? 'bg-ama-500 text-white border-ama-500' : 'text-n-600 border-n-200'
+                  }`}
+                >
+                  {p}%
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-n-300 mt-1">Il controllo automatico riprenderà al prossimo ciclo (5 min)</p>
+          </details>
+
+        </div>
+      )}
     </div>
   );
 }
@@ -176,6 +263,7 @@ function AulaCard({ aula, dispositivi, ruolo, backTo }) {
 export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
   const [dispositivi, setDispositivi] = useState([]);
   const [aule, setAule]               = useState([]);
+  const [targets, setTargets]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [errore, setErrore]           = useState(null);
 
@@ -184,17 +272,28 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
       .then(d => {
         setDispositivi(Array.isArray(d.dispositivi) ? d.dispositivi : []);
         setAule(Array.isArray(d.aule) ? d.aule : []);
+        setTargets(Array.isArray(d.targets) ? d.targets : []);
       })
       .catch(e => setErrore(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  // Aule che hanno almeno un dispositivo associato
+  const handleTargetChange = (updated) => {
+    setTargets(prev => {
+      const idx = prev.findIndex(t => t.aula_nome === updated.aula_nome);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...updated };
+        return next;
+      }
+      return [...prev, updated];
+    });
+  };
+
   const auleConDisp = aule
     .map(a => a.nome)
     .filter(nome => dispositivi.some(d => d.aula_nome === nome));
 
-  // Dispositivi senza aula associata (nome non matcha nessuna aula)
   const senzaAula = dispositivi.filter(d => !d.aula_nome);
 
   const BottomNav = ruolo === 'insegnante'
@@ -216,15 +315,14 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
             <p>{errore}</p>
             {errore.includes('non configurate') && (
               <p className="mt-2 text-xs text-red-400">
-                Aggiungi le variabili <code>SWITCHBOT_TOKEN</code> e <code>SWITCHBOT_SECRET</code> nelle env vars di Render.
+                Aggiungi <code>SWITCHBOT_TOKEN</code> e <code>SWITCHBOT_SECRET</code> nelle env vars di Render.
               </p>
             )}
           </div>
         ) : auleConDisp.length === 0 ? (
           <div className="bg-white border rounded-xl p-6 text-center text-sm text-n-400">
             <Thermometer size={32} className="mx-auto mb-2 text-n-200" />
-            Nessun dispositivo SwitchBot associato alle aule.<br />
-            <span className="text-xs">Assicurati che il nome del dispositivo contenga il nome dell'aula (es. "Aula 1 - Termometro").</span>
+            Nessun dispositivo abbinato alle aule.
           </div>
         ) : (
           auleConDisp.map(nome => (
@@ -232,13 +330,12 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
               key={nome}
               aula={nome}
               dispositivi={dispositivi}
-              ruolo={ruolo}
-              backTo={backTo}
+              targets={targets}
+              onTargetChange={handleTargetChange}
             />
           ))
         )}
 
-        {/* Dispositivi senza aula abbinata — solo admin */}
         {ruolo === 'admin' && senzaAula.length > 0 && (
           <details className="bg-white border rounded-xl p-4">
             <summary className="text-xs text-n-400 cursor-pointer select-none">
@@ -252,7 +349,7 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
               ))}
             </ul>
             <p className="text-xs text-n-400 mt-2">
-              Per abbinare un dispositivo aggiungi il nome dell'aula nel nome dispositivo sull'app SwitchBot.
+              Per abbinare, includi il nome dell'aula nel nome dispositivo sull'app SwitchBot.
             </p>
           </details>
         )}
