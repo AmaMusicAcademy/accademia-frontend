@@ -19,7 +19,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
   const [stati, setStati]           = useState({});
   const [loading, setLoading]       = useState(false);
   const [errore, setErrore]         = useState(null);
-  const [targetTemp, setTargetTemp] = useState(target?.temperatura_target ?? 20);
+  const [targetTemp, setTargetTemp] = useState(parseFloat(target?.temperatura_target ?? 20));
   const [salvando, setSalvando]     = useState(false);
 
   // Temperatura attuale dal termometro
