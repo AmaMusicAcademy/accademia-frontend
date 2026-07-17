@@ -3,6 +3,7 @@ import { Thermometer, Power, Minus, Plus, RefreshCw, AlertCircle, Target, Zap } 
 import { apiFetch } from '../utils/api';
 import PageHeader from '../componenti/PageHeader';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
+import BottomNav from '../componenti/BottomNav';
 
 const TIPI_TERMOMETRO = ['Meter', 'MeterPlus', 'WoSensorTH', 'Hub 2', 'MeterPro'];
 function isTermometro(d) { return TIPI_TERMOMETRO.some(t => (d.deviceType || '').includes(t)); }
@@ -296,9 +297,7 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
 
   const senzaAula = dispositivi.filter(d => !d.aula_nome);
 
-  const BottomNav = ruolo === 'insegnante'
-    ? require('../componenti/BottomNav').default
-    : BottomNavAdmin;
+  const NavBar = ruolo === 'insegnante' ? BottomNav : BottomNavAdmin;
 
   return (
     <div className="min-h-screen bg-n-50 pb-20">
@@ -355,7 +354,7 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
         )}
       </div>
 
-      <BottomNav />
+      <NavBar />
     </div>
   );
 }
