@@ -101,7 +101,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
   if (tutti.length === 0) return null;
 
   // Colore indicatore temperatura
-  const deltaTemp = tempAttuale != null ? tempAttuale - targetTemp : null;
+  const deltaTemp = tempAttuale != null ? parseFloat(tempAttuale) - targetTemp : null;
   const colorTemp = deltaTemp == null ? 'text-n-400'
     : Math.abs(deltaTemp) <= 0.5 ? 'text-emerald-600'
     : deltaTemp < 0 ? 'text-blue-500'
@@ -207,7 +207,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
                   ? 'Temperatura raggiunta'
                   : deltaTemp < 0
                   ? `${Math.abs(deltaTemp).toFixed(1)}°C sotto il target`
-                  : `${deltaTemp.toFixed(1)}°C sopra il target`}
+                  : `${Math.abs(deltaTemp).toFixed(1)}°C sopra il target`}
               </p>
             )}
           </div>
