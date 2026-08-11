@@ -347,6 +347,8 @@ export default function ProfiloAdmin() {
                   <p>Pagamenti archiviati: <span className="font-semibold">{terminaRisultato.riepilogo?.pagamenti}</span></p>
                   <p>Quote associative: <span className="font-semibold">{terminaRisultato.riepilogo?.quote_associative}</span></p>
                   <p>Iscrizioni: <span className="font-semibold">{terminaRisultato.riepilogo?.iscrizioni}</span></p>
+                  <p className="border-t pt-2 mt-1">Allievi disattivati: <span className="font-semibold text-amber-600">{terminaRisultato.riepilogo?.allievi_disattivati}</span></p>
+                  <p>Account eliminati: <span className="font-semibold text-red-600">{terminaRisultato.riepilogo?.account_eliminati}</span></p>
                 </div>
                 <p className="text-xs text-n-500 mb-3">Scarica una copia di backup prima di chiudere:</p>
                 <div className="flex gap-2 mb-3">
