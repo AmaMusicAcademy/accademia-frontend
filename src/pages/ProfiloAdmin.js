@@ -148,13 +148,20 @@ export default function ProfiloAdmin() {
     const url = `${base}/api/admin/archivio/${anno}/export-${tipo}`;
     try {
       const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        alert(`Errore download: ${err.error || r.status}`);
+        return;
+      }
       const blob = await r.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `AMA_${tipo === 'pdf' ? 'report' : 'backup'}_${anno}.${tipo}`;
+      a.download = `AMA_${tipo === 'pdf' ? 'report' : 'backup'}_${anno}.${tipo === 'json' ? 'json' : 'pdf'}`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
-    } catch { alert('Errore durante il download.'); }
+    } catch (e) { alert(`Errore durante il download: ${e.message}`); }
   };
 
   const handleTerminaAnno = async () => {
