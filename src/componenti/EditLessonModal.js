@@ -6,7 +6,7 @@ const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
-  'http://localhost:3000';
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 function getToken() {
   try { return localStorage.getItem("token") || null; } catch { return null; }
@@ -59,10 +59,14 @@ export default function EditLessonModal({
 
   /** se lockedTeacherId è presente, il filtro allievi è sempre by-teacher */
   const [filterByTeacher, setFilterByTeacher] = useState(!!lockedTeacherId);
+  const [tipoLezione, setTipoLezione] = useState('individuale'); // 'individuale' | 'collettiva'
+  const [gruppi, setGruppi] = useState([]);
+  const [loadingGruppi, setLoadingGruppi] = useState(false);
 
   const [form, setForm] = useState({
     id_insegnante: lockedTeacherId || lesson?.id_insegnante || "",
     id_allievo: lesson?.id_allievo || "",
+    gruppo_id: lesson?.gruppo_id || "",
     data: (lesson?.data || "").slice(0, 10),
     ora_inizio: (lesson?.ora_inizio || "").slice(0, 5),
     ora_fine: (lesson?.ora_fine || "").slice(0, 5),
@@ -72,9 +76,12 @@ export default function EditLessonModal({
   // reset su open/lesson o quando si blocca l'insegnante
   useEffect(() => {
     if (!open) return;
+    const tipo = lesson?.tipo || 'individuale';
+    setTipoLezione(tipo);
     setForm({
       id_insegnante: lockedTeacherId || lesson?.id_insegnante || "",
       id_allievo: lesson?.id_allievo || "",
+      gruppo_id: lesson?.gruppo_id || "",
       data: (lesson?.data || "").slice(0, 10),
       ora_inizio: (lesson?.ora_inizio || "").slice(0, 5),
       ora_fine: (lesson?.ora_fine || "").slice(0, 5),
@@ -84,6 +91,27 @@ export default function EditLessonModal({
     setError("");
     setFilterByTeacher(!!lockedTeacherId);
   }, [open, lesson, lockedTeacherId]);
+
+  // carica gruppi (filtrati per insegnante se locked)
+  useEffect(() => {
+    if (!open) return;
+    let cancel = false;
+    (async () => {
+      try {
+        setLoadingGruppi(true);
+        const list = await fetchJSON(`${API_BASE}/api/gruppi`, token);
+        if (cancel) return;
+        const all = Array.isArray(list) ? list : [];
+        setGruppi(lockedTeacherId
+          ? all.filter(g => String(g.insegnante_id) === String(lockedTeacherId))
+          : all
+        );
+      } finally {
+        if (!cancel) setLoadingGruppi(false);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [open, token, lockedTeacherId]);
 
   // carica insegnanti (serve anche solo per mostrare il nome quando locked)
   useEffect(() => {
@@ -176,8 +204,9 @@ export default function EditLessonModal({
 
   const hasMinData = useMemo(() => {
     const teacher = lockedTeacherId || form.id_insegnante;
-    return teacher && form.id_allievo && form.data && form.ora_inizio && form.ora_fine && form.aula;
-  }, [form, lockedTeacherId]);
+    const soggetto = tipoLezione === 'collettiva' ? form.gruppo_id : form.id_allievo;
+    return teacher && soggetto && form.data && form.ora_inizio && form.ora_fine && form.aula;
+  }, [form, lockedTeacherId, tipoLezione]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -188,14 +217,23 @@ export default function EditLessonModal({
     }
     try {
       setSaving(true);
-      const payload = {
-        id_insegnante: Number(lockedTeacherId || form.id_insegnante),
-        id_allievo: Number(form.id_allievo),
-        data: form.data,
-        ora_inizio: form.ora_inizio,
-        ora_fine: form.ora_fine,
-        aula: form.aula,
-      };
+      const payload = tipoLezione === 'collettiva'
+        ? {
+            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
+            gruppo_id: Number(form.gruppo_id),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+          }
+        : {
+            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
+            id_allievo: Number(form.id_allievo),
+            data: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula,
+          };
 
       const isEdit = Boolean(lesson?.id);
       const url = isEdit
@@ -244,8 +282,8 @@ export default function EditLessonModal({
 
         {/* header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 active:text-gray-700 text-xl leading-none">×</button>
+          <h2 className="text-base font-semibold text-n-900">{title}</h2>
+          <button onClick={onClose} className="text-n-300 active:text-gray-700 text-xl leading-none">×</button>
         </div>
 
         {/* body */}
@@ -257,11 +295,28 @@ export default function EditLessonModal({
             </div>
           )}
 
-          {/* INSEGNANTE / ALLIEVO */}
+          {/* TIPO LEZIONE — solo su nuova lezione */}
+          {!lesson?.id && (
+            <div className="flex rounded-xl border overflow-hidden">
+              {[
+                { id: 'individuale', label: 'Individuale' },
+                { id: 'collettiva',  label: 'Di gruppo' },
+              ].map(({ id, label }) => (
+                <button key={id} type="button" onClick={() => setTipoLezione(id)}
+                  className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                    tipoLezione === id ? 'bg-ama-500 text-white' : 'text-n-600 bg-white'
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* INSEGNANTE / ALLIEVO o GRUPPO */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Insegnante *">
               {lockedTeacherId ? (
-                <div className="w-full rounded-xl border px-3 py-2 text-sm bg-gray-50 text-gray-700">
+                <div className="w-full rounded-xl border px-3 py-2 text-sm bg-n-50 text-gray-700">
                   {lockedTeacher ? `${lockedTeacher.nome} ${lockedTeacher.cognome}` : `ID ${lockedTeacherId}`}
                 </div>
               ) : (
@@ -280,30 +335,49 @@ export default function EditLessonModal({
               )}
             </Field>
 
-            <Field label="Allievo *">
-              <select
-                name="id_allievo"
-                value={form.id_allievo}
-                onChange={onChange}
-                className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
-                disabled={loadingStudents}
-              >
-                <option value="">{loadingStudents ? "Caricamento…" : "Seleziona allievo"}</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
-                ))}
-              </select>
-              <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                <input
-                  type="checkbox"
-                  checked={filterByTeacher}
-                  onChange={(e) => setFilterByTeacher(e.target.checked)}
-                  disabled={!!lockedTeacherId || !form.id_insegnante}
-                />
-                Solo allievi di questo insegnante
-              </label>
-              {studentsErr && <p className="text-xs text-red-500 mt-1">{studentsErr}</p>}
-            </Field>
+            {tipoLezione === 'collettiva' ? (
+              <Field label="Gruppo *">
+                <select
+                  name="gruppo_id"
+                  value={form.gruppo_id}
+                  onChange={onChange}
+                  className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                  disabled={loadingGruppi}
+                >
+                  <option value="">{loadingGruppi ? "Caricamento…" : "Seleziona gruppo"}</option>
+                  {gruppi.map((g) => (
+                    <option key={g.id} value={g.id}>{g.nome} ({g.num_allievi} p.)</option>
+                  ))}
+                </select>
+              </Field>
+            ) : (
+              <Field label="Allievo *">
+                <select
+                  name="id_allievo"
+                  value={form.id_allievo}
+                  onChange={onChange}
+                  className="w-full rounded-xl border px-3 py-2 text-sm bg-white"
+                  disabled={loadingStudents}
+                >
+                  <option value="">{loadingStudents ? "Caricamento…" : "Seleziona allievo"}</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.cognome} {s.nome}</option>
+                  ))}
+                </select>
+                {!lockedTeacherId && (
+                  <label className="inline-flex items-center gap-2 mt-1.5 text-xs text-n-600">
+                    <input
+                      type="checkbox"
+                      checked={filterByTeacher}
+                      onChange={(e) => setFilterByTeacher(e.target.checked)}
+                      disabled={!form.id_insegnante}
+                    />
+                    Solo allievi di questo insegnante
+                  </label>
+                )}
+                {studentsErr && <p className="text-xs text-red-500 mt-1">{studentsErr}</p>}
+              </Field>
+            )}
           </div>
 
           {/* DATA / ORARI */}
@@ -363,7 +437,7 @@ export default function EditLessonModal({
                   className="w-full rounded-xl border px-3 py-2 text-sm"
                   placeholder="Inserisci nome/numero aula"
                 />
-                <button type="button" className="text-xs text-blue-600 mt-1" onClick={() => setUseManualAula(false)}>
+                <button type="button" className="text-xs text-ama-500 mt-1" onClick={() => setUseManualAula(false)}>
                   Torna alla lista aule
                 </button>
               </>
@@ -376,7 +450,7 @@ export default function EditLessonModal({
           <button
             onClick={handleSave}
             disabled={saving || deleting || !hasMinData}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium text-sm disabled:opacity-40 active:bg-blue-700"
+            className="w-full py-3 bg-ama-500 text-white rounded-xl font-medium text-sm disabled:opacity-40 active:bg-blue-700"
           >
             {saving ? "Salvataggio…" : "Salva"}
           </button>
@@ -396,12 +470,12 @@ export default function EditLessonModal({
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-2xl">
             <div className="bg-white border shadow-lg rounded-2xl p-6 mx-4 text-center">
               <Trash2 size={28} className="text-red-500 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-gray-900 mb-1">Eliminare l'appuntamento?</p>
-              <p className="text-xs text-gray-500 mb-5">L'operazione è irreversibile.</p>
+              <p className="text-sm font-semibold text-n-900 mb-1">Eliminare l'appuntamento?</p>
+              <p className="text-xs text-n-600 mb-5">L'operazione è irreversibile.</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirmDel(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium active:bg-gray-200"
+                  className="flex-1 py-2.5 rounded-xl bg-n-100 text-gray-700 text-sm font-medium active:bg-n-100"
                 >
                   Annulla
                 </button>
@@ -425,7 +499,7 @@ export default function EditLessonModal({
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-n-600 mb-1">{label}</label>
       {children}
     </div>
   );

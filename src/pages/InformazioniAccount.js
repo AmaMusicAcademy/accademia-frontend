@@ -8,7 +8,7 @@ function InformazioniAccount() {
   const utente = JSON.parse(localStorage.getItem('utente'));
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col min-h-screen bg-n-100">
       <PageHeader title="Informazioni Account" />
 
       {/* Contenuto */}

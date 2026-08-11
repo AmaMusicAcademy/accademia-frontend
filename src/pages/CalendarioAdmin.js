@@ -5,7 +5,7 @@ import BottomNavAdmin from "../componenti/BottomNavAdmin";
 import EditLessonModal from "../componenti/EditLessonModal";
 import PageHeader from "../componenti/PageHeader";
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 export default function CalendarioAdmin() {
   const [lezioni, setLezioni] = useState([]);
@@ -87,6 +87,7 @@ export default function CalendarioAdmin() {
     setEditMode("create");
     setEditOpen(true);
   };
+
   const closeModal = () => setEditOpen(false);
   const handleSaved = async () => {
     setEditOpen(false);
@@ -94,7 +95,7 @@ export default function CalendarioAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-n-50 pb-20">
       <PageHeader
         title="Calendario"
         backTo={false}
@@ -118,7 +119,7 @@ export default function CalendarioAdmin() {
         error={errore}
         nome={teacherId ? (teachers.find(t=>String(t.id)===String(teacherId))?.nome||"") : "Tutti"}
         cognome={teacherId ? (teachers.find(t=>String(t.id)===String(teacherId))?.cognome||"") : "gli insegnanti"}
-        mostraInsegnante={!teacherId} // se filtro singolo, puoi nascondere la colonna docente
+        mostraInsegnante={!teacherId}
       />
 
       {/* Modale unificata (mostra selettori docente/allievo) */}

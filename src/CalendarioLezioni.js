@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import CalendarioFull from "./componenti/CalendarioFull";
 import EditLessonModal from "./componenti/EditLessonModal";
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 const ymd = (d) => (d ? String(d).slice(0, 10) : "");
 const sameKey = (o) =>

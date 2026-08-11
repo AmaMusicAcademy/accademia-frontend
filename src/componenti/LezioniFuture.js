@@ -101,17 +101,17 @@ const LezioniFuture = ({ allievoId, apiBaseUrl }) => {
       {aperto && (
         <ul className="mt-2 space-y-4">
           {lezioni.length === 0 ? (
-            <li className="text-sm text-gray-500">Nessuna lezione programmata</li>
+            <li className="text-sm text-n-600">Nessuna lezione programmata</li>
           ) : (
             lezioni.map((lez, i) => (
-              <li key={i} className="text-sm bg-gray-50 p-3 rounded-lg shadow">
+              <li key={i} className="text-sm bg-n-50 p-3 rounded-lg shadow">
                 {lez.stato === 'rimandata' && !lez.riprogrammata ? (
                   <div>
                     <p className="font-semibold text-red-600">🔁 Lezione rimandata ({formattaData(lez.data)})</p>
                     <p>⏰ {lez.ora_inizio} - {lez.ora_fine} | Aula: {lez.aula}</p>
                     <p>👨‍🏫 {lez.nome_insegnante} {lez.cognome_insegnante}</p>
                     {lez.motivazione && (
-                      <p className="italic text-gray-600">📝 Motivo: {lez.motivazione}</p>
+                      <p className="italic text-n-600">📝 Motivo: {lez.motivazione}</p>
                     )}
                     <button
                       onClick={() => handleRiprogramma(lez)}

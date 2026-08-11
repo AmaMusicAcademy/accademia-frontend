@@ -56,7 +56,7 @@ function AdminDashboard() {
         {utenti.map((u, i) => (
           <li key={i} className="p-2 flex justify-between">
             <span>{u.username}</span>
-            <span className="text-sm text-gray-600">{u.ruolo}</span>
+            <span className="text-sm text-n-600">{u.ruolo}</span>
           </li>
         ))}
       </ul>
@@ -87,7 +87,7 @@ function AdminDashboard() {
           <option value="admin">Admin</option>
         </select>
         {errore && <p className="text-red-600">{errore}</p>}
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button type="submit" className="bg-ama-500 text-white px-4 py-2 rounded">
           Crea utente
         </button>
       </form>

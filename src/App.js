@@ -16,15 +16,21 @@ import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
 import ProfiloAdmin from './pages/ProfiloAdmin';
 import AdminAllievi from './pages/AdminAllievi';
+import AdminIscrizioni from './pages/AdminIscrizioni';
 import AdminLessonTotal from './pages/AllieviAdminPage';
 import DettaglioAllievo from './pages/DettaglioAllievo';
 import AdminInsegnanti from './pages/AdminInsegnanti';
 import DettaglioInsegnante from './pages/DettaglioInsegnante';
 import CalendarioAdmin from './pages/CalendarioAdmin';
 import AdminPagamenti from './pages/AdminPagamenti';
+import AdminCompensi from './pages/AdminCompensi';
+import AdminArchivio from './pages/AdminArchivio';
+import AdminClima from './pages/AdminClima';
+import InsegnanteClima from './pages/InsegnanteClima';
 import AllieviEdit from './pages/AllievoEditPage';
 import AuleAdmin from './pages/AdminAulePage';
 import GiorniChiusura from './pages/GiorniChiusura';
+import { AdminGruppiList, AdminGruppoDettaglio } from './pages/AdminGruppi';
 import DashboardAllievo from './pages/allievo/DashboardAllievo';
 import LezioniAllievo from './pages/allievo/LezioniAllievo';
 import PagamentiAllievo from './pages/allievo/PagamentiAllievo';
@@ -129,6 +135,9 @@ function App() {
   <Route path="/admin/pagamenti" element={
     <ProtectedRoute element={<AdminPagamenti />} allowedRoles={['admin']} />
   } />
+  <Route path="/admin/compensi" element={
+    <ProtectedRoute element={<AdminCompensi />} allowedRoles={['admin']} />
+  } />
   <Route path="/admin/allievi/:id/modifica" element={
     <ProtectedRoute element={<AllieviEdit />} allowedRoles={['admin']} />
   } />
@@ -137,6 +146,24 @@ function App() {
   } />
   <Route path="/admin/chiusure" element={
     <ProtectedRoute element={<GiorniChiusura />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/gruppi" element={
+    <ProtectedRoute element={<AdminGruppiList />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/gruppi/:id" element={
+    <ProtectedRoute element={<AdminGruppoDettaglio />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/archivio" element={
+    <ProtectedRoute element={<AdminArchivio />} allowedRoles={['admin']} />
+  } />
+  <Route path="/admin/clima" element={
+    <ProtectedRoute element={<AdminClima />} allowedRoles={['admin']} />
+  } />
+  <Route path="/insegnante/clima" element={
+    <ProtectedRoute element={<InsegnanteClima />} allowedRoles={['insegnante']} />
+  } />
+  <Route path="/admin/iscrizioni" element={
+    <ProtectedRoute element={<AdminIscrizioni />} allowedRoles={['admin']} />
   } />
 
   {/* 📚 Allievo */}

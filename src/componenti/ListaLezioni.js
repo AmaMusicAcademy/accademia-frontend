@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const API_URL = 'http://localhost:3000/api/lezioni';
+const _BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com';
+const API_URL = `${_BASE}/api/lezioni`;
 
 function ListaLezioni({ idInsegnante, nome, cognome }) {
   const [lezioni, setLezioni] = useState([]);
@@ -104,13 +105,13 @@ function ListaLezioni({ idInsegnante, nome, cognome }) {
 
       {error && <p className="text-red-600">{error}</p>}
       {loading ? (
-        <p className="text-gray-500">Caricamento lezioni...</p>
+        <p className="text-n-600">Caricamento lezioni...</p>
       ) : lezioniFiltrate.length === 0 ? (
-        <p className="text-gray-500">Nessuna lezione trovata.</p>
+        <p className="text-n-600">Nessuna lezione trovata.</p>
       ) : (
         <table className="w-full text-sm border">
           <thead>
-            <tr className="bg-gray-100 text-left">
+            <tr className="bg-n-100 text-left">
               <th className="p-2">Data</th>
               <th className="p-2">Ora Inizio</th>
               <th className="p-2">Ora Fine</th>
@@ -134,7 +135,7 @@ function ListaLezioni({ idInsegnante, nome, cognome }) {
                            : lez.stato}
                 </td>
                 <td className="p-2">
-                  <Link to={`/lezioni/${lez.id}/modifica`} className="text-blue-600 underline mr-2">Modifica</Link>
+                  <Link to={`/lezioni/${lez.id}/modifica`} className="text-ama-500 underline mr-2">Modifica</Link>
                   <button
                     onClick={() => handleAnnulla(lez)}
                     className="text-red-600 underline"

@@ -45,7 +45,7 @@ const LezioniEffettuate = ({ allievoId, apiBaseUrl }) => {
         />
       </div>
 
-      <div className="text-sm space-y-1 text-gray-800">
+      <div className="text-sm space-y-1 text-n-900">
         <p>✅ Lezioni svolte: {conteggio.svolte}</p>
         <p>❌ Lezioni annullate: {conteggio.annullate}</p>
         <p>🔁 Rimandate: {conteggio.rimandate}</p>

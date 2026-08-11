@@ -217,7 +217,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
           <h2 id="nuova-lezione-title" className="text-lg font-semibold">
             Nuova lezione
           </h2>
-          <button onClick={onClose} className="text-gray-500 text-xl">✕</button>
+          <button onClick={onClose} className="text-n-600 text-xl">✕</button>
         </div>
 
         {errore && (
@@ -229,7 +229,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Data</label>
+              <label className="block text-xs text-n-600 mb-1">Data</label>
               <input
                 type="date"
                 className="w-full rounded-lg border px-3 py-2"
@@ -239,7 +239,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Aula</label>
+              <label className="block text-xs text-n-600 mb-1">Aula</label>
               <select
                 className="w-full rounded-lg border px-3 py-2"
                 value={form.aula}
@@ -255,7 +255,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Ora inizio</label>
+              <label className="block text-xs text-n-600 mb-1">Ora inizio</label>
               <input
                 type="time"
                 className="w-full rounded-lg border px-3 py-2"
@@ -265,7 +265,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Ora fine</label>
+              <label className="block text-xs text-n-600 mb-1">Ora fine</label>
               <input
                 type="time"
                 className="w-full rounded-lg border px-3 py-2"
@@ -277,7 +277,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
           </div>
 
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Allievo</label>
+            <label className="block text-xs text-n-600 mb-1">Allievo</label>
             <select
               className="w-full rounded-lg border px-3 py-2"
               value={form.id_allievo}
@@ -307,7 +307,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
             {isRecurring && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">
+                  <label className="block text-xs text-n-600 mb-1">
                     Fino al (incluso)
                   </label>
                   <input
@@ -319,7 +319,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
                     required
                   />
                 </div>
-                <div className="text-xs text-gray-600 flex items-end">
+                <div className="text-xs text-n-600 flex items-end">
                   {occurrences > 0
                     ? `Verranno create ${occurrences} lezioni (ogni 7 giorni).`
                     : "Seleziona una data di fine valida."}
@@ -339,7 +339,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-ama-500 text-white disabled:opacity-50"
             >
               {loading
                 ? "Salvataggio…"

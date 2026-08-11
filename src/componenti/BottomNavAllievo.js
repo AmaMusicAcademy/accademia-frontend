@@ -39,7 +39,7 @@ const BottomNavAllievo = () => {
               key={tab.to}
               onClick={() => navigate(tab.to)}
               className={`flex flex-col items-center gap-0.5 flex-1 py-1 relative transition-colors ${
-                active ? 'text-indigo-600' : 'text-gray-400'
+                active ? 'text-ama-500' : 'text-n-300'
               }`}
             >
               <span className="relative">

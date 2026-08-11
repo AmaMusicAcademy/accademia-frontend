@@ -125,13 +125,13 @@ export default function GiorniChiusura() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-n-50 pb-24">
       <PageHeader
         title="Giorni di chiusura"
         action={
           <button
             onClick={() => { setShowForm(v => !v); setErrore(''); }}
-            className="flex items-center gap-1.5 text-sm font-medium text-blue-600"
+            className="flex items-center gap-1.5 text-sm font-medium text-ama-500"
           >
             {showForm ? <X size={16} /> : <Plus size={16} />}
             {showForm ? 'Annulla' : 'Aggiungi'}
@@ -144,16 +144,16 @@ export default function GiorniChiusura() {
         {/* Form aggiunta */}
         {showForm && (
           <div className="bg-white border rounded-xl px-4 py-4 space-y-4">
-            <p className="text-sm font-semibold text-gray-800">Nuova chiusura</p>
+            <p className="text-sm font-semibold text-n-900">Nuova chiusura</p>
 
             {/* Toggle singolo / intervallo */}
-            <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+            <div className="flex bg-n-100 rounded-xl p-1 gap-1">
               {[['singolo', 'Giorno singolo'], ['intervallo', 'Intervallo di date']].map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setModo(val)}
                   className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    modo === val ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                    modo === val ? 'bg-white text-n-900 shadow-sm' : 'text-n-600'
                   }`}
                 >
                   {label}
@@ -164,7 +164,7 @@ export default function GiorniChiusura() {
             {/* Campi data */}
             {modo === 'singolo' ? (
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Data *</label>
+                <label className="block text-xs text-n-600 mb-1">Data *</label>
                 <input type="date" value={form.data}
                   onChange={e => setForm(f => ({ ...f, data: e.target.value }))}
                   className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -173,21 +173,21 @@ export default function GiorniChiusura() {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Da *</label>
+                  <label className="block text-xs text-n-600 mb-1">Da *</label>
                   <input type="date" value={form.data_inizio}
                     onChange={e => setForm(f => ({ ...f, data_inizio: e.target.value }))}
                     className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">A *</label>
+                  <label className="block text-xs text-n-600 mb-1">A *</label>
                   <input type="date" value={form.data_fine}
                     onChange={e => setForm(f => ({ ...f, data_fine: e.target.value }))}
                     className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
                   />
                 </div>
                 {nGiorni > 1 && (
-                  <p className="col-span-2 text-xs text-blue-600 font-medium -mt-1">
+                  <p className="col-span-2 text-xs text-ama-500 font-medium -mt-1">
                     {nGiorni} giorni selezionati
                   </p>
                 )}
@@ -196,7 +196,7 @@ export default function GiorniChiusura() {
 
             {/* Descrizione */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Descrizione (es. "Natale", "Vacanze estive")</label>
+              <label className="block text-xs text-n-600 mb-1">Descrizione (es. "Natale", "Vacanze estive")</label>
               <input type="text" value={form.descrizione}
                 onChange={e => setForm(f => ({ ...f, descrizione: e.target.value }))}
                 placeholder="Opzionale"
@@ -207,7 +207,7 @@ export default function GiorniChiusura() {
             {errore && <p className="text-xs text-red-500">{errore}</p>}
 
             <button onClick={handleSave} disabled={saving}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium disabled:opacity-40">
+              className="w-full py-2.5 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
               {saving ? 'Salvataggio…' : modo === 'intervallo' ? `Salva ${nGiorni > 1 ? nGiorni + ' giorni' : 'intervallo'}` : 'Salva chiusura'}
             </button>
           </div>
@@ -216,18 +216,18 @@ export default function GiorniChiusura() {
         {/* Lista */}
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : chiusure.length === 0 ? (
           <div className="bg-white border border-dashed rounded-xl p-10 text-center">
-            <CalendarOff size={32} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-sm text-gray-400">Nessun giorno di chiusura impostato.</p>
-            <p className="text-xs text-gray-300 mt-1">Le domeniche sono evidenziate automaticamente.</p>
+            <CalendarOff size={32} className="mx-auto mb-3 text-n-300" />
+            <p className="text-sm text-n-300">Nessun giorno di chiusura impostato.</p>
+            <p className="text-xs text-n-300 mt-1">Le domeniche sono evidenziate automaticamente.</p>
           </div>
         ) : (
           anni.map(anno => (
             <div key={anno}>
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{anno}</p>
+              <p className="text-xs font-semibold text-n-600 uppercase mb-2">{anno}</p>
               <div className="bg-white border rounded-xl overflow-hidden">
                 {perAnno[anno].map((g, i) => {
                   const isRange = g.data !== g.fine;
@@ -239,20 +239,20 @@ export default function GiorniChiusura() {
                       <div className="flex-1 min-w-0">
                         {isRange ? (
                           <>
-                            <p className="text-sm font-semibold text-gray-900">
+                            <p className="text-sm font-semibold text-n-900">
                               {fmtDataBreve(g.data)} → {fmtDataBreve(g.fine)}
                             </p>
-                            <p className="text-xs text-gray-400">{g.ids.length} giorni{g.descrizione ? ` · ${g.descrizione}` : ''}</p>
+                            <p className="text-xs text-n-300">{g.ids.length} giorni{g.descrizione ? ` · ${g.descrizione}` : ''}</p>
                           </>
                         ) : (
                           <>
-                            <p className="text-sm font-semibold text-gray-900">{fmtData(g.data)}</p>
-                            {g.descrizione && <p className="text-xs text-gray-400">{g.descrizione}</p>}
+                            <p className="text-sm font-semibold text-n-900">{fmtData(g.data)}</p>
+                            {g.descrizione && <p className="text-xs text-n-300">{g.descrizione}</p>}
                           </>
                         )}
                       </div>
                       <button onClick={() => setConfirmDel(g)}
-                        className="p-2 text-gray-300 active:text-red-500 rounded-xl">
+                        className="p-2 text-n-300 active:text-red-500 rounded-xl">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -264,8 +264,8 @@ export default function GiorniChiusura() {
         )}
 
         {/* nota domeniche */}
-        <div className="flex items-start gap-2 text-xs text-gray-400 px-1">
-          <div className="w-3 h-3 rounded-sm bg-gray-100 border mt-0.5 shrink-0" />
+        <div className="flex items-start gap-2 text-xs text-n-300 px-1">
+          <div className="w-3 h-3 rounded-sm bg-n-100 border mt-0.5 shrink-0" />
           Le domeniche sono evidenziate automaticamente in grigio chiaro nel calendario.
         </div>
       </div>
@@ -275,8 +275,8 @@ export default function GiorniChiusura() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
             <Trash2 size={28} className="text-red-500 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-gray-900 mb-1">Eliminare questa chiusura?</p>
-            <p className="text-xs text-gray-500 mb-1">
+            <p className="text-sm font-semibold text-n-900 mb-1">Eliminare questa chiusura?</p>
+            <p className="text-xs text-n-600 mb-1">
               {confirmDel.data !== confirmDel.fine
                 ? `${fmtDataBreve(confirmDel.data)} → ${fmtDataBreve(confirmDel.fine)}`
                 : fmtData(confirmDel.data)}
@@ -285,7 +285,7 @@ export default function GiorniChiusura() {
               <p className="text-xs text-red-400 mb-4">{confirmDel.ids.length} giorni verranno eliminati.</p>
             )}
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setConfirmDel(null)} className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-sm font-medium">Annulla</button>
+              <button onClick={() => setConfirmDel(null)} className="flex-1 py-2.5 rounded-xl bg-n-100 text-gray-700 text-sm font-medium">Annulla</button>
               <button onClick={() => handleDeleteGruppo(confirmDel)} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium">Elimina</button>
             </div>
           </div>

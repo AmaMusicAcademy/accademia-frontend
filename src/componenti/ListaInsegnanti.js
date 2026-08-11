@@ -19,11 +19,11 @@ const ListaInsegnanti = ({ insegnanti, onElimina }) => {
   return (
     <div className="space-y-4">
       {insegnanti.length === 0 ? (
-        <p className="text-gray-600 text-sm">Nessun insegnante trovato.</p>
+        <p className="text-n-600 text-sm">Nessun insegnante trovato.</p>
       ) : (
         insegnanti.map((ins) => (
           <div key={ins.id} className="bg-white rounded-xl shadow-md p-4 relative w-full">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-n-900">
               {ins.nome} {ins.cognome}
             </h3>
 

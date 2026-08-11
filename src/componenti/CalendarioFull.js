@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import { MapPin, User, Clock, Pencil, UserCheck, UserX } from "lucide-react";
+import { MapPin, User, Clock, Pencil, UserCheck, UserX, RotateCcw, Users, ChevronDown, ChevronUp } from "lucide-react";
 import EditLessonModal from "./EditLessonModal";
 import AssenteModal from "./AssenteModal";
 import "./calendario.css";
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 // ── utils ──────────────────────────────────────────────────────────────────
 function getToken() {
@@ -45,7 +45,7 @@ const visibleInCalendar = (src) => {
 };
 
 const STATO_STYLE = {
-  appuntamentata: { dot: "bg-blue-500",    badge: "bg-blue-50 text-blue-700 border-blue-100" },
+  appuntamentata: { dot: "bg-ama-1000",    badge: "bg-ama-100 text-blue-700 border-blue-100" },
   svolta:         { dot: "bg-emerald-500", badge: "bg-emerald-50 text-emerald-700 border-emerald-100" },
   rimandata:      { dot: "bg-amber-500",   badge: "bg-amber-50 text-amber-700 border-amber-100" },
   riprogrammata:  { dot: "bg-purple-500",  badge: "bg-purple-50 text-purple-700 border-purple-100" },
@@ -73,6 +73,14 @@ async function patchPresente(id, token) {
   if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Errore (${res.status})`);
   return res.json();
 }
+async function patchAnnullaPresenza(id, token) {
+  const res = await fetch(`${API_BASE}/api/lezioni/${id}/annulla-presenza`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || `Errore (${res.status})`);
+  return res.json();
+}
 async function patchAnnulla(id, motivazione, token) {
   const res = await fetch(`${API_BASE}/api/lezioni/${id}/annulla`, {
     method: "PATCH",
@@ -86,6 +94,7 @@ async function patchAnnulla(id, motivazione, token) {
 // ── componente ─────────────────────────────────────────────────────────────
 export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
   const token = getToken();
+  const isAdmin = (localStorage.getItem('ruolo') || '') === 'admin';
 
   const [eventi, setEventi]               = useState([]);
   const [chiusure, setChiusure]           = useState([]); // [{data, descrizione}]
@@ -96,6 +105,10 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
   const [editLesson, setEditLesson]       = useState(null);
   const [azioneLoading, setAzioneLoading] = useState(null);
   const [assenteEv, setAssenteEv]         = useState(null);
+  // presenze lezioni collettive
+  const [presenzeOpen, setPresenzeOpen]   = useState(null); // lezione_id aperta
+  const [presenze, setPresenze]           = useState({});   // { [lezione_id]: [...] }
+  const [presenzeLoading, setPresenzeLoading] = useState({});
 
   // carica giorni di chiusura
   useEffect(() => {
@@ -154,6 +167,17 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
     finally { setAzioneLoading(null); }
   };
 
+  const onAnnullaPresenza = async (ev) => {
+    const realId = ev.id ?? ev.extendedProps?.id;
+    if (!realId) return;
+    setAzioneLoading(realId);
+    try {
+      patchLocalEvent(ev, { stato: "appuntamentata" });
+      await patchAnnullaPresenza(realId, token);
+    } catch (e) { alert(e.message); }
+    finally { setAzioneLoading(null); }
+  };
+
   const onAssenteRimanda = async (note) => {
     const ev = assenteEv;
     setAssenteEv(null);
@@ -178,6 +202,35 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
       await patchAnnulla(realId, note, token);
     } catch (e) { alert(e.message); }
     finally { setAzioneLoading(null); }
+  };
+
+  const togglePresenzePanel = async (lezioneId) => {
+    if (presenzeOpen === lezioneId) { setPresenzeOpen(null); return; }
+    setPresenzeOpen(lezioneId);
+    if (presenze[lezioneId]) return; // già caricate
+    setPresenzeLoading(l => ({ ...l, [lezioneId]: true }));
+    try {
+      const res = await fetch(`${API_BASE}/api/lezioni/${lezioneId}/partecipanti`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const lista = await res.json();
+      setPresenze(p => ({ ...p, [lezioneId]: Array.isArray(lista) ? lista : [] }));
+    } catch { /* ignora */ }
+    finally { setPresenzeLoading(l => ({ ...l, [lezioneId]: false })); }
+  };
+
+  const togglePresenza = async (lezioneId, allievoId, presente) => {
+    setPresenze(p => ({
+      ...p,
+      [lezioneId]: (p[lezioneId] || []).map(a =>
+        a.allievo_id === allievoId ? { ...a, presente } : a
+      ),
+    }));
+    await fetch(`${API_BASE}/api/lezioni/${lezioneId}/partecipanti/${allievoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ presente }),
+    }).catch(() => {});
   };
 
   const openEdit = (ev, mode = "edit") => {
@@ -286,16 +339,16 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
           <div className="mt-4">
             {/* intestazione giorno */}
             <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-sm font-semibold text-gray-900 capitalize">
+              <h2 className="text-sm font-semibold text-n-900 capitalize">
                 {formatDataLunga(dataSelezionata)}
               </h2>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-n-300">
                 {eventiOrdinati.length} {eventiOrdinati.length === 1 ? "lezione" : "lezioni"}
               </span>
             </div>
 
             {eventiOrdinati.length === 0 ? (
-              <div className="bg-white border rounded-xl p-6 text-center text-gray-400 text-sm">
+              <div className="bg-white border rounded-xl p-6 text-center text-n-300 text-sm">
                 Nessuna lezione in questo giorno
               </div>
             ) : (
@@ -312,68 +365,133 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                   const isAnnullata      = label === "annullata";
                   const isSvolta         = label === "svolta";
 
+                  const isCollettiva = ep.tipo === 'collettiva';
+                  const presenzeAperte = presenzeOpen === realId;
+
                   return (
-                    <div
-                      key={`${realId || "k"}-${i}`}
-                      className={`flex items-start gap-3 px-4 py-3 ${i < eventiOrdinati.length - 1 ? "border-b border-gray-50" : ""}`}
-                    >
-                      {/* dot colore */}
-                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${style.dot}`} />
+                    <div key={`${realId || "k"}-${i}`}>
+                      <div
+                        className={`flex items-start gap-3 px-4 py-3 ${i < eventiOrdinati.length - 1 && !presenzeAperte ? "border-b border-gray-50" : ""}`}
+                      >
+                        {/* dot colore */}
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${style.dot}`} />
 
-                      {/* contenuto */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-semibold text-gray-900">
-                            {(ep.nome_allievo && ep.cognome_allievo)
-                              ? `${ep.nome_allievo} ${ep.cognome_allievo}`
-                              : "Allievo"}
-                          </span>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${style.badge}`}>
-                            {label}
-                          </span>
+                        {/* contenuto */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="text-sm font-semibold text-n-900">
+                              {isCollettiva
+                                ? (ep.nome_gruppo || "Gruppo")
+                                : (ep.nome_allievo && ep.cognome_allievo)
+                                  ? `${ep.nome_allievo} ${ep.cognome_allievo}`
+                                  : "Allievo"}
+                            </span>
+                            {isCollettiva && (
+                              <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                <Users size={9} /> {ep.num_partecipanti || 0}
+                              </span>
+                            )}
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${style.badge}`}>
+                              {label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 flex-wrap text-xs text-n-600">
+                            <span className="flex items-center gap-1">
+                              <Clock size={11} /> {orario}
+                            </span>
+                            {ep.aula && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={11} /> {ep.aula}
+                              </span>
+                            )}
+                            {mostraInsegnante && ep.nome_insegnante && (
+                              <span className="flex items-center gap-1">
+                                <User size={11} /> {ep.nome_insegnante} {ep.cognome_insegnante}
+                              </span>
+                            )}
+                          </div>
+
+                          {ep.motivazione && label !== "svolta" && (
+                            <p className="text-xs text-n-300 mt-1 italic">{ep.motivazione}</p>
+                          )}
                         </div>
 
-                        <div className="flex items-center gap-3 flex-wrap text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} /> {orario}
-                          </span>
-                          {ep.aula && (
-                            <span className="flex items-center gap-1">
-                              <MapPin size={11} /> {ep.aula}
-                            </span>
-                          )}
-                          {mostraInsegnante && ep.nome_insegnante && (
-                            <span className="flex items-center gap-1">
-                              <User size={11} /> {ep.nome_insegnante} {ep.cognome_insegnante}
-                            </span>
-                          )}
-                        </div>
-
-                        {ep.motivazione && label !== "svolta" && (
-                          <p className="text-xs text-gray-400 mt-1 italic">{ep.motivazione}</p>
+                        {/* azioni */}
+                        {!loading && (
+                          <div
+                            className="flex items-center gap-1.5 shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {isCollettiva ? (
+                              <>
+                                {isAppuntamentata && (
+                                  <ActionBtn icon={<Pencil size={13} />} label="Modifica" color="gray" onClick={() => openEdit(ev, "edit")} />
+                                )}
+                                {isSvolta && isAdmin && (
+                                  <ActionBtn icon={<RotateCcw size={13} />} label="Ripristina" color="gray" onClick={() => onAnnullaPresenza(ev)} />
+                                )}
+                                <ActionBtn
+                                  icon={presenzeAperte ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                  label="Presenze"
+                                  color="gray"
+                                  onClick={() => togglePresenzePanel(realId)}
+                                />
+                              </>
+                            ) : (
+                              <>
+                                {isAppuntamentata && (
+                                  <>
+                                    <ActionBtn icon={<Pencil size={13} />}    label="Modifica" color="gray"    onClick={() => openEdit(ev, "edit")} />
+                                    <ActionBtn icon={<UserCheck size={13} />} label="P"        color="emerald" onClick={() => onPresente(ev)} />
+                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => setAssenteEv(ev)} />
+                                  </>
+                                )}
+                                {isRimandata && (
+                                  <ActionBtn icon={<Pencil size={13} />} label="Riprogramma" color="amber" onClick={() => openEdit(ev, "reschedule")} />
+                                )}
+                                {isSvolta && isAdmin && (
+                                  <ActionBtn icon={<RotateCcw size={13} />} label="Ripristina" color="gray" onClick={() => onAnnullaPresenza(ev)} />
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {loading && (
+                          <div className="w-4 h-4 border-2 border-ama-500 border-t-transparent rounded-full animate-spin shrink-0 mt-1" />
                         )}
                       </div>
 
-                      {/* azioni */}
-                      {!loading && (
-                        <div
-                          className="flex items-center gap-1.5 shrink-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isAppuntamentata && (
-                            <>
-                              <ActionBtn icon={<Pencil size={13} />}    label="Modifica" color="gray"    onClick={() => openEdit(ev, "edit")} />
-                              <ActionBtn icon={<UserCheck size={13} />} label="P"        color="emerald" onClick={() => onPresente(ev)} />
-                              <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => setAssenteEv(ev)} />
-                            </>
-                          )}
-                          {isRimandata && (
-                            <ActionBtn icon={<Pencil size={13} />} label="Riprogramma" color="amber" onClick={() => openEdit(ev, "reschedule")} />
+                      {/* Presenze panel per lezioni collettive */}
+                      {isCollettiva && presenzeAperte && (
+                        <div className={`px-4 pb-3 border-b border-gray-50 ${i < eventiOrdinati.length - 1 ? "" : ""}`}>
+                          {presenzeLoading[realId] ? (
+                            <div className="flex justify-center py-3">
+                              <div className="w-4 h-4 border-2 border-ama-500 border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          ) : (presenze[realId] || []).length === 0 ? (
+                            <p className="text-xs text-n-300 py-2 text-center">Nessun partecipante.</p>
+                          ) : (
+                            <div className="space-y-1 mt-1">
+                              {(presenze[realId] || []).map(p => (
+                                <div key={p.allievo_id} className="flex items-center gap-2">
+                                  <div className="flex-1 text-xs text-n-700">{p.cognome} {p.nome}</div>
+                                  <button
+                                    onClick={() => togglePresenza(realId, p.allievo_id, !p.presente)}
+                                    className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${
+                                      p.presente
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : 'bg-red-50 text-red-600 border border-red-200'
+                                    }`}
+                                  >
+                                    {p.presente ? <UserCheck size={9} /> : <UserX size={9} />}
+                                    {p.presente ? 'Presente' : 'Assente'}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
-                      )}
-                      {loading && (
-                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0 mt-1" />
                       )}
                     </div>
                   );
@@ -405,7 +523,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
 // ── sub-componenti ─────────────────────────────────────────────────────────
 function ActionBtn({ icon, label, color, onClick }) {
   const colors = {
-    gray:    "bg-gray-100 text-gray-600 hover:bg-gray-200",
+    gray:    "bg-n-100 text-n-600 hover:bg-gray-200",
     amber:   "bg-amber-50 text-amber-700 hover:bg-amber-100",
     red:     "bg-red-50 text-red-600 hover:bg-red-100",
     emerald: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100",

@@ -6,7 +6,7 @@ const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
-  'http://localhost:3000';
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 function getToken() {
   try { return localStorage.getItem("token") || null; } catch { return null; }
@@ -144,7 +144,7 @@ export default function AdminAulePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-n-50 pb-16">
       <div className="sticky top-0 z-10 bg-white border-b">
         <PageHeader title="Aule" backTo="/admin" />
         {/* Tabs */}
@@ -160,7 +160,7 @@ export default function AdminAulePage() {
                 if (id === 'occupazione' && list.length > 0) loadOccupazione(occDate, list);
               }}
               className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500'
+                tab === id ? 'border-blue-600 text-ama-500' : 'border-transparent text-n-600'
               }`}
             >
               {label}
@@ -179,7 +179,7 @@ export default function AdminAulePage() {
                 placeholder="Cerca aula…"
                 className="flex-1 rounded-xl border px-4 py-2 text-sm"
               />
-              <button type="button" className="px-3 py-2 rounded-xl bg-blue-600 text-white" onClick={openAdd}>
+              <button type="button" className="px-3 py-2 rounded-xl bg-ama-500 text-white" onClick={openAdd}>
                 + Aula
               </button>
             </div>
@@ -194,7 +194,7 @@ export default function AdminAulePage() {
             {!loading && (
               <div className="mt-4 rounded-xl border bg-white divide-y">
                 {filtered.length === 0 ? (
-                  <div className="p-4 text-sm text-gray-500">Nessuna aula trovata.</div>
+                  <div className="p-4 text-sm text-n-600">Nessuna aula trovata.</div>
                 ) : filtered.map((a) => (
                   <div key={a.id} className="flex items-center justify-between px-3 py-2">
                     <div className="text-sm font-medium">{a.nome}</div>
@@ -223,7 +223,7 @@ export default function AdminAulePage() {
                 className="flex-1 border rounded-xl px-3 py-2 text-sm"
               />
               <button
-                className="px-3 py-2 rounded-xl bg-blue-600 text-white text-sm"
+                className="px-3 py-2 rounded-xl bg-ama-500 text-white text-sm"
                 onClick={() => loadOccupazione(occDate, list)}
               >
                 Aggiorna
@@ -240,7 +240,7 @@ export default function AdminAulePage() {
               const lezioni = occData[a.id] || [];
               return (
                 <div key={a.id} className="mb-4 bg-white rounded-xl border overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b">
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-n-50 border-b">
                     <span className="font-semibold text-sm">{a.nome}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       lezioni.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
@@ -252,13 +252,13 @@ export default function AdminAulePage() {
                     <div className="divide-y">
                       {lezioni.map((l) => (
                         <div key={l.id} className="px-4 py-2 flex items-center gap-3">
-                          <span className="text-sm font-mono text-gray-600 shrink-0">
+                          <span className="text-sm font-mono text-n-600 shrink-0">
                             {String(l.ora_inizio).slice(0,5)}–{String(l.ora_fine).slice(0,5)}
                           </span>
-                          <span className="text-sm text-gray-800 flex-1 truncate">
+                          <span className="text-sm text-n-900 flex-1 truncate">
                             {l.nome_allievo} {l.cognome_allievo}
                           </span>
-                          <span className="text-xs text-gray-400 truncate">
+                          <span className="text-xs text-n-300 truncate">
                             {l.nome_insegnante} {l.cognome_insegnante}
                           </span>
                         </div>
@@ -286,7 +286,7 @@ export default function AdminAulePage() {
               </div>
             )}
 
-            <label className="block text-xs text-gray-600 mb-1">Nome aula</label>
+            <label className="block text-xs text-n-600 mb-1">Nome aula</label>
             <input
               className="w-full rounded-xl border px-3 py-2 text-sm"
               value={nome}
@@ -300,7 +300,7 @@ export default function AdminAulePage() {
                 Annulla
               </button>
               <button
-                className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+                className="px-3 py-2 rounded bg-ama-500 text-white disabled:opacity-50"
                 onClick={onSave}
                 disabled={saving || !nome.trim()}
               >

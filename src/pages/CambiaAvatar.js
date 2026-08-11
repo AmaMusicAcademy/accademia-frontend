@@ -6,7 +6,7 @@ const API_BASE =
   (typeof process !== 'undefined' &&
     process.env &&
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
-  'http://localhost:3000';
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 const MAX_SIZE_MB = 5;
 
@@ -132,7 +132,7 @@ const CambiaAvatar = () => {
   })();
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-100">
+    <div className="min-h-screen flex flex-col justify-between bg-n-100">
       {/* Header */}
       <div className="flex items-center p-4 bg-white shadow">
         <button onClick={() => navigate(-1)} className="text-xl mr-4" aria-label="Torna indietro">←</button>
@@ -164,7 +164,7 @@ const CambiaAvatar = () => {
 
         <button
           onClick={handleUpload}
-          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded disabled:opacity-60"
+          className="bg-ama-500 hover:bg-blue-700 text-white py-2 px-6 rounded disabled:opacity-60"
           disabled={loading || !file}
         >
           {loading ? 'Caricamento…' : 'Salva'}

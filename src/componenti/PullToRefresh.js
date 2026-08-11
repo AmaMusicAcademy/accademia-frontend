@@ -24,9 +24,9 @@ export default function PullToRefresh({ onRefresh, className = "", children, dis
           className="fixed top-2 left-0 right-0 z-[60] flex justify-center pointer-events-none"
           aria-hidden
         >
-          <div className="inline-flex items-center gap-2 text-sm text-gray-600 bg-white/90 rounded-full px-3 py-1 shadow">
+          <div className="inline-flex items-center gap-2 text-sm text-n-600 bg-white/90 rounded-full px-3 py-1 shadow">
             <div
-              className="h-5 w-5 rounded-full border-2 border-gray-300"
+              className="h-5 w-5 rounded-full border-2 border-n-300"
               style={{
                 background: `conic-gradient(currentColor ${progress * 360}deg, transparent 0deg)`,
                 color: "#4b5563",

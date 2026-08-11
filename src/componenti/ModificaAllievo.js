@@ -36,7 +36,7 @@ const ModificaAllievo = ({ allievo, apiBaseUrl, onClose, aggiornaLista }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-4 p-4 bg-gray-50 rounded-lg shadow space-y-4"
+      className="mt-4 p-4 bg-n-50 rounded-lg shadow space-y-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <input
@@ -90,7 +90,7 @@ const ModificaAllievo = ({ allievo, apiBaseUrl, onClose, aggiornaLista }) => {
         <button
           type="button"
           onClick={onClose}
-          className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+          className="bg-gray-200 text-n-900 px-4 py-2 rounded"
         >
           Annulla
         </button>

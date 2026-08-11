@@ -7,7 +7,7 @@ const API_BASE =
   (typeof process !== "undefined" &&
     process.env &&
     (process.env.REACT_APP_API_URL || process.env.REACT_APP_API_BASE)) ||
-  'http://localhost:3000';
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
 const YEAR_NOW = new Date().getFullYear();
 
@@ -180,7 +180,7 @@ export default function AllievoEditPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-n-50 pb-16">
       <PageHeader title="Modifica allievo" />
 
       <div className="max-w-xl mx-auto px-4 py-4">
@@ -252,7 +252,7 @@ export default function AllievoEditPage() {
                 placeholder="es. 70,00"
                 inputMode="decimal"
               />
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-n-600 mt-1">
                 Valore corrente: <b>{formatNumberToEuro(parseEuroToNumber(form.quota_mensile))}</b>
               </div>
             </Field>
@@ -281,7 +281,7 @@ export default function AllievoEditPage() {
                   {qaData ? ` · pagamento del ${(qaData || '').slice(0,10)}` : ''}
                 </span>
               </label>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-n-600 mt-1">
                 Il salvataggio aggiorna/crea il record della quota per l’anno corrente.
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function AllievoEditPage() {
               <button
                 type="submit"
                 disabled={saving || hasErrors}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-ama-500 text-white disabled:opacity-50"
                 title={hasErrors ? "Controlla i campi" : "Salva"}
               >
                 {saving ? "Salvataggio..." : "Salva"}
@@ -315,7 +315,7 @@ export default function AllievoEditPage() {
 function Field({ label, error, children }) {
   return (
     <div>
-      <label className="block text-xs text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs text-n-600 mb-1">{label}</label>
       {children}
       {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
     </div>
