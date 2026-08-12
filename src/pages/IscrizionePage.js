@@ -15,11 +15,11 @@ const MATERIE = [
   { nome: 'Batteria 45min',        prezzo: 80 },
   { nome: 'Batteria 1h',           prezzo: 100 },
   { nome: 'Coro',                  prezzo: 30 },
-  { nome: 'Band',                  prezzo: 30,  richiede_strumento: true },
-  { nome: 'Teoria e Solfeggio',    prezzo: 30,  richiede_strumento: true },
+  { nome: 'Band',    prezzo: 30, richiede_strumento: true },
+  { nome: 'Trinity', prezzo: 10, richiede_strumento: true },
 ];
 
-// Materie che fanno da "strumento base" (tutto tranne Coro, Band, Teoria e Solfeggio)
+// Materie che fanno da "strumento base" (tutto tranne Coro, Band, Trinity)
 const MATERIE_BASE = MATERIE
   .filter(m => !m.richiede_strumento && m.nome !== 'Coro')
   .map(m => m.nome);
@@ -35,45 +35,57 @@ La quota associativa annuale verrà comunicata dalla segreteria al momento dell'
 
 Il tesseramento ha validità per l'anno accademico in corso e deve essere rinnovato annualmente.`;
 
-const TESTO_REGOLAMENTO = `REGOLAMENTO INTERNO — AMA MUSIC ACADEMY
+const TESTO_REGOLAMENTO = `REGOLAMENTO ACCADEMIA — AMA Academy of Musical Arts
+Viale Felissent, 14 — Treviso (TV) · amamusicacademy.it
 
-Art. 1 — Iscrizione
-L'iscrizione all'accademia dà diritto a frequentare le lezioni secondo quanto stabilito al momento dell'iscrizione. La quota associativa annuale deve essere versata entro il 30 settembre di ogni anno accademico.
+ISCRIZIONE E TESSERAMENTO
+L'iscrizione al corso prescelto deve essere effettuata a seguito del tesseramento all'associazione stessa, tramite versamento della quota associativa di 50 euro.
 
-Art. 2 — Quote mensili
-Le quote mensili devono essere versate entro il 10 di ogni mese. Il ritardo nel pagamento comporta la sospensione temporanea dell'accesso alle lezioni.
+CORSI ORDINARI
+Il percorso di studi si articola in 36 lezioni da settembre a maggio. La durata è di 45 o 60 minuti per i corsi individuali (€ 80 o € 100 mensili) e 60 minuti per i corsi di gruppo (€ 30 mensili). Prove, saggi, concerti e spettacoli ai quali l'allievo è convocato sono considerati attività didattiche a tutti gli effetti e conteggiati tra le 36 lezioni previste.
 
-Art. 3 — Lezioni e assenze
-In caso di assenza programmata, l'allievo deve avvisare l'insegnante con almeno 24 ore di anticipo. Le lezioni annullate senza preavviso sufficiente non saranno recuperate.
+MODALITÀ DI PAGAMENTO
+Il costo annuale viene suddiviso in 9 quote mensili di pari importo, da versare entro la prima lezione di ciascun mese. La quota mensile non corrisponde al numero effettivo di lezioni del singolo mese, ma rappresenta una rata del costo annuale complessivo. La programmazione prevede una media di 4 lezioni al mese: alcuni mesi potranno averne 3, altri 4 o 5, senza variazioni dell'importo. La quota deve essere corrisposta integralmente, indipendentemente dalla presenza dell'allievo. In caso di mancato pagamento nei termini, il tesseramento decade e le lezioni vengono sospese, senza diritto a rimborso.
 
-Art. 4 — Comportamento
-Tutti gli allievi sono tenuti a mantenere un comportamento rispettoso nei confronti degli insegnanti, del personale e degli altri allievi. L'uso degli spazi comuni deve avvenire nel rispetto delle regole di convivenza.
+ORARI
+Gli orari vengono concordati tra allievo e insegnante secondo le disponibilità. Si chiede la massima puntualità.
 
-Art. 5 — Strumenti e materiali
-Ogni allievo è responsabile della cura degli strumenti e dei materiali messi a disposizione dall'accademia. Eventuali danni saranno addebitati all'allievo.
+SPETTACOLO FINALE DI GIUGNO (Loggia dei Cavalieri)
+La partecipazione è riservata agli allievi che abbiano frequentato con assiduità e siano ritenuti pronti dal docente. Per ciascun allievo: quota di partecipazione € 50,00 (prova generale + spettacolo) + € 10,00 maglietta ufficiale. Totale: € 60,00, da versare entro il 15 maggio. Le quote versate non sono rimborsabili in caso di rinuncia, salvo annullamento da parte dell'Accademia.
 
-Art. 6 — Privacy
-I dati personali degli allievi saranno trattati nel rispetto del GDPR (Reg. UE 2016/679).
+ASSENZE E RECUPERI
+Massimo 3 recuperi per anno accademico per le lezioni individuali, riconosciuti solo se l'assenza è comunicata con almeno 24 ore di preavviso. Assenze senza preavviso sufficiente: lezione persa senza recupero né rimborso. I recuperi devono essere effettuati entro il 31 maggio, in data stabilita dal docente. Le lezioni di gruppo non sono recuperabili.
 
-Art. 7 — Recesso
-L'allievo può recedere dall'iscrizione in qualsiasi momento, con comunicazione scritta alla segreteria. Non è previsto il rimborso delle quote già versate.`;
+RITIRO
+Comunicazioni di ritiro entro 30 giorni: le quote successive ai 30 giorni non saranno dovute. Con il ritiro decade il tesseramento annuale, senza rimborso dell'iscrizione.
+
+PERCORSO TRINITY
+Gli allievi interessati devono comunicarlo alla Segreteria all'inizio dell'anno. Il percorso comprende la lezione individuale + incontro mensile di solfeggio di gruppo (€ 10,00 ciascuno) + materiale didattico Trinity. Al costo d'esame si aggiunge un contributo di € 20,00 per spese di Segreteria.
+
+CREDITI FORMATIVI
+L'Accademia rilascia idonea documentazione per i crediti scolastici su richiesta specifica.`;
 
 const TESTO_PRIVACY = `INFORMATIVA SUL TRATTAMENTO DEI DATI PERSONALI
-(ai sensi dell'art. 13 del Regolamento UE 2016/679 — GDPR)
+Ai sensi degli artt. 13-14 del Regolamento (UE) 2016/679 (GDPR)
+AMA Academy of Musical Arts — Viale Felissent 14, 31100 Treviso (TV) · amamusicacademy.it
 
-Titolare del trattamento: AMA Music Academy
-Email: info@amamusicacademy.it
+1. TITOLARE DEL TRATTAMENTO
+AMA – Academy of Musical Arts, con sede in Viale Felissent 14, 31100 Treviso (TV), contattabile all'indirizzo email indicato sul sito amamusicacademy.it.
 
-FINALITÀ DEL TRATTAMENTO:
-I dati personali forniti verranno trattati per le seguenti finalità:
-• Gestione amministrativa dell'iscrizione e del rapporto associativo
-• Comunicazioni relative all'attività didattica e agli eventi dell'accademia
-• Adempimenti fiscali e contabili previsti dalla legge
-• Invio di comunicazioni relative all'attività associativa
+2. FINALITÀ DEL TRATTAMENTO
+I dati personali forniti in sede di iscrizione sono trattati per: gestione amministrativa dell'iscrizione e della frequenza ai corsi; organizzazione delle attività didattiche, sessioni d'esame e saggi; comunicazioni relative ai servizi dell'accademia; adempimenti contabili e fiscali previsti dalla legge.
 
-CONSERVAZIONE: I dati saranno conservati per tutta la durata del rapporto associativo e per i 10 anni successivi, in adempimento agli obblighi di legge.
+3. BASE GIURIDICA
+Il trattamento si basa sull'esecuzione del contratto di iscrizione ai corsi e sull'adempimento di obblighi di legge. Il trattamento delle immagini per finalità promozionali si basa sul consenso specifico, facoltativo e revocabile in ogni momento.
 
-DIRITTI DELL'INTERESSATO: Hai diritto di accedere ai tuoi dati, rettificarli, cancellarli, limitarne il trattamento e opporti al loro utilizzo, rivolgendoti a info@amamusicacademy.it.`;
+4. MODALITÀ E CONSERVAZIONE
+I dati sono trattati con strumenti cartacei e informatici, con misure di sicurezza adeguate a prevenirne la perdita, l'uso illecito o l'accesso non autorizzato, e sono conservati per il tempo necessario alle finalità indicate e nel rispetto dei termini di legge.
+
+5. COMUNICAZIONE A TERZI
+I dati non sono diffusi. Possono essere comunicati a soggetti terzi solo per adempimenti amministrativi, contabili o assicurativi strettamente connessi all'attività didattica (es. Trinity College London per le certificazioni d'esame).
+
+6. DIRITTI DELL'INTERESSATO
+L'interessato può in qualsiasi momento esercitare i diritti di accesso, rettifica, cancellazione, limitazione, portabilità e opposizione al trattamento, oltre al diritto di revocare il consenso prestato, scrivendo al Titolare ai recapiti indicati in intestazione.`;
 
 const TESTO_IMMAGINI = `CONSENSO ALL'USO DELLE IMMAGINI
 
