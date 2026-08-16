@@ -11,6 +11,7 @@ function urlBase64ToUint8Array(base64String) {
 
 export async function registraPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (localStorage.getItem('pushRegistered')) return true;
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
     const permission = await Notification.requestPermission();
@@ -26,6 +27,7 @@ export async function registraPush() {
       method: 'POST',
       body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
     });
+    localStorage.setItem('pushRegistered', '1');
     return true;
   } catch (e) {
     console.warn('Push registration failed:', e);
