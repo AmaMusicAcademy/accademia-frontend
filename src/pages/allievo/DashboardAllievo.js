@@ -284,22 +284,8 @@ export default function DashboardAllievo() {
         </button>
       </div>
 
-      {/* Bottone test push (visibile solo se service worker supportato) */}
-      {'serviceWorker' in navigator && (
-        <button
-          onClick={async () => {
-            try {
-              await registraPush();
-              await apiFetch('/api/allievo/push-test', { method: 'POST' });
-            } catch {}
-          }}
-          className="mt-4 w-full text-xs text-n-300 py-2 underline"
-        >
-          Testa notifiche push
-        </button>
-      )}
 
-      {/* Popup notifiche */}
+{/* Popup notifiche */}
       {showNotifiche && (
         <PopupNotifiche
           notifiche={notifiche}
