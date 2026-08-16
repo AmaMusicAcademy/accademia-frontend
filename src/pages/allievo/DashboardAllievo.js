@@ -153,8 +153,9 @@ export default function DashboardAllievo() {
       setRiepilogo(riep);
       setChiusure(Array.isArray(chius) ? chius : []);
     }).catch(console.error).finally(() => setLoading(false));
+  }, []);
 
-    // Registra push al primo accesso (invia push di conferma se nuova iscrizione)
+  useEffect(() => {
     registraPush().catch(() => {});
   }, []);
 
