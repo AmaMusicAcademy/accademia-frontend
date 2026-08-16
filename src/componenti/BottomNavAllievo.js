@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, BookOpen, CreditCard, User } from 'lucide-react';
-import { apiFetch } from '../utils/api';
 
 const TABS = [
   { label: 'Home',      icon: Home,       to: '/allievo',          exact: true  },
@@ -13,13 +12,6 @@ const TABS = [
 const BottomNavAllievo = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [nonLette, setNonLette] = useState(0);
-
-  useEffect(() => {
-    apiFetch('/api/allievo/notifiche')
-      .then((d) => setNonLette(d.nonLette || 0))
-      .catch(() => {});
-  }, [pathname]);
 
   const isActive = ({ to, exact }) =>
     exact ? pathname === to : pathname.startsWith(to);
@@ -33,7 +25,6 @@ const BottomNavAllievo = () => {
         {TABS.map((tab) => {
           const active = isActive(tab);
           const Icon = tab.icon;
-          const hasBadge = tab.label === 'Profilo' && nonLette > 0;
           return (
             <button
               key={tab.to}
@@ -42,14 +33,7 @@ const BottomNavAllievo = () => {
                 active ? 'text-ama-500' : 'text-n-300'
               }`}
             >
-              <span className="relative">
-                <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
-                {hasBadge && (
-                  <span className="absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                    {nonLette > 9 ? '9+' : nonLette}
-                  </span>
-                )}
-              </span>
+              <Icon size={20} strokeWidth={active ? 2.2 : 1.8} />
               <span className="text-[10px] font-medium">{tab.label}</span>
             </button>
           );
