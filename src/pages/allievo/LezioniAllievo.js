@@ -56,9 +56,6 @@ function LezioneCard({ lezione }) {
           </span>
         )}
       </div>
-      {lezione.motivazione && (
-        <p className="mt-2 text-xs text-n-600 italic">"{lezione.motivazione}"</p>
-      )}
     </div>
   );
 }
