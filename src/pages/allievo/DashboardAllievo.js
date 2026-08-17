@@ -78,7 +78,7 @@ function ModalChiusure({ chiusure, onClose }) {
   const anni = Object.keys(perAnno).sort((a,b) => b-a);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={onClose}>
       <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl flex flex-col"
         style={{ maxHeight: 'calc(80vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>

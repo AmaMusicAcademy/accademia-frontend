@@ -19,7 +19,7 @@ function ModalArretrati({ arretrati, quota, onClose, onPagato }) {
   const totale = arretrati.reduce((s, a) => s + parseFloat(a.importo || quota), 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={step === 'ok' ? onClose : undefined}>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
       <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
@@ -99,7 +99,7 @@ function ModalAbbonamento({ quota, onClose, onAttivato }) {
   const [step, setStep] = useState('checkout');
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" onClick={step === 'ok' ? onClose : undefined}>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
       <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
