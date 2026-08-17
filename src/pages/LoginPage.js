@@ -99,8 +99,10 @@ function LoginPage() {
         localStorage.setItem('allievoId', data.allievoId);
       }
 
-      // Redirect in base al ruolo
-      if (data.ruolo === 'admin') {
+      // Redirect in base al ruolo (o cambio password obbligatorio)
+      if (data.mustChangePassword) {
+        navigate('/cambia-password');
+      } else if (data.ruolo === 'admin') {
         navigate('/admin');
       } else if (data.ruolo === 'allievo') {
         navigate('/allievo');

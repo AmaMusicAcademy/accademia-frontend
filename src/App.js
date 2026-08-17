@@ -11,6 +11,7 @@ import ProfiloInsegnante from './componenti/ProfiloInsegnante';
 import AllieviInsegnante from './pages/AllieviPage';
 import InformazioniAccount from './pages/InformazioniAccount';
 import CambiaPassword from './pages/CambiaPassword';
+import CambiaPasswordPrimoAccesso from './pages/CambiaPasswordPrimoAccesso';
 import CambiaAvatar from './pages/CambiaAvatar';
 import CalcoloRimborso from './pages/CalcoloRimborso';
 import CalendarioPersonale from './pages/CalendarioPersonale';
@@ -71,6 +72,7 @@ function App() {
   {/* Login sempre accessibile */}
   <Route path="/" element={<LoginPage />} />
   <Route path="/login" element={<LoginPage />} />
+  <Route path="/cambia-password" element={<CambiaPasswordPrimoAccesso />} />
 
   {/* 👨‍🏫 Insegnante */}
   <Route path="/insegnante" element={

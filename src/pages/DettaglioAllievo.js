@@ -166,7 +166,18 @@ export default function DettaglioAllievo() {
     setAccLoad(true); setAccountMsg(null);
     try {
       const data = await apiFetch(`/api/admin/allievi/${id}/credenziali`, { method:'POST' });
-      setAccountMsg({ ok:true, text:`Account creato — username: "${data.username}" / password: "${data.password_iniziale}"` });
+      const dest = data.emailInviataA ? ` — email inviata a ${data.emailInviataA}` : '';
+      setAccountMsg({ ok:true, text:`Account creato — username: "${data.username}"${dest}` });
+    } catch (e) { setAccountMsg({ ok:false, text: e.message || 'Errore.' }); }
+    finally { setAccLoad(false); }
+  };
+
+  const handleResetPassword = async () => {
+    setAccLoad(true); setAccountMsg(null);
+    try {
+      const data = await apiFetch(`/api/admin/allievi/${id}/reset-password`, { method:'POST' });
+      const dest = data.emailInviataA ? ` a ${data.emailInviataA}` : '';
+      setAccountMsg({ ok:true, text:`Password reimpostata — email con le nuove credenziali inviata${dest}.` });
     } catch (e) { setAccountMsg({ ok:false, text: e.message || 'Errore.' }); }
     finally { setAccLoad(false); }
   };
@@ -339,7 +350,11 @@ export default function DettaglioAllievo() {
           <p className="text-sm font-semibold text-n-900">Account allievo</p>
           <button onClick={handleCreaAccount} disabled={accountLoad}
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40">
-            <Key size={15} /> {accountLoad ? 'Creazione…' : 'Crea / reimposta credenziali'}
+            <Key size={15} /> {accountLoad ? 'Invio…' : 'Crea account'}
+          </button>
+          <button onClick={handleResetPassword} disabled={accountLoad}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-medium disabled:opacity-40">
+            <Key size={15} /> {accountLoad ? 'Invio…' : 'Reset password (invia email)'}
           </button>
           {pdfToken && (
             <a href={`${process.env.REACT_APP_API_URL || 'https://app-docenti.onrender.com'}/api/iscrizione/${pdfToken}/pdf`}
