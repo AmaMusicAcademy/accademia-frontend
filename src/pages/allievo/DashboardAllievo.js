@@ -79,7 +79,8 @@ function ModalChiusure({ chiusure, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center" onClick={onClose}>
-      <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[80vh] flex flex-col"
+      <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl flex flex-col"
+        style={{ maxHeight: 'calc(80vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <div className="flex items-center gap-2">
