@@ -224,12 +224,12 @@ export default function PagamentiAllievo() {
             <CreditCard size={16} /> Paga ora — €{totaleArretrati.toFixed(2)}
           </button>
         </div>
-      ) : (
+      ) : tassaPagata !== false ? (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-center gap-3">
           <CheckCircle size={20} className="text-emerald-500 shrink-0" />
           <p className="text-sm font-semibold text-emerald-800">Nessun arretrato — posizione in regola</p>
         </div>
-      )}
+      ) : null}
 
       {/* ── Card abbonamento ── */}
       {quota > 0 && (
