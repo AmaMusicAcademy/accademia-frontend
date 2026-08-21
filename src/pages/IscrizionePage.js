@@ -14,7 +14,7 @@ const MATERIE = [
   { nome: 'Chitarra 1h',           prezzo: 100 },
   { nome: 'Batteria 45min',        prezzo: 80 },
   { nome: 'Batteria 1h',           prezzo: 100 },
-  { nome: 'Coro',                  prezzo: 30 },
+  { nome: 'Coro',                  prezzo: 40 },
   { nome: 'Band',    prezzo: 30, richiede_strumento: true },
   { nome: 'Trinity', prezzo: 10, richiede_strumento: true },
 ];
