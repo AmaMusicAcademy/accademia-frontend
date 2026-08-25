@@ -15,13 +15,14 @@ const MATERIE = [
   { nome: 'Batteria 45min',        prezzo: 80 },
   { nome: 'Batteria 1h',           prezzo: 100 },
   { nome: 'Coro',                  prezzo: 40 },
+  { nome: 'Coro Teen',             prezzo: 30 },
   { nome: 'Band',    prezzo: 30, richiede_strumento: true },
   { nome: 'Trinity', prezzo: 10, richiede_strumento: true },
 ];
 
-// Materie che fanno da "strumento base" (tutto tranne Coro, Band, Trinity)
+// Materie che fanno da "strumento base" (tutto tranne Coro, Coro Teen, Band, Trinity)
 const MATERIE_BASE = MATERIE
-  .filter(m => !m.richiede_strumento && m.nome !== 'Coro')
+  .filter(m => !m.richiede_strumento && m.nome !== 'Coro' && m.nome !== 'Coro Teen')
   .map(m => m.nome);
 
 const TESTO_TESSERAMENTO = `DOMANDA DI TESSERAMENTO
@@ -317,11 +318,14 @@ export default function IscrizionePage() {
     // Validazione step 1 — dati genitore
     if (stepOrder[step] === 1) {
       const obbligatori = {
-        genitore_nome:     'Nome genitore',
-        genitore_cognome:  'Cognome genitore',
-        genitore_cf:       'Codice Fiscale genitore',
-        genitore_telefono: 'Telefono genitore',
-        genitore_email:    'Email genitore',
+        genitore_nome:          'Nome genitore',
+        genitore_cognome:       'Cognome genitore',
+        genitore_cf:            'Codice Fiscale genitore',
+        genitore_data_nascita:  'Data di nascita genitore',
+        genitore_luogo_nascita: 'Luogo di nascita genitore',
+        genitore_indirizzo:     'Indirizzo di residenza genitore',
+        genitore_telefono:      'Telefono genitore',
+        genitore_email:         'Email genitore',
       };
       const errori = {};
       for (const [k, label] of Object.entries(obbligatori)) {
@@ -565,12 +569,12 @@ export default function IscrizionePage() {
         onChange={v => set('genitore_cf', v.toUpperCase())} required error={!!e.genitore_cf} />
       <div className="grid grid-cols-2 gap-3">
         <Campo label="Data di nascita" type="date" value={form.genitore_data_nascita}
-          onChange={v => set('genitore_data_nascita', v)} />
+          onChange={v => set('genitore_data_nascita', v)} required error={!!e.genitore_data_nascita} />
         <Campo label="Luogo di nascita" value={form.genitore_luogo_nascita}
-          onChange={v => set('genitore_luogo_nascita', v)} />
+          onChange={v => set('genitore_luogo_nascita', v)} required error={!!e.genitore_luogo_nascita} />
       </div>
       <Campo label="Indirizzo di residenza" value={form.genitore_indirizzo}
-        onChange={v => set('genitore_indirizzo', v)} />
+        onChange={v => set('genitore_indirizzo', v)} required error={!!e.genitore_indirizzo} />
       <div className="grid grid-cols-2 gap-3">
         <Campo label="Telefono" type="tel" value={form.genitore_telefono}
           onChange={v => set('genitore_telefono', v)} required error={!!e.genitore_telefono} />
