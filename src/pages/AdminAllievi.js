@@ -254,8 +254,8 @@ export default function AdminAllievi() {
 
       {/* Modal nuovo allievo */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl overflow-y-auto" style={{ maxHeight: 'calc(90vh - 56px - env(safe-area-inset-bottom))' }}>
             <div className="sticky top-0 bg-white flex items-center justify-between px-5 py-4 border-b z-10">
               <h2 className="text-base font-semibold text-n-900">Nuovo allievo</h2>
               <button onClick={() => setShowModal(false)} className="text-n-300"><X size={20} /></button>
@@ -317,8 +317,8 @@ export default function AdminAllievi() {
 
       {/* Modal nuovo gruppo */}
       {showModalGruppo && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center">
-          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl p-5 pb-10 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white w-full max-w-lg rounded-t-2xl shadow-xl p-5 space-y-4" style={{ maxHeight: 'calc(80vh - 56px - env(safe-area-inset-bottom))', overflowY: 'auto' }}>
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-n-900">Nuovo gruppo</h2>
               <button onClick={() => setShowModalGruppo(false)} className="text-n-300"><X size={20} /></button>

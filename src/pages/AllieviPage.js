@@ -244,8 +244,8 @@ function SchedaGruppo({ gruppo, lezioniInsegnante, onClose }) {
   const annullate  = lezioniGruppo.filter(l => l.stato === 'annullata').length;
 
   const modal = (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
-      <div className="bg-white w-full max-w-md rounded-t-2xl shadow-xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+      <div className="bg-white w-full max-w-md rounded-t-2xl shadow-xl flex flex-col" style={{ maxHeight: 'calc(90vh - 56px - env(safe-area-inset-bottom))' }}>
         {/* header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b shrink-0">
           <button onClick={onClose} className="text-n-300 -ml-1"><ArrowLeft size={20} /></button>

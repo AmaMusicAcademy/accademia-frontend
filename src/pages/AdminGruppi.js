@@ -299,8 +299,8 @@ export function AdminGruppoDettaglio() {
 
       {/* Modal aggiungi allievo */}
       {modalAggiungi && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
-          <div className="bg-white w-full rounded-t-2xl p-5 space-y-3 pb-10 max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
+          <div className="bg-white w-full rounded-t-2xl p-5 space-y-3" style={{ maxHeight: 'calc(80vh - 56px - env(safe-area-inset-bottom))', display: 'flex', flexDirection: 'column' }}>
             <div className="flex items-center justify-between">
               <p className="font-semibold text-n-900">Aggiungi partecipante</p>
               <button onClick={() => setModalAggiungi(false)}><X size={18} className="text-n-400" /></button>
