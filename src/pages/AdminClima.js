@@ -309,15 +309,25 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
             <div className="w-7 h-7 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : errore ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
-            <p className="font-semibold mb-1">Errore connessione SwitchBot</p>
-            <p>{errore}</p>
-            {errore.includes('non configurate') && (
-              <p className="mt-2 text-xs text-red-400">
-                Aggiungi <code>SWITCHBOT_TOKEN</code> e <code>SWITCHBOT_SECRET</code> nelle env vars di Render.
+          errore.includes('ore di lezione') ? (
+            <div className="bg-white border border-n-100 rounded-xl p-8 text-center">
+              <Thermometer size={40} className="mx-auto mb-3 text-n-200" />
+              <p className="font-semibold text-n-700 mb-1">Nessuna lezione in corso</p>
+              <p className="text-sm text-n-400">
+                Il controllo del clima è disponibile solo durante le tue ore di lezione (entro 30 minuti dall'inizio o dalla fine).
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+              <p className="font-semibold mb-1">Errore connessione SwitchBot</p>
+              <p>{errore}</p>
+              {errore.includes('non configurate') && (
+                <p className="mt-2 text-xs text-red-400">
+                  Aggiungi <code>SWITCHBOT_TOKEN</code> e <code>SWITCHBOT_SECRET</code> nelle env vars di Render.
+                </p>
+              )}
+            </div>
+          )
         ) : auleConDisp.length === 0 ? (
           <div className="bg-white border rounded-xl p-6 text-center text-sm text-n-400">
             <Thermometer size={32} className="mx-auto mb-2 text-n-200" />
