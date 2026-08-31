@@ -9,7 +9,7 @@ const TIPI_TERMOMETRO = ['Meter', 'MeterPlus', 'WoSensorTH', 'Hub 2', 'MeterPro'
 function isTermometro(d) { return TIPI_TERMOMETRO.some(t => (d.deviceType || '').includes(t)); }
 
 // ── Card singola aula ────────────────────────────────────────────────────
-function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
+function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
   const termometri = dispositivi.filter(d => d.aula_nome === aula && isTermometro(d));
   const valvole    = dispositivi.filter(d => d.aula_nome === aula && !isTermometro(d));
   const tutti      = dispositivi.filter(d => d.aula_nome === aula);
@@ -20,6 +20,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
   const [loading, setLoading]       = useState(false);
   const [errore, setErrore]         = useState(null);
   const [targetTemp, setTargetTemp] = useState(parseFloat(target?.temperatura_target ?? 20));
+  const [modalita, setModalita]     = useState(target?.modalita ?? 'riscaldamento');
   const [salvando, setSalvando]     = useState(false);
 
   // Temperatura attuale dal termometro
@@ -66,6 +67,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
           device_id_valvola: valvola.deviceId,
           temperatura_target: targetTemp,
           attivo: true,
+          ...(ruolo === 'admin' ? { modalita } : {}),
         }),
       });
       onTargetChange(res);
@@ -212,6 +214,27 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange }) {
             )}
           </div>
 
+          {/* Modalità impianto — solo admin */}
+          {ruolo === 'admin' && (
+            <div>
+              <p className="text-xs text-n-500 mb-2">Modalità impianto</p>
+              <div className="flex rounded-xl overflow-hidden border border-n-100 text-sm font-medium">
+                <button
+                  onClick={() => setModalita('riscaldamento')}
+                  className={`flex-1 py-2 transition-colors ${modalita === 'riscaldamento' ? 'bg-orange-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
+                >
+                  🔥 Riscaldamento
+                </button>
+                <button
+                  onClick={() => setModalita('raffrescamento')}
+                  className={`flex-1 py-2 transition-colors ${modalita === 'raffrescamento' ? 'bg-blue-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
+                >
+                  ❄️ Raffrescamento
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Azioni */}
           <div className="flex gap-2">
             <button
@@ -341,6 +364,7 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
               dispositivi={dispositivi}
               targets={targets}
               onTargetChange={handleTargetChange}
+              ruolo={ruolo}
             />
           ))
         )}
