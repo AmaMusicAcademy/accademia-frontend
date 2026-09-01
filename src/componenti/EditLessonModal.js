@@ -252,11 +252,13 @@ export default function EditLessonModal({
 
       if (!isEdit && isRecurring) {
         // loop settimanale
-        let current = new Date(form.data + 'T00:00:00');
-        const end = new Date(repeatUntil + 'T00:00:00');
+        const toLocalDateStr = (d) =>
+          `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        let current = new Date(form.data + 'T12:00:00');
+        const end = new Date(repeatUntil + 'T12:00:00');
         let created = 0;
         while (current <= end) {
-          const dateStr = current.toISOString().slice(0, 10);
+          const dateStr = toLocalDateStr(current);
           if (!giorniChiusura.includes(dateStr)) {
             try {
               await fetchJSON(`${API_BASE}/api/lezioni`, token, {
@@ -473,22 +475,16 @@ export default function EditLessonModal({
                   {repeatUntil && form.data && repeatUntil >= form.data && (
                     <p className="text-xs text-n-500 mt-1.5">
                       {(() => {
-                        let count = 0;
-                        let d = new Date(form.data + 'T00:00:00');
-                        const end = new Date(repeatUntil + 'T00:00:00');
+                        const toLocalDateStr = (d) =>
+                          `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                        let count = 0, skipped = 0;
+                        let d = new Date(form.data + 'T12:00:00');
+                        const end = new Date(repeatUntil + 'T12:00:00');
                         while (d <= end) {
-                          if (!giorniChiusura.includes(d.toISOString().slice(0, 10))) count++;
+                          if (giorniChiusura.includes(toLocalDateStr(d))) skipped++;
+                          else count++;
                           d.setDate(d.getDate() + 7);
                         }
-                        const skipped = (() => {
-                          let s = 0;
-                          let d2 = new Date(form.data + 'T00:00:00');
-                          while (d2 <= end) {
-                            if (giorniChiusura.includes(d2.toISOString().slice(0, 10))) s++;
-                            d2.setDate(d2.getDate() + 7);
-                          }
-                          return s;
-                        })();
                         return `${count} lezioni${skipped > 0 ? `, ${skipped} saltate (giorno di chiusura)` : ''}`;
                       })()}
                     </p>
