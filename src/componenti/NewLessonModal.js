@@ -47,6 +47,8 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
   const [conflittoAula, setConflittoAula] = useState(null);
   const [checkingAula, setCheckingAula] = useState(false);
   const [auleConId, setAuleConId] = useState([]); // [{id, nome}]
+  const [giorniChiusura, setGiorniChiusura] = useState(new Set()); // Set di YYYY-MM-DD
+  const [riepilogoRicorrenza, setRiepilogoRicorrenza] = useState(null); // {create, saltate, senzaAula}
 
   const insegnanteId = useMemo(() => getInsegnanteId(), []);
 
@@ -61,9 +63,11 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
       return;
     }
     let count = 0;
-    for (const _ of weeklyGenerator(form.data, untilDate)) count++;
+    for (const ymd of weeklyGenerator(form.data, untilDate)) {
+      if (!giorniChiusura.has(ymd)) count++;
+    }
     setOccurrences(count);
-  }, [isRecurring, form.data, untilDate]);
+  }, [isRecurring, form.data, untilDate, giorniChiusura]);
 
   const loadAllievi = useCallback(async () => {
     if (!open || !insegnanteId) return;
@@ -102,11 +106,14 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     }
   }, [open]);
 
-  // Carica allievi e aule quando il modal si apre
+  // Carica allievi, aule e giorni di chiusura quando il modal si apre
   useEffect(() => {
     if (!open) return;
     loadAllievi();
     loadAule();
+    apiFetch('/api/giorni-chiusura')
+      .then(rows => setGiorniChiusura(new Set((rows || []).map(r => r.data))))
+      .catch(() => {});
   }, [open, loadAllievi, loadAule]);
 
   // Conflict detection aula in tempo reale
@@ -219,14 +226,38 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
 
       // Ricorrenza settimanale
       const createdItems = [];
+      let saltate = 0;
+      let senzaAula = 0;
+
       for (const ymd of weeklyGenerator(form.data, untilDate)) {
-        try {
-          const c = await createOne({ ...basePayload, data: ymd });
-          if (c) createdItems.push(c);
-        } catch {
-          // silenzia singoli errori per continuare a creare le altre occorrenze
+        // Salta giorni di chiusura
+        if (giorniChiusura.has(ymd)) { saltate++; continue; }
+
+        // Controlla disponibilità aula per questa data
+        let aulaOk = true;
+        if (form.aula) {
+          try {
+            const aulaObj = auleConId.find(a => a.nome === form.aula);
+            if (aulaObj) {
+              const disp = await apiFetch(`/api/aule/${aulaObj.id}/disponibilita?data=${ymd}`);
+              const occupate = (disp.lezioni || []).filter(
+                l => l.ora_inizio < form.ora_fine && l.ora_fine > form.ora_inizio
+              );
+              if (occupate.length > 0) aulaOk = false;
+            }
+          } catch { /* se la verifica fallisce proviamo comunque */ }
         }
+
+        try {
+          const payload = aulaOk
+            ? { ...basePayload, data: ymd }
+            : { ...basePayload, data: ymd, aula: null, motivazione: 'Aula non disponibile - da assegnare' };
+          const c = await createOne(payload);
+          if (c) { createdItems.push(c); if (!aulaOk) senzaAula++; }
+        } catch { /* continua con le altre */ }
       }
+
+      setRiepilogoRicorrenza({ create: createdItems.length, saltate, senzaAula });
       onCreated && onCreated(createdItems);
       resetAndClose();
     } catch (err) {
@@ -250,6 +281,7 @@ export default function NewLessonModal({ open, onClose, onCreated }) {
     setIsRecurring(false);
     setUntilDate("");
     setConflittoAula(null);
+    setRiepilogoRicorrenza(null);
     onClose();
   };
 

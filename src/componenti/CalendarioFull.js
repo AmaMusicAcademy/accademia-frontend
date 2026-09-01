@@ -50,6 +50,7 @@ const STATO_STYLE = {
   rimandata:      { dot: "bg-amber-500",   badge: "bg-amber-50 text-amber-700 border-amber-100" },
   riprogrammata:  { dot: "bg-purple-500",  badge: "bg-purple-50 text-purple-700 border-purple-100" },
   annullata:      { dot: "bg-red-400",     badge: "bg-red-50 text-red-700 border-red-100" },
+  senza_aula:     { dot: "bg-orange-400",  badge: "bg-orange-50 text-orange-700 border-orange-200" },
 };
 
 // dot color per FullCalendar events
@@ -356,7 +357,8 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                 {eventiOrdinati.map((ev, i) => {
                   const ep     = ev.extendedProps || {};
                   const label  = statoLabel(ev);
-                  const style  = STATO_STYLE[label] || STATO_STYLE.appuntamentata;
+                  const senzaAula = label === 'appuntamentata' && !ep.aula;
+                  const style  = senzaAula ? STATO_STYLE.senza_aula : (STATO_STYLE[label] || STATO_STYLE.appuntamentata);
                   const orario = `${ep.oraInizio || hhmm(ep.ora_inizio)} – ${ep.oraFine || hhmm(ep.ora_fine)}`;
                   const realId = ev.id ?? ep.id;
                   const loading = azioneLoading === realId;
@@ -400,11 +402,15 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                             <span className="flex items-center gap-1">
                               <Clock size={11} /> {orario}
                             </span>
-                            {ep.aula && (
+                            {ep.aula ? (
                               <span className="flex items-center gap-1">
                                 <MapPin size={11} /> {ep.aula}
                               </span>
-                            )}
+                            ) : label === 'appuntamentata' ? (
+                              <span className="flex items-center gap-1 text-orange-500 font-medium">
+                                <MapPin size={11} /> Aula da assegnare
+                              </span>
+                            ) : null}
                             {mostraInsegnante && ep.nome_insegnante && (
                               <span className="flex items-center gap-1">
                                 <User size={11} /> {ep.nome_insegnante} {ep.cognome_insegnante}
