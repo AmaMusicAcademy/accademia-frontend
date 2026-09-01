@@ -57,6 +57,10 @@ export default function EditLessonModal({
   const [roomsErr, setRoomsErr] = useState("");
   const [useManualAula, setUseManualAula] = useState(false);
 
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [repeatUntil, setRepeatUntil] = useState("");
+  const [giorniChiusura, setGiorniChiusura] = useState([]);
+
   /** se lockedTeacherId è presente, il filtro allievi è sempre by-teacher */
   const [filterByTeacher, setFilterByTeacher] = useState(!!lockedTeacherId);
   const [tipoLezione, setTipoLezione] = useState('individuale'); // 'individuale' | 'collettiva'
@@ -88,9 +92,24 @@ export default function EditLessonModal({
       aula: lesson?.aula || "",
     });
     setUseManualAula(false);
+    setIsRecurring(false);
+    setRepeatUntil("");
     setError("");
     setFilterByTeacher(!!lockedTeacherId);
   }, [open, lesson, lockedTeacherId]);
+
+  // carica giorni di chiusura (solo su nuova lezione)
+  useEffect(() => {
+    if (!open || lesson?.id) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const list = await fetchJSON(`${API_BASE}/api/giorni-chiusura`, token);
+        if (!cancel) setGiorniChiusura(Array.isArray(list) ? list.map(g => g.data?.slice(0, 10)) : []);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancel = true; };
+  }, [open, lesson, token]);
 
   // carica gruppi (filtrati per insegnante se locked)
   useEffect(() => {
@@ -205,8 +224,10 @@ export default function EditLessonModal({
   const hasMinData = useMemo(() => {
     const teacher = lockedTeacherId || form.id_insegnante;
     const soggetto = tipoLezione === 'collettiva' ? form.gruppo_id : form.id_allievo;
-    return teacher && soggetto && form.data && form.ora_inizio && form.ora_fine && form.aula;
-  }, [form, lockedTeacherId, tipoLezione]);
+    const aulaOk = isRecurring ? true : !!form.aula;
+    const repeatOk = !isRecurring || (repeatUntil && repeatUntil >= form.data);
+    return teacher && soggetto && form.data && form.ora_inizio && form.ora_fine && aulaOk && repeatOk;
+  }, [form, lockedTeacherId, tipoLezione, isRecurring, repeatUntil]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -217,31 +238,53 @@ export default function EditLessonModal({
     }
     try {
       setSaving(true);
-      const payload = tipoLezione === 'collettiva'
-        ? {
-            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
-            gruppo_id: Number(form.gruppo_id),
-            data: form.data,
-            ora_inizio: form.ora_inizio,
-            ora_fine: form.ora_fine,
-            aula: form.aula,
-          }
-        : {
-            id_insegnante: Number(lockedTeacherId || form.id_insegnante),
-            id_allievo: Number(form.id_allievo),
-            data: form.data,
-            ora_inizio: form.ora_inizio,
-            ora_fine: form.ora_fine,
-            aula: form.aula,
-          };
-
       const isEdit = Boolean(lesson?.id);
-      const url = isEdit
-        ? `${API_BASE}/api/lezioni/${lesson.id}`
-        : `${API_BASE}/api/lezioni`;
-      const method = isEdit ? "PUT" : "POST";
 
-      await fetchJSON(url, token, { method, body: JSON.stringify(payload) });
+      const buildPayload = (data, aula, motivazione) => {
+        const base = tipoLezione === 'collettiva'
+          ? { id_insegnante: Number(lockedTeacherId || form.id_insegnante), gruppo_id: Number(form.gruppo_id) }
+          : { id_insegnante: Number(lockedTeacherId || form.id_insegnante), id_allievo: Number(form.id_allievo) };
+        const p = { ...base, data, ora_inizio: form.ora_inizio, ora_fine: form.ora_fine };
+        if (aula) p.aula = aula;
+        if (motivazione) p.motivazione = motivazione;
+        return p;
+      };
+
+      if (!isEdit && isRecurring) {
+        // loop settimanale
+        let current = new Date(form.data + 'T00:00:00');
+        const end = new Date(repeatUntil + 'T00:00:00');
+        let created = 0;
+        while (current <= end) {
+          const dateStr = current.toISOString().slice(0, 10);
+          if (!giorniChiusura.includes(dateStr)) {
+            try {
+              await fetchJSON(`${API_BASE}/api/lezioni`, token, {
+                method: 'POST',
+                body: JSON.stringify(buildPayload(dateStr, form.aula, null)),
+              });
+            } catch (err) {
+              if (err.status === 409) {
+                // aula occupata: crea senza aula con nota
+                await fetchJSON(`${API_BASE}/api/lezioni`, token, {
+                  method: 'POST',
+                  body: JSON.stringify(buildPayload(dateStr, null, 'Aula non disponibile - da assegnare')),
+                });
+              }
+              // altri errori: ignora e continua
+            }
+            created++;
+          }
+          current.setDate(current.getDate() + 7);
+        }
+      } else {
+        const url = isEdit
+          ? `${API_BASE}/api/lezioni/${lesson.id}`
+          : `${API_BASE}/api/lezioni`;
+        const method = isEdit ? "PUT" : "POST";
+        await fetchJSON(url, token, { method, body: JSON.stringify(buildPayload(form.data, form.aula, null)) });
+      }
+
       onSaved && onSaved();
     } catch (e) {
       setError(e.message || "Errore nel salvataggio.");
@@ -404,8 +447,59 @@ export default function EditLessonModal({
             </div>
           </div>
 
+          {/* RIPETIZIONE SETTIMANALE — solo su nuova lezione */}
+          {!lesson?.id && (
+            <div className="rounded-xl border p-3 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm font-medium text-n-800">Ripeti settimanalmente</span>
+              </label>
+              {isRecurring && (
+                <div className="pt-1">
+                  <Field label="Fino al *">
+                    <input
+                      type="date"
+                      value={repeatUntil}
+                      min={form.data || undefined}
+                      onChange={(e) => setRepeatUntil(e.target.value)}
+                      className="w-full rounded-xl border px-3 py-2 text-sm"
+                    />
+                  </Field>
+                  {repeatUntil && form.data && repeatUntil >= form.data && (
+                    <p className="text-xs text-n-500 mt-1.5">
+                      {(() => {
+                        let count = 0;
+                        let d = new Date(form.data + 'T00:00:00');
+                        const end = new Date(repeatUntil + 'T00:00:00');
+                        while (d <= end) {
+                          if (!giorniChiusura.includes(d.toISOString().slice(0, 10))) count++;
+                          d.setDate(d.getDate() + 7);
+                        }
+                        const skipped = (() => {
+                          let s = 0;
+                          let d2 = new Date(form.data + 'T00:00:00');
+                          while (d2 <= end) {
+                            if (giorniChiusura.includes(d2.toISOString().slice(0, 10))) s++;
+                            d2.setDate(d2.getDate() + 7);
+                          }
+                          return s;
+                        })();
+                        return `${count} lezioni${skipped > 0 ? `, ${skipped} saltate (giorno di chiusura)` : ''}`;
+                      })()}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* AULA */}
-          <Field label="Aula *">
+          <Field label={isRecurring ? "Aula preferita" : "Aula *"}>
             {!useManualAula ? (
               <>
                 <select
