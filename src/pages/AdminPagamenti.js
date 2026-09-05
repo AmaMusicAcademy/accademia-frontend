@@ -427,7 +427,9 @@ function SyncQonto({ token }) {
     try {
       const mesi = formTipo === 'mensile'
         ? formMesi.map(m => ({ anno: formAnno, mese: m }))
-        : [{ anno: formAnno }];
+        : formTipo === 'mensile+associativa'
+          ? [...formMesi.map(m => ({ anno: formAnno, mese: m })), { anno: formAnno }]
+          : [{ anno: formAnno }];
       await fetch(`${BASE_URL}/api/qonto/abbina`, {
         method: 'POST',
         headers: { ...hdr, 'Content-Type': 'application/json' },
@@ -611,6 +613,7 @@ function SyncQonto({ token }) {
                   className="w-full border rounded-xl px-3 py-2.5 text-sm">
                   <option value="mensile">Quota mensile</option>
                   <option value="associativa">Tassa associativa</option>
+                  <option value="mensile+associativa">Quota mensile + Tassa associativa</option>
                 </select>
               </div>
               <div>
@@ -618,7 +621,7 @@ function SyncQonto({ token }) {
                 <input type="number" value={formAnno} onChange={e => setFormAnno(parseInt(e.target.value))}
                   className="w-full border rounded-xl px-3 py-2.5 text-sm" />
               </div>
-              {formTipo === 'mensile' && (
+              {(formTipo === 'mensile' || formTipo === 'mensile+associativa') && (
                 <div>
                   <label className="block text-xs text-n-600 mb-2">Mesi coperti (seleziona uno o più)</label>
                   <div className="grid grid-cols-4 gap-2">
@@ -646,7 +649,7 @@ function SyncQonto({ token }) {
 
             <button
               onClick={confermaAbbina}
-              disabled={!formAllievo || abbinando || (formTipo === 'mensile' && formMesi.length === 0)}
+              disabled={!formAllievo || abbinando || ((formTipo === 'mensile' || formTipo === 'mensile+associativa') && formMesi.length === 0)}
               className="w-full bg-ama-500 text-white py-3 rounded-xl text-sm font-semibold disabled:opacity-40">
               {abbinando ? 'Salvataggio…' : 'Conferma abbinamento'}
             </button>
