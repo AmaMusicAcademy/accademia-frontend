@@ -744,12 +744,16 @@ function PagamentiStripe({ token }) {
             <div key={p.id} className="px-4 py-3 flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-n-900 truncate">{p.allievo_nome}</p>
-                <p className="text-xs text-n-400 truncate">{fmtMesi(p.mesi)}</p>
+                <p className="text-xs text-n-400 truncate">
+                  {p.tipo === 'abbonamento' ? 'Abbonamento mensile' : fmtMesi(p.mesi)}
+                </p>
                 <p className="text-xs text-n-300">{fmtData(p.data)}</p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-bold text-emerald-700">€{p.importo.toFixed(2)}</p>
-                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Pagato</span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${p.tipo === 'abbonamento' ? 'bg-ama-100 text-ama-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {p.tipo === 'abbonamento' ? 'Abbonamento' : 'Arretrati'}
+                </span>
               </div>
             </div>
           ))}
