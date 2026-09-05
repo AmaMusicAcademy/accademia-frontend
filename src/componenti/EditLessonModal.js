@@ -44,6 +44,7 @@ export default function EditLessonModal({
   const [saving, setSaving]         = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [serieDialog, setSerieDialog] = useState(false);
   const [error, setError]           = useState("");
 
   const [teachers, setTeachers] = useState([]);
@@ -229,6 +230,17 @@ export default function EditLessonModal({
     return teacher && soggetto && form.data && form.ora_inizio && form.ora_fine && aulaOk && repeatOk;
   }, [form, lockedTeacherId, tipoLezione, isRecurring, repeatUntil]);
 
+  const buildPayload = (data, aula, motivazione, serieId) => {
+    const base = tipoLezione === 'collettiva'
+      ? { id_insegnante: Number(lockedTeacherId || form.id_insegnante), gruppo_id: Number(form.gruppo_id) }
+      : { id_insegnante: Number(lockedTeacherId || form.id_insegnante), id_allievo: Number(form.id_allievo) };
+    const p = { ...base, data, ora_inizio: form.ora_inizio, ora_fine: form.ora_fine };
+    if (aula) p.aula = aula;
+    if (motivazione) p.motivazione = motivazione;
+    if (serieId) p.serie_id = serieId;
+    return p;
+  };
+
   const handleSave = async (e) => {
     e?.preventDefault?.();
     setError("");
@@ -236,55 +248,66 @@ export default function EditLessonModal({
       setError("Compila tutti i campi obbligatori.");
       return;
     }
+
+    const isEdit = Boolean(lesson?.id);
+
+    // Se è una modifica di lezione con serie_id, mostra il dialog di scelta
+    if (isEdit && lesson?.serie_id && !serieDialog) {
+      setSerieDialog(true);
+      return;
+    }
+
+    await doSave(isEdit, null);
+  };
+
+  const doSave = async (isEdit, serieScope) => {
+    setSerieDialog(false);
     try {
       setSaving(true);
-      const isEdit = Boolean(lesson?.id);
-
-      const buildPayload = (data, aula, motivazione) => {
-        const base = tipoLezione === 'collettiva'
-          ? { id_insegnante: Number(lockedTeacherId || form.id_insegnante), gruppo_id: Number(form.gruppo_id) }
-          : { id_insegnante: Number(lockedTeacherId || form.id_insegnante), id_allievo: Number(form.id_allievo) };
-        const p = { ...base, data, ora_inizio: form.ora_inizio, ora_fine: form.ora_fine };
-        if (aula) p.aula = aula;
-        if (motivazione) p.motivazione = motivazione;
-        return p;
-      };
 
       if (!isEdit && isRecurring) {
-        // loop settimanale
+        // Genera un UUID comune per tutta la serie
+        const newSerieId = crypto.randomUUID();
         const toLocalDateStr = (d) =>
           `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         let current = new Date(form.data + 'T12:00:00');
         const end = new Date(repeatUntil + 'T12:00:00');
-        let created = 0;
         while (current <= end) {
           const dateStr = toLocalDateStr(current);
           if (!giorniChiusura.includes(dateStr)) {
             try {
               await fetchJSON(`${API_BASE}/api/lezioni`, token, {
                 method: 'POST',
-                body: JSON.stringify(buildPayload(dateStr, form.aula, null)),
+                body: JSON.stringify(buildPayload(dateStr, form.aula, null, newSerieId)),
               });
             } catch (err) {
               if (err.status === 409) {
-                // aula occupata: crea senza aula con nota
                 await fetchJSON(`${API_BASE}/api/lezioni`, token, {
                   method: 'POST',
-                  body: JSON.stringify(buildPayload(dateStr, null, 'Aula non disponibile - da assegnare')),
+                  body: JSON.stringify(buildPayload(dateStr, null, 'Aula non disponibile - da assegnare', newSerieId)),
                 });
               }
-              // altri errori: ignora e continua
             }
-            created++;
           }
           current.setDate(current.getDate() + 7);
         }
+      } else if (isEdit && serieScope === 'series' && lesson?.serie_id) {
+        // Aggiorna tutte le lezioni della serie dalla data in poi
+        await fetchJSON(`${API_BASE}/api/lezioni/serie/${lesson.serie_id}`, token, {
+          method: 'PUT',
+          body: JSON.stringify({
+            data_dal: form.data,
+            ora_inizio: form.ora_inizio,
+            ora_fine: form.ora_fine,
+            aula: form.aula || undefined,
+          }),
+        });
       } else {
         const url = isEdit
           ? `${API_BASE}/api/lezioni/${lesson.id}`
           : `${API_BASE}/api/lezioni`;
         const method = isEdit ? "PUT" : "POST";
-        await fetchJSON(url, token, { method, body: JSON.stringify(buildPayload(form.data, form.aula, null)) });
+        await fetchJSON(url, token, { method, body: JSON.stringify(buildPayload(form.data, form.aula, null, null)) });
       }
 
       onSaved && onSaved();
@@ -574,6 +597,36 @@ export default function EditLessonModal({
                   className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium active:bg-red-700"
                 >
                   Elimina
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* popup scelta modifica serie */}
+        {serieDialog && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 rounded-2xl">
+            <div className="bg-white border shadow-lg rounded-2xl p-6 mx-4 text-center">
+              <p className="text-sm font-semibold text-n-900 mb-1">Modifica lezione ripetuta</p>
+              <p className="text-xs text-n-600 mb-5">Vuoi modificare solo questa lezione o tutta la serie da oggi in poi?</p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => doSave(true, 'single')}
+                  className="py-2.5 rounded-xl bg-ama-500 text-white text-sm font-medium active:bg-blue-700"
+                >
+                  Solo questa lezione
+                </button>
+                <button
+                  onClick={() => doSave(true, 'series')}
+                  className="py-2.5 rounded-xl bg-n-100 text-gray-700 text-sm font-medium active:bg-n-200"
+                >
+                  Tutta la serie (da questa data in poi)
+                </button>
+                <button
+                  onClick={() => setSerieDialog(false)}
+                  className="py-2.5 text-xs text-n-400"
+                >
+                  Annulla
                 </button>
               </div>
             </div>
