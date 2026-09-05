@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Thermometer, Power, Minus, Plus, RefreshCw, AlertCircle, Target, Zap } from 'lucide-react';
+import { Thermometer, Power, Minus, Plus, RefreshCw, AlertCircle, Target, Zap, Wind, Settings, Trash2, PlusCircle } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import PageHeader from '../componenti/PageHeader';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
@@ -284,6 +284,264 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
 }
 
 // ── Pagina principale ────────────────────────────────────────────────────
+// ── Pannello condizionatori automatici ───────────────────────────────────
+function ACPanel() {
+  const [stato, setStato]           = useState(null);
+  const [dispositivi, setDispositivi] = useState([]);
+  const [oggi, setOggi]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [azione, setAzione]         = useState(null); // 'accendi' | 'spegni'
+  const [showConfig, setShowConfig] = useState(false);
+
+  // Lista dispositivi SwitchBot per la configurazione
+  const [sbDevices, setSbDevices]   = useState(null);
+  const [loadingSb, setLoadingSb]   = useState(false);
+
+  // Form aggiunta dispositivo
+  const [form, setForm] = useState({ nome: '', device_id: '', tipo: 'ir_ac', ordine: 0 });
+  const [saving, setSaving] = useState(false);
+
+  const carica = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await apiFetch('/api/ac/stato');
+      setStato(d.stato);
+      setDispositivi(d.dispositivi || []);
+      setOggi(d.oggi);
+    } catch { /* ignora */ }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { carica(); }, [carica]);
+
+  const doAzione = async (cmd) => {
+    setAzione(cmd);
+    try { await apiFetch(`/api/ac/${cmd}`, { method: 'POST' }); }
+    catch (e) { alert('Errore: ' + e.message); }
+    setAzione(null);
+    carica();
+  };
+
+  const caricaSwitchbot = async () => {
+    setLoadingSb(true);
+    try {
+      const d = await apiFetch('/api/ac/devices-switchbot');
+      setSbDevices(d);
+    } catch (e) { alert('Errore SwitchBot: ' + e.message); }
+    setLoadingSb(false);
+  };
+
+  const aggiungiDispositivo = async () => {
+    if (!form.nome || !form.device_id || !form.tipo) return;
+    setSaving(true);
+    try {
+      await apiFetch('/api/ac/dispositivi', { method: 'POST', body: JSON.stringify(form) });
+      setForm({ nome: '', device_id: '', tipo: 'ir_ac', ordine: 0 });
+      carica();
+    } catch (e) { alert('Errore: ' + e.message); }
+    setSaving(false);
+  };
+
+  const eliminaDispositivo = async (id) => {
+    if (!window.confirm('Eliminare il dispositivo?')) return;
+    await apiFetch(`/api/ac/dispositivi/${id}`, { method: 'DELETE' });
+    carica();
+  };
+
+  const selezionaDevice = (deviceId) => {
+    setForm(f => ({ ...f, device_id: deviceId }));
+  };
+
+  const acceso = stato?.acceso ?? false;
+
+  return (
+    <div className="bg-white border rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-blue-50">
+        <div className="flex items-center gap-2">
+          <Wind size={18} className="text-blue-500" />
+          <span className="font-semibold text-sm text-n-900">Condizionatori</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${acceso ? 'bg-green-100 text-green-700' : 'bg-n-100 text-n-500'}`}>
+            {acceso ? 'ACCESI' : 'SPENTI'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={carica} className="text-n-400 active:text-n-700">
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button onClick={() => setShowConfig(v => !v)} className="text-n-400 active:text-n-700">
+            <Settings size={15} />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Orari del giorno */}
+        {oggi && (
+          <div className="grid grid-cols-2 gap-2 text-center text-xs">
+            <div className="bg-n-50 rounded-lg p-2">
+              <div className="text-n-400 mb-0.5">Accensione</div>
+              <div className="font-semibold text-n-800">
+                {oggi.on_time ?? '—'} {oggi.prima_lezione && <span className="text-n-400 font-normal">(prima lezione {oggi.prima_lezione})</span>}
+              </div>
+            </div>
+            <div className="bg-n-50 rounded-lg p-2">
+              <div className="text-n-400 mb-0.5">Spegnimento</div>
+              <div className="font-semibold text-n-800">
+                {oggi.off_time ?? '—'} {oggi.ultima_lezione && <span className="text-n-400 font-normal">(ultima lezione {oggi.ultima_lezione})</span>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {oggi && !oggi.on_time && (
+          <p className="text-xs text-center text-n-400 py-1">Nessuna lezione programmata oggi — condizionatori non attivati automaticamente</p>
+        )}
+
+        {/* Controlli manuali */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => doAzione('accendi')}
+            disabled={azione !== null}
+            className="flex-1 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            <Power size={14} /> {azione === 'accendi' ? 'Accensione…' : 'Accendi ora'}
+          </button>
+          <button
+            onClick={() => doAzione('spegni')}
+            disabled={azione !== null}
+            className="flex-1 py-2.5 bg-n-100 text-n-700 rounded-xl text-sm font-medium disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            <Power size={14} /> {azione === 'spegni' ? 'Spegnimento…' : 'Spegni ora'}
+          </button>
+        </div>
+
+        {/* Ultima azione */}
+        {stato?.ultima_azione && (
+          <p className="text-xs text-center text-n-400">
+            Ultima azione: <span className="text-n-600 font-medium">{stato.ultima_azione}</span>
+            {stato.aggiornato_il && ` · ${new Date(stato.aggiornato_il).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`}
+          </p>
+        )}
+
+        {/* Dispositivi configurati */}
+        {dispositivi.length > 0 && (
+          <div className="space-y-1 pt-1">
+            {dispositivi.map(d => (
+              <div key={d.id} className="flex items-center justify-between text-xs text-n-600 bg-n-50 rounded-lg px-3 py-1.5">
+                <span>{d.nome}</span>
+                <span className="text-n-400">{d.tipo === 'smart_switch' ? 'Smart Switch' : 'IR AC'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {dispositivi.length === 0 && !showConfig && (
+          <div className="text-center py-3">
+            <p className="text-xs text-n-400 mb-2">Nessun dispositivo configurato</p>
+            <button onClick={() => setShowConfig(true)} className="text-xs text-blue-500 font-medium">
+              + Aggiungi dispositivi
+            </button>
+          </div>
+        )}
+
+        {/* Sezione configurazione */}
+        {showConfig && (
+          <div className="border-t pt-3 space-y-3">
+            <p className="text-xs font-semibold text-n-700">Configurazione dispositivi</p>
+
+            {/* Lista dispositivi SwitchBot */}
+            <button
+              onClick={caricaSwitchbot}
+              disabled={loadingSb}
+              className="w-full py-2 border border-dashed rounded-xl text-xs text-n-500 flex items-center justify-center gap-2"
+            >
+              {loadingSb ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              Carica dispositivi da SwitchBot
+            </button>
+
+            {sbDevices && (
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                <p className="text-xs text-n-400 font-medium">Fisici</p>
+                {sbDevices.devices?.map(d => (
+                  <button key={d.deviceId} onClick={() => selezionaDevice(d.deviceId)}
+                    className={`w-full text-left text-xs px-3 py-1.5 rounded-lg border ${form.device_id === d.deviceId ? 'border-blue-400 bg-blue-50' : 'border-n-100 bg-n-50'}`}>
+                    <span className="font-medium">{d.deviceName}</span>
+                    <span className="text-n-400 ml-2">{d.deviceType}</span>
+                    <span className="text-n-300 ml-2 font-mono text-[10px]">{d.deviceId}</span>
+                  </button>
+                ))}
+                <p className="text-xs text-n-400 font-medium pt-1">IR (Hub Mini)</p>
+                {sbDevices.infrared?.map(d => (
+                  <button key={d.deviceId} onClick={() => selezionaDevice(d.deviceId)}
+                    className={`w-full text-left text-xs px-3 py-1.5 rounded-lg border ${form.device_id === d.deviceId ? 'border-blue-400 bg-blue-50' : 'border-n-100 bg-n-50'}`}>
+                    <span className="font-medium">{d.deviceName}</span>
+                    <span className="text-n-400 ml-2">{d.remoteType}</span>
+                    <span className="text-n-300 ml-2 font-mono text-[10px]">{d.deviceId}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Form aggiunta */}
+            <div className="space-y-2">
+              <input
+                placeholder="Nome (es. AC Aula 1)"
+                value={form.nome}
+                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                className="w-full rounded-xl border px-3 py-2 text-xs"
+              />
+              <input
+                placeholder="Device ID (seleziona dalla lista o incolla)"
+                value={form.device_id}
+                onChange={e => setForm(f => ({ ...f, device_id: e.target.value }))}
+                className="w-full rounded-xl border px-3 py-2 text-xs font-mono"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={form.tipo}
+                  onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
+                  className="rounded-xl border px-3 py-2 text-xs bg-white"
+                >
+                  <option value="ir_ac">IR AC (Hub Mini)</option>
+                  <option value="smart_switch">Smart Switch</option>
+                </select>
+                <input
+                  type="number" placeholder="Ordine" value={form.ordine}
+                  onChange={e => setForm(f => ({ ...f, ordine: Number(e.target.value) }))}
+                  className="rounded-xl border px-3 py-2 text-xs"
+                />
+              </div>
+              <button
+                onClick={aggiungiDispositivo}
+                disabled={saving || !form.nome || !form.device_id}
+                className="w-full py-2 bg-blue-500 text-white rounded-xl text-xs font-medium disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                <PlusCircle size={13} /> {saving ? 'Salvataggio…' : 'Aggiungi dispositivo'}
+              </button>
+            </div>
+
+            {/* Elimina esistenti */}
+            {dispositivi.length > 0 && (
+              <div className="space-y-1 pt-1 border-t">
+                <p className="text-xs text-n-400">Dispositivi salvati</p>
+                {dispositivi.map(d => (
+                  <div key={d.id} className="flex items-center justify-between text-xs bg-n-50 rounded-lg px-3 py-1.5">
+                    <span>{d.nome} <span className="text-n-400">({d.tipo})</span></span>
+                    <button onClick={() => eliminaDispositivo(d.id)} className="text-red-400 active:text-red-600">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
   const [dispositivi, setDispositivi] = useState([]);
   const [aule, setAule]               = useState([]);
@@ -368,6 +626,8 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
             />
           ))
         )}
+
+        {ruolo === 'admin' && <ACPanel />}
 
         {ruolo === 'admin' && senzaAula.length > 0 && (
           <details className="bg-white border rounded-xl p-4">
