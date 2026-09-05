@@ -139,8 +139,8 @@ export default function StripePayment({ mode, mesi = [], onSuccess, onError }) {
           const d = await apiFetch('/api/stripe/setup-intent', { method: 'POST' });
           if (!cancelled) setClientSecret(d.clientSecret);
         }
-      } catch {
-        if (!cancelled) setErrore('Impossibile avviare il pagamento. Riprova.');
+      } catch (err) {
+        if (!cancelled) setErrore(err.message || 'Impossibile avviare il pagamento. Riprova.');
       }
     })();
     return () => { cancelled = true; };
