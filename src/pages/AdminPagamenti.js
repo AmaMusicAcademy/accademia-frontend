@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 
@@ -657,26 +657,129 @@ function SyncQonto({ token }) {
   );
 }
 
+function PagamentiStripe({ token }) {
+  const [pagamenti, setPagamenti] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+
+  const carica = () => {
+    setLoading(true);
+    fetch(`${BASE_URL}/api/stripe/pagamenti-admin`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => setPagamenti(Array.isArray(d) ? d : []))
+      .catch(() => setPagamenti([]))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { carica(); }, []);
+
+  const fmtData = (d) => new Date(d).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
+  const fmtMesi = (mesi) => {
+    if (!mesi?.length) return '—';
+    return mesi.map(m => `${MESI_NOME[m.mese - 1]} ${m.anno}`).join(', ');
+  };
+
+  const filtrati = pagamenti.filter(p => {
+    const q = search.trim().toLowerCase();
+    return !q || p.allievo_nome.toLowerCase().includes(q);
+  });
+
+  const totale = pagamenti.reduce((s, p) => s + p.importo, 0);
+
+  return (
+    <div className="space-y-4">
+      {/* Intestazione con totale e refresh */}
+      <div className="bg-white border rounded-xl px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CreditCard size={15} className="text-ama-500" />
+          <p className="text-sm font-semibold text-n-900">Pagamenti via app</p>
+        </div>
+        <button onClick={carica} className="flex items-center gap-1.5 text-xs text-ama-500 font-medium">
+          <RefreshCw size={12} />
+          Aggiorna
+        </button>
+      </div>
+
+      {/* Totale incassato */}
+      {!loading && pagamenti.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+            <p className="text-2xl font-bold text-emerald-700 leading-none">€{totale.toFixed(2)}</p>
+            <p className="text-xs text-emerald-600 mt-1">Totale incassato</p>
+          </div>
+          <div className="bg-ama-50 border border-ama-200 rounded-xl p-4 text-center">
+            <p className="text-3xl font-bold text-ama-700 leading-none">{pagamenti.length}</p>
+            <p className="text-xs text-ama-600 mt-1">Transazioni</p>
+          </div>
+        </div>
+      )}
+
+      {/* Ricerca */}
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Cerca allievo…"
+          className="w-full border rounded-xl pl-9 pr-8 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-300" />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-n-300">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        )}
+      </div>
+
+      {/* Lista */}
+      {loading ? (
+        <div className="flex justify-center py-10">
+          <div className="w-7 h-7 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filtrati.length === 0 ? (
+        <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+          {search ? 'Nessun risultato.' : 'Nessun pagamento ricevuto via app.'}
+        </div>
+      ) : (
+        <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+          {filtrati.map(p => (
+            <div key={p.id} className="px-4 py-3 flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-n-900 truncate">{p.allievo_nome}</p>
+                <p className="text-xs text-n-400 truncate">{fmtMesi(p.mesi)}</p>
+                <p className="text-xs text-n-300">{fmtData(p.data)}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-emerald-700">€{p.importo.toFixed(2)}</p>
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Pagato</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPagamenti() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem('token'), []);
-  const [tab, setTab] = useState('allievi'); // 'allievi' | 'tassa' | 'qonto'
+  const [tab, setTab] = useState('allievi'); // 'allievi' | 'tassa' | 'qonto' | 'stripe'
 
   return (
     <div className="min-h-screen bg-n-100 flex flex-col justify-between pb-16">
       <PageHeader title="Pagamenti" backTo="/admin" />
 
-      {/* Tab switcher */}
-      <div className="flex bg-white border-b">
+      {/* Tab switcher — scrollabile orizzontalmente */}
+      <div className="flex bg-white border-b overflow-x-auto">
         {[
           { id: 'allievi', label: 'Quote mensili' },
           { id: 'tassa',   label: 'Tassa annuale' },
+          { id: 'stripe',  label: 'App (Stripe)' },
           { id: 'qonto',   label: 'Qonto' },
         ].map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === id ? 'border-blue-600 text-ama-500' : 'border-transparent text-n-600'
             }`}
           >
@@ -701,10 +804,13 @@ export default function AdminPagamenti() {
           </div>
         )}
 
+        {tab === 'stripe' && (
+          <PagamentiStripe token={token} />
+        )}
+
         {tab === 'qonto' && (
           <SyncQonto token={token} />
         )}
-
       </div>
 
       <BottomNavAdmin />
