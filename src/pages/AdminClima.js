@@ -7,11 +7,169 @@ import BottomNav from '../componenti/BottomNav';
 
 const TIPI_TERMOMETRO = ['Meter', 'MeterPlus', 'WoSensorTH', 'Hub 2', 'MeterPro'];
 function isTermometro(d) { return TIPI_TERMOMETRO.some(t => (d.deviceType || '').includes(t)); }
+function isIRAC(d) { return (d.remoteType || '').toLowerCase().includes('air'); }
+
+const MODALITA_IR = [
+  { id: 'auto',            label: 'Auto',   emoji: '🔄' },
+  { id: 'raffrescamento',  label: 'Freddo', emoji: '❄️' },
+  { id: 'riscaldamento',   label: 'Caldo',  emoji: '🔥' },
+  { id: 'deumidificazione',label: 'Dry',    emoji: '💧' },
+  { id: 'ventilazione',    label: 'Fan',    emoji: '🌀' },
+];
+const FAN_SPEEDS = [
+  { id: 1, label: 'Auto' },
+  { id: 2, label: 'Bassa' },
+  { id: 3, label: 'Media' },
+  { id: 4, label: 'Alta' },
+];
+
+// ── Sezione IR AC per una singola aula ───────────────────────────────────
+function IrAcSection({ irDevice, aula, target, ruolo }) {
+  const savedTemp     = parseFloat(target?.temperatura_ir_target ?? target?.temperatura_target ?? 22);
+  const savedModalita = target?.modalita ?? 'auto';
+  const savedFan      = target?.fan_speed ?? 1;
+
+  const [temp, setTemp]         = useState(savedTemp);
+  const [modalita, setModalita] = useState(savedModalita);
+  const [fanSpeed, setFanSpeed] = useState(savedFan);
+  const [inviando, setInviando] = useState(false);
+  const [spegnendo, setSpegnendo] = useState(false);
+  const [esito, setEsito]       = useState(null); // 'ok' | 'err'
+  const [errore, setErrore]     = useState(null);
+
+  const invia = async () => {
+    setInviando(true);
+    setEsito(null);
+    setErrore(null);
+    try {
+      await apiFetch(`/api/clima/ir-ac/${irDevice.deviceId}/imposta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ temperatura: temp, modalita, fan_speed: fanSpeed, aula_nome: aula }),
+      });
+      setEsito('ok');
+    } catch (e) {
+      setEsito('err');
+      setErrore(e.message);
+    } finally {
+      setInviando(false);
+      setTimeout(() => setEsito(null), 3000);
+    }
+  };
+
+  const spegni = async () => {
+    setSpegnendo(true);
+    try {
+      await apiFetch(`/api/clima/ir-ac/${irDevice.deviceId}/spegni`, { method: 'POST' });
+      setEsito('ok');
+    } catch (e) {
+      setEsito('err');
+      setErrore(e.message);
+    } finally {
+      setSpegnendo(false);
+      setTimeout(() => setEsito(null), 3000);
+    }
+  };
+
+  return (
+    <div className="border rounded-xl p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-n-500">{irDevice.deviceName}</p>
+        <span className="text-xs text-n-400 bg-blue-50 text-blue-500 px-2 py-0.5 rounded-full">IR AC</span>
+      </div>
+
+      {/* Temperatura target */}
+      <div>
+        <p className="text-xs text-n-500 mb-2">Temperatura</p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTemp(t => Math.max(16, t - 1))}
+            className="w-10 h-10 rounded-full border flex items-center justify-center active:bg-n-50 shrink-0 text-lg"
+          >
+            <Minus size={15} />
+          </button>
+          <span className="flex-1 text-center text-2xl font-bold text-n-900">{temp}°C</span>
+          <button
+            onClick={() => setTemp(t => Math.min(30, t + 1))}
+            className="w-10 h-10 rounded-full border flex items-center justify-center active:bg-n-50 shrink-0"
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Modalità */}
+      <div>
+        <p className="text-xs text-n-500 mb-2">Modalità</p>
+        <div className="grid grid-cols-5 gap-1">
+          {MODALITA_IR.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setModalita(m.id)}
+              className={`py-1.5 rounded-lg text-xs font-medium border flex flex-col items-center gap-0.5 transition-colors ${
+                modalita === m.id ? 'bg-ama-500 text-white border-ama-500' : 'text-n-600 border-n-200 bg-white'
+              }`}
+            >
+              <span>{m.emoji}</span>
+              <span className="text-[10px]">{m.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Fan speed */}
+      <div>
+        <p className="text-xs text-n-500 mb-2">Ventilazione</p>
+        <div className="grid grid-cols-4 gap-1">
+          {FAN_SPEEDS.map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFanSpeed(f.id)}
+              className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                fanSpeed === f.id ? 'bg-ama-500 text-white border-ama-500' : 'text-n-600 border-n-200 bg-white'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Feedback esito */}
+      {esito === 'ok' && (
+        <p className="text-xs text-center text-emerald-600 font-medium">✓ Comando inviato</p>
+      )}
+      {esito === 'err' && (
+        <p className="text-xs text-center text-red-500">{errore || 'Errore invio comando'}</p>
+      )}
+
+      {/* Azioni */}
+      <div className="flex gap-2">
+        <button
+          onClick={invia}
+          disabled={inviando || spegnendo}
+          className="flex-1 py-2.5 rounded-xl bg-ama-500 text-white text-sm font-semibold disabled:opacity-50"
+        >
+          {inviando ? 'Invio…' : 'Invia comando'}
+        </button>
+        <button
+          onClick={spegni}
+          disabled={inviando || spegnendo}
+          className="py-2.5 px-3 rounded-xl border border-n-200 text-n-600 disabled:opacity-30"
+          title="Spegni climatizzatore"
+        >
+          <Power size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ── Card singola aula ────────────────────────────────────────────────────
 function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
   const termometri = dispositivi.filter(d => d.aula_nome === aula && isTermometro(d));
-  const valvole    = dispositivi.filter(d => d.aula_nome === aula && !isTermometro(d));
+  const irDevices  = dispositivi.filter(d => d.aula_nome === aula && isIRAC(d));
+  const valvole    = dispositivi.filter(d => d.aula_nome === aula && !isTermometro(d) && !isIRAC(d));
   const tutti      = dispositivi.filter(d => d.aula_nome === aula);
 
   const target = targets.find(t => t.aula_nome === aula);
@@ -102,6 +260,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
 
   if (tutti.length === 0) return null;
 
+
   // Colore indicatore temperatura
   const deltaTemp = tempAttuale != null ? parseFloat(tempAttuale) - targetTemp : null;
   const colorTemp = deltaTemp == null ? 'text-n-400'
@@ -158,6 +317,17 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
           </div>
         </div>
       )}
+
+      {/* Condizionatori IR AC */}
+      {irDevices.map(irDev => (
+        <IrAcSection
+          key={irDev.deviceId}
+          irDevice={irDev}
+          aula={aula}
+          target={target}
+          ruolo={ruolo}
+        />
+      ))}
 
       {/* Valvola */}
       {valvola && (
