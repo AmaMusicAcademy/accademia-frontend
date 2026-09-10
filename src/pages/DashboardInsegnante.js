@@ -126,6 +126,7 @@ export default function DashboardInsegnante() {
   const [dataAule, setDataAule]       = useState(oggiStr);
   const [riprogrammaLezione, setRiprogrammaLezione] = useState(null);
   const [assenteOpen, setAssenteOpen] = useState(false);
+  const [recuperiWarning, setRecupériWarning] = useState(false);
 
   const caricaOccupazione = useCallback(async (aulaArr, data) => {
     const results = await Promise.all(
@@ -210,6 +211,12 @@ export default function DashboardInsegnante() {
 
   const auleFree  = aule.filter((a) => (occupazione[a.id] || []).length === 0).length;
   const auleBusy  = aule.length - auleFree;
+
+  const countRecuperi = (allievoId) =>
+    lezioni.filter(l =>
+      String(l.id_allievo) === String(allievoId) &&
+      (l.stato === 'rimandata' || l.riprogrammata === true)
+    ).length;
 
   const daRiprogrammare = lezioni
     .filter((l) => l.stato === 'rimandata' && !l.riprogrammata)
@@ -335,7 +342,13 @@ export default function DashboardInsegnante() {
                         P — Presente
                       </button>
                       <button
-                        onClick={() => setAssenteOpen(true)}
+                        onClick={() => {
+                          if (prossima.id_allievo && countRecuperi(prossima.id_allievo) >= 3) {
+                            setRecupériWarning(true);
+                          } else {
+                            setAssenteOpen(true);
+                          }
+                        }}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-500 active:bg-red-600 rounded-xl text-sm font-bold text-white shadow-sm"
                       >
                         A — Assente
@@ -474,6 +487,32 @@ export default function DashboardInsegnante() {
         onClose={() => setRiprogrammaLezione(null)}
         onSaved={() => { setRiprogrammaLezione(null); carica(); }}
       />
+
+      {recuperiWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <p className="text-base font-bold text-n-900 mb-2">Recuperi esauriti</p>
+            <p className="text-sm text-n-600 mb-5">
+              Questo allievo ha già raggiunto i <strong>3 recuperi</strong> consentiti dal regolamento.
+              Vuoi comunque rimandare la lezione?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRecupériWarning(false)}
+                className="flex-1 py-3 bg-n-100 text-gray-700 rounded-xl font-medium text-sm active:bg-n-200"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => { setRecupériWarning(false); setAssenteOpen(true); }}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium text-sm active:bg-red-600"
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </InsegnanteLayout>
   );
 }

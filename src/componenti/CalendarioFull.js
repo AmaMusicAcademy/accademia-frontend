@@ -106,6 +106,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
   const [editLesson, setEditLesson]       = useState(null);
   const [azioneLoading, setAzioneLoading] = useState(null);
   const [assenteEv, setAssenteEv]         = useState(null);
+  const [recuperiWarning, setRecupériWarning] = useState(null); // ev pending
   // presenze lezioni collettive
   const [presenzeOpen, setPresenzeOpen]   = useState(null); // lezione_id aperta
   const [presenze, setPresenze]           = useState({});   // { [lezione_id]: [...] }
@@ -203,6 +204,21 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
       await patchAnnulla(realId, note, token);
     } catch (e) { alert(e.message); }
     finally { setAzioneLoading(null); }
+  };
+
+  const countRecuperi = (allievoId) =>
+    (lezioni || []).filter(l =>
+      String(l.id_allievo) === String(allievoId) &&
+      (l.stato === 'rimandata' || l.riprogrammata === true)
+    ).length;
+
+  const handleAssenteClick = (ev) => {
+    const ep = ev.extendedProps || ev;
+    if (ep.id_allievo && !isAdmin && countRecuperi(ep.id_allievo) >= 3) {
+      setRecupériWarning(ev);
+    } else {
+      setAssenteEv(ev);
+    }
   };
 
   const togglePresenzePanel = async (lezioneId) => {
@@ -435,7 +451,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                                   <>
                                     <ActionBtn icon={<Pencil size={13} />}    label="Modifica" color="gray"    onClick={() => openEdit(ev, "edit")} />
                                     <ActionBtn icon={<UserCheck size={13} />} label="P"        color="emerald" onClick={() => onPresente(ev)} />
-                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => setAssenteEv(ev)} />
+                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => handleAssenteClick(ev)} />
                                   </>
                                 )}
                                 {isSvolta && isAdmin && (
@@ -454,7 +470,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                                   <>
                                     <ActionBtn icon={<Pencil size={13} />}    label="Modifica" color="gray"    onClick={() => openEdit(ev, "edit")} />
                                     <ActionBtn icon={<UserCheck size={13} />} label="P"        color="emerald" onClick={() => onPresente(ev)} />
-                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => setAssenteEv(ev)} />
+                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => handleAssenteClick(ev)} />
                                   </>
                                 )}
                                 {isRimandata && (
@@ -526,6 +542,32 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
         onRimanda={onAssenteRimanda}
         onAnnulla={onAssenteAnnulla}
       />
+
+      {recuperiWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <p className="text-base font-bold text-n-900 mb-2">Recuperi esauriti</p>
+            <p className="text-sm text-n-600 mb-5">
+              Questo allievo ha già raggiunto i <strong>3 recuperi</strong> consentiti dal regolamento.
+              Vuoi comunque rimandare la lezione?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRecupériWarning(null)}
+                className="flex-1 py-3 bg-n-100 text-gray-700 rounded-xl font-medium text-sm active:bg-n-200"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => { const ev = recuperiWarning; setRecupériWarning(null); setAssenteEv(ev); }}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium text-sm active:bg-red-600"
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

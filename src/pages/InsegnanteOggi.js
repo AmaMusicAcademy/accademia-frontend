@@ -19,7 +19,14 @@ export default function InsegnanteOggi() {
   const [lezioni, setLezioni] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assenteLezione, setAssenteLezione] = useState(null);
+  const [recuperiWarning, setRecupériWarning] = useState(null); // lezione pending
   const [busy, setBusy] = useState({});
+
+  const countRecuperi = (allievoId) =>
+    lezioni.filter(l =>
+      String(l.id_allievo) === String(allievoId) &&
+      (l.stato === 'rimandata' || l.riprogrammata === true)
+    ).length;
 
   const carica = useCallback(async () => {
     const id = getInsegnanteId();
@@ -151,7 +158,13 @@ export default function InsegnanteOggi() {
                       </button>
                       <button
                         disabled={isBusy}
-                        onClick={() => setAssenteLezione(l)}
+                        onClick={() => {
+                          if (l.id_allievo && countRecuperi(l.id_allievo) >= 3) {
+                            setRecupériWarning(l);
+                          } else {
+                            setAssenteLezione(l);
+                          }
+                        }}
                         className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-red-500 active:bg-red-600 disabled:opacity-60 rounded-xl text-white font-bold text-base shadow-sm"
                       >
                         <XCircle size={20} />
@@ -182,6 +195,32 @@ export default function InsegnanteOggi() {
           onClose={() => setAssenteLezione(null)}
           onSaved={() => { setAssenteLezione(null); carica(); }}
         />
+      )}
+
+      {recuperiWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <p className="text-base font-bold text-n-900 mb-2">Recuperi esauriti</p>
+            <p className="text-sm text-n-600 mb-5">
+              Questo allievo ha già raggiunto i <strong>3 recuperi</strong> consentiti dal regolamento.
+              Vuoi comunque rimandare la lezione?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setRecupériWarning(null)}
+                className="flex-1 py-3 bg-n-100 text-gray-700 rounded-xl font-medium text-sm active:bg-n-200"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => { const l = recuperiWarning; setRecupériWarning(null); setAssenteLezione(l); }}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium text-sm active:bg-red-600"
+              >
+                Conferma
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </InsegnanteLayout>
   );
