@@ -432,7 +432,11 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
                             {isCollettiva ? (
                               <>
                                 {isAppuntamentata && (
-                                  <ActionBtn icon={<Pencil size={13} />} label="Modifica" color="gray" onClick={() => openEdit(ev, "edit")} />
+                                  <>
+                                    <ActionBtn icon={<Pencil size={13} />}    label="Modifica" color="gray"    onClick={() => openEdit(ev, "edit")} />
+                                    <ActionBtn icon={<UserCheck size={13} />} label="P"        color="emerald" onClick={() => onPresente(ev)} />
+                                    <ActionBtn icon={<UserX size={13} />}     label="A"        color="red"     onClick={() => setAssenteEv(ev)} />
+                                  </>
                                 )}
                                 {isSvolta && isAdmin && (
                                   <ActionBtn icon={<RotateCcw size={13} />} label="Ripristina" color="gray" onClick={() => onAnnullaPresenza(ev)} />
