@@ -23,7 +23,7 @@
       "name": "Segna Presenze",
       "short_name": "Presenze",
       "description": "Segna presenza o assenza alle lezioni di oggi",
-      "url": "/insegnante/calendario",
+      "url": "/insegnante/oggi",
       "icons": [{ "src": "/icons/presenza.svg", "sizes": "96x96", "type": "image/svg+xml" }]
     },
     {
