@@ -229,11 +229,12 @@ export default function DashboardAllievo() {
       {riepilogo && (
         <div className="mb-4">
           <p className="text-xs font-semibold text-n-600 uppercase mb-2">Anno accademico {annoAcc}</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Svolte',    n: parseInt(riepilogo.svolte||0),    cls: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
-              { label: 'Rimandate', n: parseInt(riepilogo.rimandate||0), cls: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100' },
-              { label: 'Annullate', n: parseInt(riepilogo.annullate||0), cls: 'text-red-600',     bg: 'bg-red-50 border-red-100' },
+              { label: 'Svolte',      n: parseInt(riepilogo.svolte||0),      cls: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
+              { label: 'Recuperate',  n: parseInt(riepilogo.recuperate||0),  cls: 'text-teal-600',    bg: 'bg-teal-50 border-teal-100' },
+              { label: 'Rimandate',   n: parseInt(riepilogo.rimandate||0),   cls: 'text-amber-600',   bg: 'bg-amber-50 border-amber-100' },
+              { label: 'Annullate',   n: parseInt(riepilogo.annullate||0),   cls: 'text-red-600',     bg: 'bg-red-50 border-red-100' },
             ].map(({ label, n, cls, bg }) => (
               <div key={label} className={`border rounded-xl p-3 text-center ${bg}`}>
                 <p className={`text-2xl font-bold ${cls}`}>{n}</p>

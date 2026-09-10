@@ -215,6 +215,10 @@ export default function DashboardInsegnante() {
     .filter((l) => l.stato === 'rimandata' && !l.riprogrammata)
     .sort((a, b) => (a.data || '').localeCompare(b.data || ''));
 
+  const lezioniRecuperate = lezioni
+    .filter((l) => l.riprogrammata && (l.stato === 'svolta' || l.stato === 'appuntamentata'))
+    .sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
   if (loading) {
     return (
       <InsegnanteLayout>
@@ -387,6 +391,37 @@ export default function DashboardInsegnante() {
                   </div>
                 ))}
               </div>
+            )}
+
+            {lezioniRecuperate.length > 0 && (
+              <>
+                <h2 className="font-semibold text-n-900 mt-5 mb-3">
+                  Recuperate ({lezioniRecuperate.length})
+                </h2>
+                <div className="bg-white border rounded-xl overflow-hidden">
+                  {lezioniRecuperate.map((l, i) => (
+                    <div
+                      key={l.id}
+                      className={`flex items-center gap-3 px-4 py-3 ${i < lezioniRecuperate.length - 1 ? 'border-b border-gray-50' : ''}`}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-n-900 truncate">
+                          {l.tipo === 'collettiva' ? (l.nome_gruppo || 'Gruppo') : `${l.nome_allievo} ${l.cognome_allievo}`}
+                        </p>
+                        <p className="text-xs text-n-600 flex items-center gap-2 mt-0.5">
+                          <span className="flex items-center gap-1"><Calendar size={10} /> {formatDataBreve(l.data?.slice(0,10))}</span>
+                          <span className="flex items-center gap-1"><Clock size={10} /> {formatOra(l.ora_inizio)}–{formatOra(l.ora_fine)}</span>
+                          {l.aula && <span className="flex items-center gap-1"><MapPin size={10} /> {l.aula}</span>}
+                        </p>
+                      </div>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${l.stato === 'svolta' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                        {l.stato === 'svolta' ? 'Svolta' : 'Programmata'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}

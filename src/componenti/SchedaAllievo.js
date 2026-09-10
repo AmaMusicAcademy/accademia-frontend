@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, RotateCcw, CreditCard, AlertCircle, ChevronRight, ArrowLeft, Clock, CalendarDays, FileText } from 'lucide-react';
+import { X, CheckCircle2, RotateCcw, CreditCard, AlertCircle, ChevronRight, ArrowLeft, Clock, CalendarDays, FileText, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 const hhmm = (t) => t ? String(t).slice(0, 5) : '';
@@ -125,7 +125,7 @@ export default function SchedaAllievo({ allievo, lezioniInsegnante, onClose }) {
   const [conteggi, setConteggi]   = useState(null);
   const [pagamenti, setPagamenti] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [popup, setPopup]         = useState(null); // 'rimandate' | 'da_recuperare'
+  const [popup, setPopup]         = useState(null); // 'rimandate' | 'da_recuperare' | 'recuperate'
 
   useEffect(() => {
     if (!allievo) return;
@@ -157,6 +157,7 @@ export default function SchedaAllievo({ allievo, lezioniInsegnante, onClose }) {
     parseHistory(l.old_schedules).length > 0
   );
   const lezioniDaRecuperare = lezioniAllievo.filter(l => l.stato === 'rimandata' && !l.riprogrammata);
+  const lezioniRecuperate   = lezioniAllievo.filter(l => l.riprogrammata && (l.stato === 'svolta' || l.stato === 'appuntamentata'));
 
   const dataIscrizione = allievo.data_iscrizione || allievo.created_at || allievo.data_creazione;
 
@@ -226,6 +227,14 @@ export default function SchedaAllievo({ allievo, lezioniInsegnante, onClose }) {
                   value={lezioniDaRecuperare.length}
                   onClick={lezioniDaRecuperare.length > 0 ? () => setPopup('da_recuperare') : null}
                 />
+
+                <KpiCard
+                  icon={RefreshCw}
+                  color="emerald"
+                  label="Recuperate"
+                  value={conteggi?.recuperate ?? lezioniRecuperate.length}
+                  onClick={lezioniRecuperate.length > 0 ? () => setPopup('recuperate') : null}
+                />
               </div>
 
               {/* info extra */}
@@ -262,6 +271,14 @@ export default function SchedaAllievo({ allievo, lezioniInsegnante, onClose }) {
           title="Lezioni da recuperare"
           lezioni={lezioniDaRecuperare}
           tipo="da_recuperare"
+          onClose={() => setPopup(null)}
+        />
+      )}
+      {popup === 'recuperate' && (
+        <LogPopup
+          title="Lezioni recuperate"
+          lezioni={lezioniRecuperate}
+          tipo="rimandate"
           onClose={() => setPopup(null)}
         />
       )}
