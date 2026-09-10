@@ -249,7 +249,7 @@ export default function DashboardInsegnante() {
           <StatCard icon={Calendar}   label={`Lezioni ${MESI[mese]}`}  value={lezioniMese}        color="blue" />
           <StatCard icon={Users}      label="Allievi seguiti"           value={allieviUnici}        color="indigo" />
           <StatCard icon={TrendingUp} label="Oggi"                      value={lezioniOggi.length}  color="emerald" />
-          <StatCard icon={Clock}      label="Totali archivio"           value={lezioni.length}      color="amber" />
+          <StatCard icon={RotateCcw}  label="Recuperate"                value={lezioniRecuperate.length} color="amber" />
         </div>
 
         {/* Tab */}

@@ -246,14 +246,15 @@ export default function DettaglioAllievo() {
               {statsOpen ? <ChevronUp size={16} className="text-n-300" /> : <ChevronDown size={16} className="text-n-300" />}
             </button>
             {statsOpen && (
-              <div className="grid grid-cols-3 divide-x border-t">
+              <div className="grid grid-cols-2 divide-x border-t">
                 {[
-                  { stato: 'svolta',    label: 'Svolte',    count: conteggioLezioni.svolte,    color: 'text-emerald-600', bg: 'bg-emerald-50' },
-                  { stato: 'annullata', label: 'Annullate', count: conteggioLezioni.annullate,  color: 'text-red-500',     bg: 'bg-red-50' },
-                  { stato: 'rimandata', label: 'Rimandate', count: conteggioLezioni.rimandate,  color: 'text-amber-600',   bg: 'bg-amber-50' },
+                  { stato: 'svolta',    label: 'Svolte',      count: conteggioLezioni.svolte,      color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                  { stato: 'annullata', label: 'Annullate',   count: conteggioLezioni.annullate,   color: 'text-red-500',     bg: 'bg-red-50' },
+                  { stato: 'rimandata', label: 'Rimandate',   count: conteggioLezioni.rimandate,   color: 'text-amber-600',   bg: 'bg-amber-50' },
+                  { stato: null,        label: 'Recuperate',  count: conteggioLezioni.recuperate,  color: 'text-teal-600',    bg: 'bg-teal-50' },
                 ].map(({ stato, label, count, color, bg }) => (
-                  <button key={stato} onClick={() => apriModalLezioni(stato)}
-                    className={`flex flex-col items-center py-4 gap-1 active:opacity-70 ${bg}`}>
+                  <button key={label} onClick={() => stato && apriModalLezioni(stato)} disabled={!stato}
+                    className={`flex flex-col items-center py-4 gap-1 active:opacity-70 disabled:cursor-default ${bg}`}>
                     <span className={`text-2xl font-bold ${color}`}>{count ?? 0}</span>
                     <span className="text-xs text-n-300">{label}</span>
                   </button>
