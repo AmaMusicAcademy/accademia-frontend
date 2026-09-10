@@ -18,6 +18,29 @@
       "sizes": "512x512"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Segna Presenze",
+      "short_name": "Presenze",
+      "description": "Segna presenza o assenza alle lezioni di oggi",
+      "url": "/insegnante/calendario",
+      "icons": [{ "src": "/icons/presenza.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Nuova Lezione",
+      "short_name": "Nuova Lezione",
+      "description": "Aggiungi una nuova lezione al calendario",
+      "url": "/nuova-lezione",
+      "icons": [{ "src": "/icons/nuova-lezione.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Valida Pagamenti",
+      "short_name": "Pagamenti",
+      "description": "Valida quote mensili e tassa associativa",
+      "url": "/admin/pagamenti",
+      "icons": [{ "src": "/icons/pagamenti.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    }
+  ],
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",
