@@ -282,7 +282,7 @@ export default function PwaInstallGuide({ forceShow = false, onDismiss: onDismis
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
-      <div className="absolute inset-0 bg-black/55 pointer-events-auto" onClick={dismiss} />
+      <div className="absolute inset-0 bg-black/55 pointer-events-auto" onClick={next} />
 
       <div className={`absolute ${s.wrapperClass} pointer-events-auto`}>
         {s.arrowFirst && <Arrow direction={s.arrowDir} />}
