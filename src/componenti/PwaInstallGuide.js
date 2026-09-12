@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { X, MoreVertical, Share, Plus } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_guide_shown';
-const AUTO_MS = 3000;
+const AUTO_MS = 8000;
 
 function detectDevice() {
   const ua = navigator.userAgent || '';
@@ -109,7 +109,7 @@ function Bubble({ label, text, onNext, onDismiss, step, total, resetKey }) {
               <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === step ? 'bg-ama-500' : 'bg-n-200'}`} />
             ))}
           </div>
-          <p className="text-[11px] font-medium text-ama-500">prossimo step in 3s…</p>
+          <p className="text-[11px] font-medium text-ama-500">prossimo step in 8s…</p>
         </div>
         <div className="h-2 bg-n-100 rounded-full overflow-hidden">
           <ProgressBarInner running resetKey={resetKey} onComplete={onNext} />
