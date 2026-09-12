@@ -311,6 +311,51 @@ export default function DettaglioAllievo() {
           )}
         </div>
 
+        {/* Genitore / Tutore (solo se minore) */}
+        {(() => {
+          const isMinore = allievo.minore ||
+            (allievo.data_nascita && (() => {
+              const nascita = new Date(allievo.data_nascita);
+              const oggi = new Date();
+              const anni = oggi.getFullYear() - nascita.getFullYear() -
+                (oggi < new Date(oggi.getFullYear(), nascita.getMonth(), nascita.getDate()) ? 1 : 0);
+              return anni < 18;
+            })());
+          if (!isMinore) return null;
+
+          const CAMPI_GEN = [
+            { key: 'genitore_nome',          label: 'Nome' },
+            { key: 'genitore_cognome',        label: 'Cognome' },
+            { key: 'genitore_cf',             label: 'Codice Fiscale' },
+            { key: 'genitore_data_nascita',   label: 'Data di nascita', isDate: true },
+            { key: 'genitore_luogo_nascita',  label: 'Luogo di nascita' },
+            { key: 'genitore_indirizzo',      label: 'Indirizzo' },
+            { key: 'genitore_telefono',       label: 'Telefono' },
+            { key: 'genitore_email',          label: 'Email' },
+          ];
+
+          return (
+            <div className="bg-white border rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Minore</span>
+                  <p className="text-sm font-semibold text-n-900">Genitore / Tutore</p>
+                </div>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {CAMPI_GEN.map(({ key, label, isDate }) => (
+                  <div key={key} className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-xs text-n-300 w-36 shrink-0">{label}</span>
+                    <span className="text-sm text-n-900 text-right truncate">
+                      {isDate ? fmtData(allievo[key]) : (allievo[key] || '—')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Insegnanti */}
         <div className="bg-white border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b">
