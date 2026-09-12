@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { X, MoreVertical, Share, Plus, ArrowRight } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_guide_shown';
-const AUTO_MS = 5000;
+const AUTO_MS = 3000;
 
 function detectDevice() {
   const ua = navigator.userAgent || '';
@@ -105,19 +105,20 @@ function Bubble({ label, text, onNext, onDismiss, step, total, resetKey }) {
       {/* Progress + bottone */}
       <ProgressBar running onComplete={onNext} resetKey={resetKey} />
 
-      <div className="flex items-center justify-between mt-3">
-        {/* Pallini */}
+      <button
+        onClick={onNext}
+        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 bg-ama-500 text-white rounded-xl text-sm font-semibold active:bg-ama-700"
+      >
+        Fatto, vai avanti <ArrowRight size={14} />
+      </button>
+
+      <div className="flex items-center justify-between mt-2">
         <div className="flex gap-1.5">
           {Array.from({ length: total }).map((_, i) => (
             <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === step ? 'bg-ama-500' : 'bg-n-200'}`} />
           ))}
         </div>
-        <button
-          onClick={onNext}
-          className="flex items-center gap-1 px-3 py-1.5 bg-ama-500 text-white rounded-xl text-xs font-semibold active:bg-ama-700"
-        >
-          Avanti <ArrowRight size={12} />
-        </button>
+        <p className="text-[10px] text-n-300">avanza da solo in 3s</p>
       </div>
     </div>
   );
@@ -282,7 +283,7 @@ export default function PwaInstallGuide({ forceShow = false, onDismiss: onDismis
 
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
-      <div className="absolute inset-0 bg-black/55 pointer-events-auto" onClick={next} />
+      <div className="absolute inset-0 bg-black/55 pointer-events-none" />
 
       <div className={`absolute ${s.wrapperClass} pointer-events-auto`}>
         {s.arrowFirst && <Arrow direction={s.arrowDir} />}
