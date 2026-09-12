@@ -10,10 +10,20 @@ function detectDevice() {
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
   if (isStandalone) return 'installed';
+
   const isIOS =
     /iphone|ipad|ipod/i.test(ua) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (isIOS) return 'ios';
+
+  if (isIOS) {
+    // Estrai versione iOS: "OS 15_0" → 15
+    const match = ua.match(/OS (\d+)_/);
+    const iosVersion = match ? parseInt(match[1], 10) : 0;
+    // iOS 15+: barra in basso con i 3 puntini
+    // iOS <15: barra in alto con pulsante Condividi visibile in basso
+    return iosVersion >= 15 ? 'ios-new' : 'ios-old';
+  }
+
   if (/android/i.test(ua)) return 'android';
   return 'desktop';
 }
@@ -22,14 +32,15 @@ function detectDevice() {
 
 function Arrow({ direction }) {
   const defs = {
-    up:         { vb: '0 0 40 80', line: 'M20 72 L20 14', poly: '8,26 20,6 32,26' },
-    down:       { vb: '0 0 40 80', line: 'M20 8 L20 66',  poly: '8,54 20,74 32,54' },
-    'up-right': { vb: '0 0 80 80', line: 'M10 70 L62 18', poly: '47,10 72,16 64,40' },
+    up:           { vb: '0 0 40 80', line: 'M20 72 L20 14', poly: '8,26 20,6 32,26',   w: 32, h: 64 },
+    down:         { vb: '0 0 40 80', line: 'M20 8 L20 66',  poly: '8,54 20,74 32,54',  w: 32, h: 64 },
+    'up-right':   { vb: '0 0 80 80', line: 'M10 70 L62 18', poly: '47,10 72,16 64,40', w: 48, h: 48 },
+    'down-right': { vb: '0 0 80 80', line: 'M10 10 L62 62', poly: '47,70 72,64 64,40', w: 48, h: 48 },
   };
   const d = defs[direction] || defs.up;
   return (
     <svg viewBox={d.vb} className="drop-shadow-lg shrink-0"
-      style={{ width: direction === 'up-right' ? 48 : 32, height: direction === 'up-right' ? 48 : 64 }}
+      style={{ width: d.w, height: d.h }}
       fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d={d.line} stroke="white" strokeWidth="3.5" strokeLinecap="round" />
       <polygon points={d.poly} fill="white" />
@@ -157,35 +168,36 @@ const STEPS = {
       ),
     },
   ],
-  ios: [
+  // iOS 15+ – barra in basso, 3 puntini in basso a destra
+  'ios-new': [
     {
-      // Step 0 – 3 puntini (Chrome iOS) o menu Safari
-      wrapperClass: 'top-14 right-3 flex flex-col items-end gap-1',
-      arrowFirst: true,
-      arrowDir: 'up-right',
+      // Step 0 – 3 puntini in basso a destra
+      wrapperClass: 'bottom-28 right-3 flex flex-col items-end gap-1',
+      arrowFirst: false,
+      arrowDir: 'down-right',
       label: 'Passo 1 di 3',
       text: () => (
         <span>
-          Tocca i <strong>3 puntini</strong> {ic(MoreVertical, 'text-n-700')} in alto a destra
-          per aprire il menu del browser
+          Tocca i <strong>3 puntini</strong> {ic(MoreVertical, 'text-n-700')} in basso
+          a destra per aprire il menu di Safari
         </span>
       ),
     },
     {
-      // Step 1 – Condividi
-      wrapperClass: 'top-[42%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
-      arrowFirst: true,
-      arrowDir: 'up',
+      // Step 1 – Condividi nel menu aperto (copre parte bassa)
+      wrapperClass: 'top-[20%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
+      arrowFirst: false,
+      arrowDir: 'down',
       label: 'Passo 2 di 3',
       text: () => (
         <span>
-          Nel menu, scegli <strong>Condividi</strong> {ic(Share, 'text-n-700')} oppure
+          Nel menu che appare, scegli <strong>Condividi</strong> {ic(Share, 'text-n-700')} oppure
           direttamente <strong>"Aggiungi a schermata Home"</strong> {ic(Plus, 'text-n-700')}
         </span>
       ),
     },
     {
-      // Step 2 – Aggiungi a Home
+      // Step 2 – Conferma (foglio copre parte bassa)
       wrapperClass: 'top-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
       arrowFirst: false,
       arrowDir: 'down',
@@ -194,6 +206,36 @@ const STEPS = {
         <span>
           Scorri il foglio, scegli <strong>"Aggiungi a schermata Home"</strong>{' '}
           {ic(Plus, 'text-n-700')} poi conferma con <strong>Aggiungi</strong>
+        </span>
+      ),
+    },
+  ],
+
+  // iOS <15 – pulsante Condividi direttamente visibile in basso al centro
+  'ios-old': [
+    {
+      // Step 0 – Condividi in basso al centro
+      wrapperClass: 'bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+      arrowFirst: false,
+      arrowDir: 'down',
+      label: 'Passo 1 di 2',
+      text: () => (
+        <span>
+          Tocca il pulsante <strong>Condividi</strong> {ic(Share, 'text-n-700')} nella barra
+          in basso a Safari
+        </span>
+      ),
+    },
+    {
+      // Step 1 – Aggiungi a Home (foglio sale dal basso)
+      wrapperClass: 'top-[18%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
+      arrowFirst: false,
+      arrowDir: 'down',
+      label: 'Passo 2 di 2',
+      text: () => (
+        <span>
+          Scorri il menu che appare, scegli <strong>"Aggiungi a schermata Home"</strong>{' '}
+          {ic(Plus, 'text-n-700')} poi tocca <strong>Aggiungi</strong> in alto a destra
         </span>
       ),
     },
@@ -217,9 +259,7 @@ export default function PwaInstallGuide({ forceShow = false, onDismiss: onDismis
 
     try { if (localStorage.getItem(STORAGE_KEY)) return; } catch { return; }
 
-    setStep(0);
-    setResetKey(k => k + 1);
-    setVisible(true);
+    setStep(0); setResetKey(k => k + 1); setVisible(true);
   }, [forceShow]);
 
   const dismiss = useCallback(() => {
