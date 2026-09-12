@@ -306,6 +306,47 @@ export default function DettaglioAllievo() {
                     className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
                 </div>
               ))}
+
+              {/* Campi genitore — visibili solo se minore */}
+              {(() => {
+                const nascita = formAna.data_nascita ? new Date(formAna.data_nascita) : null;
+                const anni = nascita ? (() => {
+                  const oggi = new Date();
+                  return oggi.getFullYear() - nascita.getFullYear() -
+                    (oggi < new Date(oggi.getFullYear(), nascita.getMonth(), nascita.getDate()) ? 1 : 0);
+                })() : null;
+                const isMinore = formAna.minore || (anni !== null && anni < 18);
+                if (!isMinore) return null;
+
+                const CAMPI_GEN = [
+                  { key: 'genitore_nome',         label: 'Nome genitore',              type: 'text' },
+                  { key: 'genitore_cognome',       label: 'Cognome genitore',           type: 'text' },
+                  { key: 'genitore_cf',            label: 'CF genitore',                type: 'text' },
+                  { key: 'genitore_data_nascita',  label: 'Data nascita genitore',      type: 'date' },
+                  { key: 'genitore_luogo_nascita', label: 'Luogo nascita genitore',     type: 'text' },
+                  { key: 'genitore_indirizzo',     label: 'Indirizzo genitore',         type: 'text' },
+                  { key: 'genitore_telefono',      label: 'Telefono genitore',          type: 'tel' },
+                  { key: 'genitore_email',         label: 'Email genitore',             type: 'email' },
+                ];
+
+                return (
+                  <>
+                    <div className="pt-2 pb-1">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Genitore / Tutore</span>
+                    </div>
+                    {CAMPI_GEN.map(({ key, label, type }) => (
+                      <div key={key}>
+                        <label className="block text-xs text-n-600 mb-1">{label}</label>
+                        <input type={type}
+                          value={type==='date' ? (formAna[key] ? String(formAna[key]).slice(0,10) : '') : (formAna[key] ?? '')}
+                          onChange={e => setFormAna(f => ({ ...f, [key]: e.target.value || null }))}
+                          className="w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
+
               {errAna && <p className="text-xs text-red-500">{errAna}</p>}
             </div>
           )}
