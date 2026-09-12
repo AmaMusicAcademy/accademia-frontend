@@ -250,12 +250,8 @@ export default function PwaInstallGuide({ forceShow = false, onDismiss: onDismis
     const d = detectDevice();
     if (d === 'installed' || d === 'desktop') return;
     setDevice(d);
-
-    if (forceShow) { setStep(0); setResetKey(k => k + 1); setVisible(true); return; }
-
-    try { if (localStorage.getItem(STORAGE_KEY)) return; } catch { return; }
-
-    setStep(0); setResetKey(k => k + 1); setVisible(true);
+    // la guida appare solo se richiesta esplicitamente (forceShow)
+    if (forceShow) { setStep(0); setResetKey(k => k + 1); setVisible(true); }
   }, [forceShow]);
 
   const dismiss = useCallback(() => {

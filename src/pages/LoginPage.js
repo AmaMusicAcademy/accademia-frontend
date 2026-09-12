@@ -15,6 +15,18 @@ function LoginPage() {
   const [showGuide, setShowGuide] = useState(false);
   const navigate = useNavigate();
 
+  const isPwaInstalled =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  const isMobile = (() => {
+    const ua = navigator.userAgent || '';
+    return /iphone|ipad|ipod|android/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  })();
+
+  const showInstallUI = isMobile && !isPwaInstalled;
+
   // Prefill + autologin se token presente
   useEffect(() => {
     try {
@@ -123,8 +135,8 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-n-100 p-4">
-      <PwaInstallPrompt onInstall={() => setShowGuide(true)} />
-      <PwaInstallGuide forceShow={showGuide} onDismiss={() => setShowGuide(false)} />
+      {showInstallUI && <PwaInstallPrompt onInstall={() => setShowGuide(true)} />}
+      {showInstallUI && <PwaInstallGuide forceShow={showGuide} onDismiss={() => setShowGuide(false)} />}
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-full max-w-sm">
         <h1 className="text-xl font-bold mb-4">Login</h1>
 
@@ -185,14 +197,16 @@ function LoginPage() {
           Il nome utente non distingue tra maiuscole e minuscole.
         </p>
 
-        <button
-          type="button"
-          onClick={() => { try { localStorage.removeItem('pwa_guide_shown'); } catch {} setShowGuide(true); }}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-n-200 rounded-xl text-sm text-n-500 active:bg-n-100"
-        >
-          <Smartphone size={15} />
-          Installa app sul telefono
-        </button>
+        {showInstallUI && (
+          <button
+            type="button"
+            onClick={() => { try { localStorage.removeItem('pwa_guide_shown'); } catch {} setShowGuide(true); }}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-n-200 rounded-xl text-sm text-n-500 active:bg-n-100"
+          >
+            <Smartphone size={15} />
+            Installa app sul telefono
+          </button>
+        )}
 
         <p className="text-xs text-center text-n-300 mt-4">
           Vuoi iscriverti?{' '}
