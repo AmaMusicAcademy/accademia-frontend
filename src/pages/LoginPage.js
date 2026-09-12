@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../utils/api';
 import PwaInstallGuide from '../componenti/PwaInstallGuide';
+import PwaInstallPrompt from '../componenti/PwaInstallPrompt';
 import { Smartphone } from 'lucide-react';
 
 function LoginPage() {
@@ -122,6 +123,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-n-100 p-4">
+      <PwaInstallPrompt onInstall={() => setShowGuide(true)} />
       <PwaInstallGuide forceShow={showGuide} onDismiss={() => setShowGuide(false)} />
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-full max-w-sm">
         <h1 className="text-xl font-bold mb-4">Login</h1>
