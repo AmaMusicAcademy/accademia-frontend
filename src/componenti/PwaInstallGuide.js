@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { X, MoreVertical, Share, Plus, ArrowRight } from 'lucide-react';
+import { X, MoreVertical, Share, Plus } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_guide_shown';
 const AUTO_MS = 3000;
@@ -50,7 +50,7 @@ function Arrow({ direction }) {
 
 // ── Progress bar automatica ───────────────────────────────────────────────────
 
-function ProgressBar({ running, onComplete, resetKey }) {
+function ProgressBarInner({ running, onComplete, resetKey }) {
   const [width, setWidth] = useState(0);
   const start = useRef(null);
   const raf = useRef(null);
@@ -77,12 +77,10 @@ function ProgressBar({ running, onComplete, resetKey }) {
   }, [running, resetKey]);
 
   return (
-    <div className="h-0.5 bg-n-100 rounded-full overflow-hidden mt-3">
-      <div
-        className="h-full bg-ama-400 rounded-full transition-none"
-        style={{ width: `${width}%` }}
-      />
-    </div>
+    <div
+      className="h-full bg-ama-500 rounded-full transition-none"
+      style={{ width: `${width}%` }}
+    />
   );
 }
 
@@ -103,22 +101,19 @@ function Bubble({ label, text, onNext, onDismiss, step, total, resetKey }) {
       <p className="text-sm text-n-800 leading-snug">{typeof text === 'function' ? text() : text}</p>
 
       {/* Progress + bottone */}
-      <ProgressBar running onComplete={onNext} resetKey={resetKey} />
 
-      <button
-        onClick={onNext}
-        className="mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 bg-ama-500 text-white rounded-xl text-sm font-semibold active:bg-ama-700"
-      >
-        Fatto, vai avanti <ArrowRight size={14} />
-      </button>
-
-      <div className="flex items-center justify-between mt-2">
-        <div className="flex gap-1.5">
-          {Array.from({ length: total }).map((_, i) => (
-            <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === step ? 'bg-ama-500' : 'bg-n-200'}`} />
-          ))}
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex gap-1.5">
+            {Array.from({ length: total }).map((_, i) => (
+              <span key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === step ? 'bg-ama-500' : 'bg-n-200'}`} />
+            ))}
+          </div>
+          <p className="text-[11px] font-medium text-ama-500">prossimo step in 3s…</p>
         </div>
-        <p className="text-[10px] text-n-300">avanza da solo in 3s</p>
+        <div className="h-2 bg-n-100 rounded-full overflow-hidden">
+          <ProgressBarInner running resetKey={resetKey} onComplete={onNext} />
+        </div>
       </div>
     </div>
   );
