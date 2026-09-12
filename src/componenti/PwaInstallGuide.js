@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Share, MoreVertical, Plus, Download } from 'lucide-react';
+import { X, MoreVertical, Share } from 'lucide-react';
 
 const STORAGE_KEY = 'pwa_guide_shown';
 
@@ -8,151 +8,205 @@ function detectDevice() {
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone === true;
-
   if (isStandalone) return 'installed';
-
   const isIOS =
     /iphone|ipad|ipod/i.test(ua) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
   if (isIOS) return 'ios';
-
-  const isAndroid = /android/i.test(ua);
-  if (isAndroid) return 'android';
-
+  if (/android/i.test(ua)) return 'android';
   return 'desktop';
 }
 
-// Arrow pointing downward toward bottom bar (iOS)
-function ArrowDown() {
+// ── Frecce SVG ───────────────────────────────────────────────────────────────
+
+function Arrow({ direction }) {
+  // direction: 'up' | 'down' | 'up-right' | 'down-right'
+  const paths = {
+    up:         { line: 'M20 70 L20 15', poly: '8,28 20,8 32,28' },
+    down:       { line: 'M20 10 L20 65', poly: '8,52 20,72 32,52' },
+    'up-right': { line: 'M10 65 L55 20', poly: '42,10 65,18 57,40' },
+  };
+  const p = paths[direction] || paths.up;
   return (
-    <svg viewBox="0 0 40 80" className="w-10 h-20 text-white" fill="currentColor">
-      <line x1="20" y1="0" x2="20" y2="60" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      <polyline points="8,50 20,70 32,50" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 80 80" className="w-12 h-12 drop-shadow-lg" fill="none"
+      xmlns="http://www.w3.org/2000/svg">
+      <path d={p.line} stroke="white" strokeWidth="3.5" strokeLinecap="round" />
+      <polygon points={p.poly} fill="white" />
     </svg>
   );
 }
 
-// Arrow pointing upward toward top-right (Android)
-function ArrowUp() {
+// ── Bolla ────────────────────────────────────────────────────────────────────
+
+function Bubble({ icon: Icon, label, text, onNext, onDismiss, isLast, step }) {
   return (
-    <svg viewBox="0 0 40 80" className="w-10 h-20 text-white" fill="currentColor">
-      <line x1="20" y1="80" x2="20" y2="20" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-      <polyline points="8,30 20,10 32,30" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div className="bg-white rounded-2xl shadow-2xl px-5 py-4 w-72 max-w-[85vw]">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon size={15} className="text-ama-500 shrink-0" />}
+          <p className="text-xs font-semibold text-n-400 uppercase tracking-wide">{label}</p>
+        </div>
+        <button onClick={onDismiss} className="text-n-200 -mr-1 -mt-1 p-1">
+          <X size={14} />
+        </button>
+      </div>
+      <p className="text-sm font-medium text-n-900 leading-snug mb-4">{text}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1">
+          {[0, 1, 2].map(i => (
+            <span key={i} className={`w-1.5 h-1.5 rounded-full ${i === step ? 'bg-ama-500' : 'bg-n-200'}`} />
+          ))}
+        </div>
+        <button
+          onClick={onNext}
+          className="px-4 py-2 bg-ama-500 text-white rounded-xl text-sm font-semibold active:bg-ama-700"
+        >
+          {isLast ? 'Ho capito' : 'Avanti →'}
+        </button>
+      </div>
+    </div>
   );
 }
 
-export default function PwaInstallGuide({ forceShow = false, onDismiss }) {
+// ── Step definitions ──────────────────────────────────────────────────────────
+//
+// position: className per il wrapper dello step (absolute + inset)
+// arrowClass: className per il wrapper della freccia
+// bubbleClass: className per il wrapper della bolla
+
+const STEPS = {
+  android: [
+    {
+      // Step 0 – 3 puntini in alto a destra
+      // La bolla appare sotto i 3 puntini, la freccia punta in alto a destra
+      wrapperClass: 'top-16 right-3 flex flex-col items-end gap-1',
+      arrowFirst: true,   // freccia sopra la bolla
+      arrowDir: 'up-right',
+      icon: MoreVertical,
+      label: 'Passo 1 di 3',
+      text: 'Tocca i 3 puntini in alto a destra per aprire il menu del browser',
+    },
+    {
+      // Step 1 – Condividi nel menu a tendina (metà schermo in alto occupata dal menu)
+      // La bolla appare nella metà inferiore visibile
+      wrapperClass: 'top-[45%] right-3 flex flex-col items-end gap-1',
+      arrowFirst: true,
+      arrowDir: 'up',
+      icon: Share,
+      label: 'Passo 2 di 3',
+      text: 'Nel menu che si apre, tocca "Condividi"',
+    },
+    {
+      // Step 2 – Aggiungi a Home (il foglio di condivisione copre la metà inferiore)
+      // La bolla appare nella metà superiore visibile
+      wrapperClass: 'top-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+      arrowFirst: false,  // freccia sotto la bolla
+      arrowDir: 'down',
+      icon: null,
+      label: 'Passo 3 di 3',
+      text: 'Scorri il foglio di condivisione, scegli "Aggiungi a schermata Home" e tocca Aggiungi',
+    },
+  ],
+  ios: [
+    {
+      // Step 0 – Pulsante Condividi in basso al centro (Safari)
+      wrapperClass: 'bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+      arrowFirst: false,
+      arrowDir: 'down',
+      icon: Share,
+      label: 'Passo 1 di 3',
+      text: 'Tocca il pulsante Condividi nella barra in fondo a Safari',
+    },
+    {
+      // Step 1 – Il foglio di condivisione è aperto dal basso (~50% schermo occupato)
+      // La bolla nella metà superiore
+      wrapperClass: 'top-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+      arrowFirst: false,
+      arrowDir: 'down',
+      icon: null,
+      label: 'Passo 2 di 3',
+      text: 'Nel menu che appare, tocca "Aggiungi a schermata Home"',
+    },
+    {
+      // Step 2 – Dialog conferma: il pulsante Aggiungi è in alto a destra
+      wrapperClass: 'top-[30%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
+      arrowFirst: true,
+      arrowDir: 'up',
+      icon: null,
+      label: 'Passo 3 di 3',
+      text: 'Tocca "Aggiungi" in alto a destra per completare l\'installazione',
+    },
+  ],
+};
+
+// ── Componente principale ─────────────────────────────────────────────────────
+
+export default function PwaInstallGuide({ forceShow = false, onDismiss: onDismissProp }) {
   const [device, setDevice] = useState(null);
   const [visible, setVisible] = useState(false);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
     const d = detectDevice();
     if (d === 'installed' || d === 'desktop') return;
     setDevice(d);
 
-    if (forceShow) {
-      setVisible(true);
-      return;
-    }
+    if (forceShow) { setStep(0); setVisible(true); return; }
 
     try {
-      const alreadyShown = localStorage.getItem(STORAGE_KEY);
-      if (alreadyShown) return;
+      if (localStorage.getItem(STORAGE_KEY)) return;
     } catch { return; }
 
+    setStep(0);
     setVisible(true);
   }, [forceShow]);
 
   const dismiss = () => {
     try { localStorage.setItem(STORAGE_KEY, '1'); } catch {}
     setVisible(false);
-    if (onDismiss) onDismiss();
+    if (onDismissProp) onDismissProp();
+  };
+
+  const next = () => {
+    const steps = STEPS[device] || [];
+    if (step >= steps.length - 1) { dismiss(); } else { setStep(s => s + 1); }
   };
 
   if (!visible || !device) return null;
 
-  const isIOS = device === 'ios';
+  const steps = STEPS[device] || [];
+  const s = steps[step];
+  if (!s) return null;
+
+  const isLast = step === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col pointer-events-none">
-      {/* Sfondo semitrasparente */}
-      <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={dismiss} />
+    <div className="fixed inset-0 z-[9999] pointer-events-none">
+      {/* Sfondo */}
+      <div className="absolute inset-0 bg-black/55 pointer-events-auto" onClick={dismiss} />
 
-      {isIOS ? (
-        // iOS: bolla al centro in basso, freccia verso la barra in fondo
-        <div className="absolute bottom-24 left-0 right-0 flex flex-col items-center gap-1 pointer-events-auto">
-          {/* Bolla */}
-          <div className="bg-white rounded-2xl shadow-2xl px-5 py-4 mx-6 max-w-xs w-full">
-            <div className="flex items-start justify-between mb-2">
-              <p className="text-sm font-bold text-n-900">Installa l'app</p>
-              <button onClick={dismiss} className="text-n-300 -mr-1 -mt-1">
-                <X size={16} />
-              </button>
-            </div>
-            <ol className="text-sm text-n-700 space-y-2 list-none">
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">1</span>
-                <span>Tocca il pulsante <Share size={13} className="inline -mt-0.5" /> <strong>Condividi</strong> in basso</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">2</span>
-                <span>Scorri e scegli <strong>"Aggiungi a Home"</strong> <Plus size={12} className="inline -mt-0.5" /></span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">3</span>
-                <span>Tocca <strong>Aggiungi</strong> in alto a destra</span>
-              </li>
-            </ol>
-            <button
-              onClick={dismiss}
-              className="mt-3 w-full py-2 bg-ama-500 text-white rounded-xl text-sm font-semibold active:bg-ama-700"
-            >
-              Ho capito
-            </button>
+      {/* Step corrente */}
+      <div className={`absolute ${s.wrapperClass} pointer-events-auto`}>
+        {s.arrowFirst && (
+          <div className="flex justify-end pr-2">
+            <Arrow direction={s.arrowDir} />
           </div>
-          {/* Freccia verso il basso */}
-          <ArrowDown />
-        </div>
-      ) : (
-        // Android: bolla in alto a destra, freccia verso i 3 puntini
-        <div className="absolute top-12 right-4 flex flex-col items-end gap-1 pointer-events-auto">
-          {/* Freccia verso l'alto */}
-          <div className="mr-2">
-            <ArrowUp />
+        )}
+        <Bubble
+          icon={s.icon}
+          label={s.label}
+          text={s.text}
+          onNext={next}
+          onDismiss={dismiss}
+          isLast={isLast}
+          step={step}
+        />
+        {!s.arrowFirst && (
+          <div className="flex justify-center">
+            <Arrow direction={s.arrowDir} />
           </div>
-          {/* Bolla */}
-          <div className="bg-white rounded-2xl shadow-2xl px-5 py-4 max-w-xs w-72">
-            <div className="flex items-start justify-between mb-2">
-              <p className="text-sm font-bold text-n-900">Installa l'app</p>
-              <button onClick={dismiss} className="text-n-300 -mr-1 -mt-1">
-                <X size={16} />
-              </button>
-            </div>
-            <ol className="text-sm text-n-700 space-y-2 list-none">
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">1</span>
-                <span>Tocca <MoreVertical size={13} className="inline -mt-0.5" /> <strong>i 3 puntini</strong> in alto a destra</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">2</span>
-                <span>Scegli <strong>"Aggiungi a schermata Home"</strong> <Download size={12} className="inline -mt-0.5" /></span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="shrink-0 w-5 h-5 rounded-full bg-ama-100 text-ama-600 text-xs font-bold flex items-center justify-center">3</span>
-                <span>Tocca <strong>Aggiungi</strong> per confermare</span>
-              </li>
-            </ol>
-            <button
-              onClick={dismiss}
-              className="mt-3 w-full py-2 bg-ama-500 text-white rounded-xl text-sm font-semibold active:bg-ama-700"
-            >
-              Ho capito
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
