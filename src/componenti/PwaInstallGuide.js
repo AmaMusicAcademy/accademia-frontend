@@ -89,7 +89,7 @@ function Bubble({ label, text, onNext, onDismiss, step, total, resetKey }) {
       </div>
 
       {/* Testo con icone inline */}
-      <p className="text-sm text-n-800 leading-snug">{text}</p>
+      <p className="text-sm text-n-800 leading-snug">{typeof text === 'function' ? text() : text}</p>
 
       {/* Progress + bottone */}
       <ProgressBar running onComplete={onNext} resetKey={resetKey} />
@@ -119,34 +119,70 @@ const ic = (Icon, cls = '') => <Icon size={13} className={`inline -mt-0.5 mx-0.5
 const STEPS = {
   android: [
     {
+      // Step 0 – 3 puntini
       wrapperClass: 'top-14 right-3 flex flex-col items-end gap-1',
       arrowFirst: true,
       arrowDir: 'up-right',
-      label: 'Passo 1 di 2',
-      text: <span>Tocca i <strong>3 puntini</strong> {ic(MoreVertical,'text-n-700')} in alto a destra per aprire il menu del browser</span>,
+      label: 'Passo 1 di 3',
+      text: () => (
+        <span>
+          Tocca i <strong>3 puntini</strong> {ic(MoreVertical, 'text-n-700')} in alto a destra
+          per aprire il menu del browser
+        </span>
+      ),
     },
     {
+      // Step 1 – Condividi
       wrapperClass: 'top-[42%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
       arrowFirst: true,
       arrowDir: 'up',
-      label: 'Passo 2 di 2',
-      text: <span>Nel menu, scegli <strong>Condividi</strong> {ic(Share,'text-n-700')} — poi scorri e tocca <strong>"Aggiungi a schermata Home"</strong> {ic(Plus,'text-n-700')} e conferma con <strong>Aggiungi</strong></span>,
+      label: 'Passo 2 di 3',
+      text: () => (
+        <span>
+          Nel menu che si apre, scegli <strong>Condividi</strong> {ic(Share, 'text-n-700')}
+        </span>
+      ),
+    },
+    {
+      // Step 2 – Aggiungi a Home
+      wrapperClass: 'top-[15%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
+      arrowFirst: false,
+      arrowDir: 'down',
+      label: 'Passo 3 di 3',
+      text: () => (
+        <span>
+          Scorri il foglio e scegli <strong>"Aggiungi a schermata Home"</strong>{' '}
+          {ic(Plus, 'text-n-700')} poi conferma con <strong>Aggiungi</strong>
+        </span>
+      ),
     },
   ],
   ios: [
     {
+      // Step 0 – Condividi Safari
       wrapperClass: 'bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1',
       arrowFirst: false,
       arrowDir: 'down',
       label: 'Passo 1 di 2',
-      text: <span>Tocca il pulsante <strong>Condividi</strong> {ic(Share,'text-n-700')} nella barra in fondo a Safari</span>,
+      text: () => (
+        <span>
+          Tocca il pulsante <strong>Condividi</strong> {ic(Share, 'text-n-700')} nella barra
+          in fondo a Safari
+        </span>
+      ),
     },
     {
+      // Step 1 – Aggiungi a Home
       wrapperClass: 'top-[18%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-2',
       arrowFirst: false,
       arrowDir: 'down',
       label: 'Passo 2 di 2',
-      text: <span>Scorri il menu che appare e scegli <strong>"Aggiungi a schermata Home"</strong> {ic(Plus,'text-n-700')} — nella schermata successiva tocca <strong>Aggiungi</strong> in alto a destra</span>,
+      text: () => (
+        <span>
+          Scorri il menu che appare e scegli <strong>"Aggiungi a schermata Home"</strong>{' '}
+          {ic(Plus, 'text-n-700')} — poi tocca <strong>Aggiungi</strong> in alto a destra
+        </span>
+      ),
     },
   ],
 };
