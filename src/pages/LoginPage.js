@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../utils/api';
+import PwaInstallGuide from '../componenti/PwaInstallGuide';
+import { Smartphone } from 'lucide-react';
 
 function LoginPage() {
   const [username, setUsername] = useState('');
@@ -9,6 +11,7 @@ function LoginPage() {
   const [staySignedIn, setStaySignedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState('');
+  const [showGuide, setShowGuide] = useState(false);
   const navigate = useNavigate();
 
   // Prefill + autologin se token presente
@@ -119,6 +122,7 @@ function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-n-100 p-4">
+      <PwaInstallGuide forceShow={showGuide} onDismiss={() => setShowGuide(false)} />
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow-md w-full max-w-sm">
         <h1 className="text-xl font-bold mb-4">Login</h1>
 
@@ -178,6 +182,15 @@ function LoginPage() {
         <p className="text-xs text-n-600 mt-3">
           Il nome utente non distingue tra maiuscole e minuscole.
         </p>
+
+        <button
+          type="button"
+          onClick={() => { try { localStorage.removeItem('pwa_guide_shown'); } catch {} setShowGuide(true); }}
+          className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-n-200 rounded-xl text-sm text-n-500 active:bg-n-100"
+        >
+          <Smartphone size={15} />
+          Installa app sul telefono
+        </button>
 
         <p className="text-xs text-center text-n-300 mt-4">
           Vuoi iscriverti?{' '}
