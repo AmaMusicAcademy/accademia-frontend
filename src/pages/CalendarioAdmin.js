@@ -1,55 +1,92 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import BottomNavAdmin from "../componenti/BottomNavAdmin";
 import EditLessonModal from "../componenti/EditLessonModal";
 import PageHeader from "../componenti/PageHeader";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
+const GRID_START  = 8;   // 08:00
+const GRID_END    = 21;  // 21:00
+const HOUR_H      = 64;  // px per hour
+const TOTAL_H     = (GRID_END - GRID_START) * HOUR_H;
+
 const COLORS = [
-  { bg: 'bg-blue-100',   border: 'border-blue-300',   text: 'text-blue-800',   dot: 'bg-blue-500',   chipSel: 'bg-blue-500 text-white',   chipDef: 'bg-white text-blue-600 border border-blue-300' },
-  { bg: 'bg-emerald-100',border: 'border-emerald-300', text: 'text-emerald-800',dot: 'bg-emerald-500', chipSel: 'bg-emerald-500 text-white', chipDef: 'bg-white text-emerald-600 border border-emerald-300' },
-  { bg: 'bg-violet-100', border: 'border-violet-300',  text: 'text-violet-800', dot: 'bg-violet-500',  chipSel: 'bg-violet-500 text-white',  chipDef: 'bg-white text-violet-600 border border-violet-300' },
-  { bg: 'bg-amber-100',  border: 'border-amber-300',   text: 'text-amber-800',  dot: 'bg-amber-500',   chipSel: 'bg-amber-500 text-white',   chipDef: 'bg-white text-amber-700 border border-amber-300' },
-  { bg: 'bg-rose-100',   border: 'border-rose-300',    text: 'text-rose-800',   dot: 'bg-rose-500',    chipSel: 'bg-rose-500 text-white',    chipDef: 'bg-white text-rose-600 border border-rose-300' },
-  { bg: 'bg-cyan-100',   border: 'border-cyan-300',    text: 'text-cyan-800',   dot: 'bg-cyan-500',    chipSel: 'bg-cyan-500 text-white',    chipDef: 'bg-white text-cyan-600 border border-cyan-300' },
-  { bg: 'bg-orange-100', border: 'border-orange-300',  text: 'text-orange-800', dot: 'bg-orange-500',  chipSel: 'bg-orange-500 text-white',  chipDef: 'bg-white text-orange-600 border border-orange-300' },
-  { bg: 'bg-pink-100',   border: 'border-pink-300',    text: 'text-pink-800',   dot: 'bg-pink-500',    chipSel: 'bg-pink-500 text-white',    chipDef: 'bg-white text-pink-600 border border-pink-300' },
+  { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af', chip: '#3b82f6' },
+  { bg: '#d1fae5', border: '#6ee7b7', text: '#065f46', chip: '#10b981' },
+  { bg: '#ede9fe', border: '#c4b5fd', text: '#4c1d95', chip: '#8b5cf6' },
+  { bg: '#fef3c7', border: '#fcd34d', text: '#92400e', chip: '#f59e0b' },
+  { bg: '#fee2e2', border: '#fca5a5', text: '#991b1b', chip: '#ef4444' },
+  { bg: '#cffafe', border: '#67e8f9', text: '#164e63', chip: '#06b6d4' },
+  { bg: '#ffedd5', border: '#fdba74', text: '#9a3412', chip: '#f97316' },
+  { bg: '#fce7f3', border: '#f9a8d4', text: '#9d174d', chip: '#ec4899' },
 ];
 
-const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-const MESI   = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const GIORNI_LONG  = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const MESI_SHORT   = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 
-function fmtData(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  const oggi = new Date(); oggi.setHours(0,0,0,0);
-  const domani = new Date(oggi); domani.setDate(oggi.getDate()+1);
-  if (d.getTime() === oggi.getTime())   return `Oggi, ${d.getDate()} ${MESI[d.getMonth()]}`;
-  if (d.getTime() === domani.getTime()) return `Domani, ${d.getDate()} ${MESI[d.getMonth()]}`;
-  return `${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} ${d.getFullYear()}`;
+function toYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
 }
 
-function isToday(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
-  const oggi = new Date(); oggi.setHours(0,0,0,0);
-  return d.getTime() === oggi.getTime();
+function todayYMD() { return toYMD(new Date()); }
+
+function fmtHeader(ymd) {
+  const d = new Date(ymd + 'T00:00:00');
+  const t = todayYMD();
+  const label = ymd === t ? 'Oggi' : GIORNI_LONG[d.getDay()];
+  return `${label} ${d.getDate()} ${MESI_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function addDays(ymd, n) {
+  const d = new Date(ymd + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return toYMD(d);
+}
+
+function timeToMin(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.slice(0,5).split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Layout algorithm: assign column index to overlapping events
+function layoutEvents(events) {
+  const sorted = [...events].sort((a,b) => a.startMin - b.startMin);
+  const cols = []; // cols[i] = endMin of last event in column i
+
+  return sorted.map(ev => {
+    let col = cols.findIndex(endMin => endMin <= ev.startMin);
+    if (col === -1) { col = cols.length; }
+    cols[col] = ev.endMin;
+    return { ...ev, col, totalCols: 0 };
+  }).map((ev, _, arr) => {
+    // count how many columns are needed for overlapping group
+    const overlapping = arr.filter(e =>
+      e.startMin < ev.endMin && e.endMin > ev.startMin
+    );
+    return { ...ev, totalCols: Math.max(...overlapping.map(e => e.col)) + 1 };
+  });
 }
 
 export default function CalendarioAdmin() {
   const [lezioni, setLezioni]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [teachers, setTeachers] = useState([]);
-  const [selected, setSelected] = useState(new Set()); // Set di id_insegnante selezionati (vuoto = tutti)
+  const [selected, setSelected] = useState(new Set());
+  const [day, setDay]           = useState(todayYMD());
 
-  const [editOpen, setEditOpen]   = useState(false);
-  const [editMode, setEditMode]   = useState("edit");
+  const [editOpen, setEditOpen]     = useState(false);
+  const [editMode, setEditMode]     = useState("edit");
   const [editLesson, setEditLesson] = useState(null);
 
-  const todayRef = useRef(null);
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
 
-  // Carica insegnanti
   useEffect(() => {
     fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(d => setTeachers(Array.isArray(d) ? d : [])).catch(() => {});
@@ -63,59 +100,42 @@ export default function CalendarioAdmin() {
       });
       if (res.status === 401 || res.status === 403) { navigate('/login'); return; }
       const data = await res.json();
-      const safeDateStr = (d) => (d ? String(d).slice(0,10) : null);
-      const enrich = (l) => {
-        const ymd = safeDateStr(l.data);
-        const oi  = l.ora_inizio ? String(l.ora_inizio).slice(0,5) : null;
-        const of  = l.ora_fine   ? String(l.ora_fine).slice(0,5)   : null;
-        return { ...l, start: ymd && oi ? `${ymd}T${oi}` : null, end: ymd && of ? `${ymd}T${of}` : null };
-      };
-      setLezioni((Array.isArray(data) ? data : []).map(enrich));
+      setLezioni(Array.isArray(data) ? data : []);
     } catch {}
     finally { setLoading(false); }
   }, [token, navigate]);
 
   useEffect(() => { refetch(); }, [refetch]);
 
-  // Scroll verso oggi dopo il caricamento
-  useEffect(() => {
-    if (!loading && todayRef.current) {
-      todayRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [loading]);
-
-  // Mappa id_insegnante → colore
   const colorMap = useMemo(() => {
     const map = {};
     teachers.forEach((t, i) => { map[String(t.id)] = COLORS[i % COLORS.length]; });
     return map;
   }, [teachers]);
 
-  // Filtra e raggruppa per data
-  const grouped = useMemo(() => {
-    const oggi = new Date(); oggi.setHours(0,0,0,0);
-    const filtered = lezioni.filter(l => {
-      if (!l.data) return false;
-      const d = new Date(l.data + 'T00:00:00');
-      if (d < oggi) return false; // solo da oggi in poi
-      if (selected.size === 0) return true;
-      return selected.has(String(l.id_insegnante));
-    });
+  // Lezioni del giorno corrente, filtrate per insegnante
+  const dayEvents = useMemo(() => {
+    return lezioni
+      .filter(l => {
+        if (!l.data) return false;
+        if (String(l.data).slice(0,10) !== day) return false;
+        if (selected.size > 0 && !selected.has(String(l.id_insegnante))) return false;
+        return true;
+      })
+      .map(l => {
+        const oi = l.ora_inizio ? String(l.ora_inizio).slice(0,5) : null;
+        const of = l.ora_fine   ? String(l.ora_fine).slice(0,5)   : null;
+        return {
+          ...l,
+          startMin: timeToMin(oi),
+          endMin:   timeToMin(of),
+          oi, of,
+        };
+      })
+      .filter(l => l.startMin !== null && l.endMin !== null);
+  }, [lezioni, day, selected]);
 
-    const map = {};
-    filtered.forEach(l => {
-      const key = String(l.data).slice(0,10);
-      if (!map[key]) map[key] = [];
-      map[key].push(l);
-    });
-
-    return Object.entries(map)
-      .sort(([a],[b]) => a.localeCompare(b))
-      .map(([date, lz]) => ({
-        date,
-        lezioni: lz.sort((a,b) => (a.ora_inizio||'').localeCompare(b.ora_inizio||'')),
-      }));
-  }, [lezioni, selected]);
+  const laidOut = useMemo(() => layoutEvents(dayEvents), [dayEvents]);
 
   const toggleTeacher = (id) => {
     setSelected(prev => {
@@ -125,110 +145,177 @@ export default function CalendarioAdmin() {
     });
   };
 
-  const openEdit = (l) => {
-    setEditLesson(l);
-    setEditMode('edit');
-    setEditOpen(true);
-  };
+  const openEdit = (l) => { setEditLesson(l); setEditMode('edit'); setEditOpen(true); };
+  const openAdd  = () => { setEditLesson(null); setEditMode('create'); setEditOpen(true); };
 
-  const openAdd = () => {
-    setEditLesson(null);
-    setEditMode('create');
-    setEditOpen(true);
-  };
+  // Indicatore ora corrente
+  const nowMin = useMemo(() => {
+    if (day !== todayYMD()) return null;
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  }, [day]);
+
+  const nowTop = nowMin !== null
+    ? ((nowMin - GRID_START * 60) / 60) * HOUR_H
+    : null;
 
   return (
     <div className="min-h-screen bg-n-100 flex flex-col pb-20">
       <PageHeader title="Calendario" backTo={false} />
 
       {/* Chip filtro insegnanti */}
-      <div className="px-4 py-3 bg-white border-b">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {teachers.map(t => {
-            const c   = colorMap[String(t.id)] || COLORS[0];
-            const sel = selected.has(String(t.id));
-            return (
+      {teachers.length > 0 && (
+        <div className="px-4 pt-3 pb-2 bg-white border-b">
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {teachers.map(t => {
+              const c   = colorMap[String(t.id)] || COLORS[0];
+              const sel = selected.has(String(t.id));
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => toggleTeacher(t.id)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={sel
+                    ? { backgroundColor: c.chip, color: '#fff' }
+                    : { backgroundColor: '#fff', color: c.chip, border: `1.5px solid ${c.chip}` }
+                  }
+                >
+                  {!sel && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.chip }} />}
+                  {t.nome} {t.cognome}
+                </button>
+              );
+            })}
+            {selected.size > 0 && (
               <button
-                key={t.id}
-                onClick={() => toggleTeacher(t.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${sel ? c.chipSel : c.chipDef}`}
+                onClick={() => setSelected(new Set())}
+                className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-n-100 text-n-500"
               >
-                {!sel && <span className={`w-2 h-2 rounded-full ${c.dot}`} />}
-                {t.nome} {t.cognome}
+                Tutti
               </button>
-            );
-          })}
-          {selected.size > 0 && (
-            <button
-              onClick={() => setSelected(new Set())}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium bg-n-100 text-n-500"
-            >
-              Tutti
-            </button>
-          )}
+            )}
+          </div>
         </div>
+      )}
+
+      {/* Navigatore giorno */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b">
+        <button
+          onClick={() => setDay(d => addDays(d, -1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-n-50 active:bg-n-100"
+        >
+          <ChevronLeft size={18} className="text-n-600" />
+        </button>
+        <div className="text-center">
+          <p className="text-sm font-semibold text-n-900">{fmtHeader(day)}</p>
+        </div>
+        <button
+          onClick={() => setDay(d => addDays(d, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-n-50 active:bg-n-100"
+        >
+          <ChevronRight size={18} className="text-n-600" />
+        </button>
       </div>
 
-      {/* Agenda */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-5">
+      {/* Griglia oraria */}
+      <div className="flex-1 overflow-y-auto bg-white">
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : grouped.length === 0 ? (
-          <div className="bg-white border border-dashed rounded-xl p-10 text-center text-sm text-n-300">
-            Nessuna lezione in programma.
-          </div>
         ) : (
-          grouped.map(({ date, lezioni: lz }) => (
-            <div key={date} ref={isToday(date) ? todayRef : null}>
-              {/* Header data */}
-              <div className={`flex items-center gap-2 mb-2 ${isToday(date) ? 'text-ama-500' : 'text-n-500'}`}>
-                <span className={`text-xs font-bold uppercase tracking-wide ${isToday(date) ? 'text-ama-500' : 'text-n-400'}`}>
-                  {fmtData(date)}
-                </span>
-                <div className="flex-1 h-px bg-n-200" />
-              </div>
+          <div className="relative flex" style={{ height: TOTAL_H }}>
 
-              {/* Lezioni del giorno */}
-              <div className="space-y-2">
-                {lz.map(l => {
-                  const c = colorMap[String(l.id_insegnante)] || COLORS[0];
-                  const nomeAllievo = l.nome_allievo
-                    ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim()
-                    : l.title || '—';
-                  const nomeIns = l.nome_insegnante
-                    ? `${l.nome_insegnante} ${l.cognome_insegnante || ''}`.trim()
-                    : '—';
-                  return (
-                    <button
-                      key={l.id}
-                      onClick={() => openEdit(l)}
-                      className={`w-full text-left flex items-stretch gap-3 bg-white border ${c.border} rounded-xl px-3 py-2.5 active:opacity-70 transition-opacity`}
-                    >
-                      {/* Barra colore sinistra */}
-                      <div className={`w-1 rounded-full ${c.dot} shrink-0`} />
-                      {/* Contenuto */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="text-sm font-semibold text-n-900 truncate">{nomeAllievo}</p>
-                          <p className="text-xs text-n-400 shrink-0">
-                            {l.ora_inizio?.slice(0,5)} – {l.ora_fine?.slice(0,5)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-xs font-medium ${c.text}`}>{nomeIns}</span>
-                          {l.aula && <span className="text-xs text-n-300">· Aula {l.aula}</span>}
-                          {l.stato === 'recupero' && <span className="text-xs text-amber-600 font-medium">· Recupero</span>}
-                          {l.stato === 'annullata' && <span className="text-xs text-red-500 font-medium">· Annullata</span>}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+            {/* Colonna orari */}
+            <div className="w-12 shrink-0 relative border-r border-n-100">
+              {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 flex items-start justify-end pr-1.5"
+                  style={{ top: i * HOUR_H - 7, height: HOUR_H }}
+                >
+                  <span className="text-[10px] text-n-300 font-medium">
+                    {String(GRID_START + i).padStart(2,'0')}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))
+
+            {/* Area eventi */}
+            <div className="flex-1 relative">
+
+              {/* Righe orarie */}
+              {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute left-0 right-0 border-t border-n-100"
+                  style={{ top: i * HOUR_H }}
+                />
+              ))}
+
+              {/* Linea ora corrente */}
+              {nowTop !== null && nowTop >= 0 && nowTop <= TOTAL_H && (
+                <div
+                  className="absolute left-0 right-0 z-10 flex items-center"
+                  style={{ top: nowTop }}
+                >
+                  <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
+                  <div className="flex-1 h-px bg-red-500" />
+                </div>
+              )}
+
+              {/* Nessuna lezione */}
+              {laidOut.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-sm text-n-300">Nessuna lezione</p>
+                </div>
+              )}
+
+              {/* Blocchi lezione */}
+              {laidOut.map(l => {
+                const c = colorMap[String(l.id_insegnante)] || COLORS[0];
+                const top    = Math.max(0, (l.startMin - GRID_START * 60) / 60 * HOUR_H);
+                const height = Math.max(20, (l.endMin - l.startMin) / 60 * HOUR_H - 2);
+                const colW   = 100 / l.totalCols;
+                const left   = `${l.col * colW}%`;
+                const width  = `calc(${colW}% - 4px)`;
+                const nomeAllievo = l.nome_allievo
+                  ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim()
+                  : l.title || '—';
+                const nomeIns = l.nome_insegnante
+                  ? `${l.nome_insegnante} ${l.cognome_insegnante || ''}`.trim()
+                  : '';
+
+                return (
+                  <button
+                    key={l.id}
+                    onClick={() => openEdit(l)}
+                    className="absolute rounded-lg px-2 py-1 text-left overflow-hidden active:opacity-70 transition-opacity"
+                    style={{
+                      top,
+                      height,
+                      left,
+                      width,
+                      backgroundColor: c.bg,
+                      border: `1.5px solid ${c.border}`,
+                    }}
+                  >
+                    <p className="text-xs font-semibold leading-tight truncate" style={{ color: c.text }}>
+                      {l.oi} – {l.of}
+                    </p>
+                    <p className="text-xs font-medium leading-tight truncate" style={{ color: c.text }}>
+                      {nomeAllievo}
+                    </p>
+                    {height > 36 && nomeIns && (
+                      <p className="text-[10px] leading-tight truncate opacity-70" style={{ color: c.text }}>
+                        {nomeIns}
+                        {l.aula ? ` · Aula ${l.aula}` : ''}
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
