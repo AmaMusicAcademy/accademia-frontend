@@ -43,6 +43,7 @@ const PALETTE = [
 
 function ColorePicker({ ins, id, onUpdated }) {
   const [saving, setSaving] = useState(false);
+  const [custom, setCustom] = useState(ins.colore || '#2563eb');
   const current = ins.colore || null;
 
   const handleSelect = async (hex) => {
@@ -53,6 +54,7 @@ function ColorePicker({ ins, id, onUpdated }) {
         method: 'PATCH', body: JSON.stringify({ colore: hex }),
       });
       onUpdated(updated);
+      setCustom(hex);
     } catch {}
     finally { setSaving(false); }
   };
@@ -60,7 +62,9 @@ function ColorePicker({ ins, id, onUpdated }) {
   return (
     <div className="bg-white border rounded-xl px-4 py-3">
       <p className="text-sm font-semibold text-n-900 mb-3">Colore calendario</p>
-      <div className="flex flex-wrap gap-2">
+
+      {/* Colori rapidi */}
+      <div className="flex flex-wrap gap-2 mb-3">
         {PALETTE.map(({ hex, label }) => {
           const sel = current === hex;
           return (
@@ -70,15 +74,45 @@ function ColorePicker({ ins, id, onUpdated }) {
               onClick={() => handleSelect(hex)}
               disabled={saving}
               className={`w-8 h-8 rounded-full transition-transform ${sel ? 'scale-125 ring-2 ring-offset-2' : 'active:scale-110'}`}
-              style={{ backgroundColor: hex, ringColor: hex }}
+              style={{ backgroundColor: hex }}
             />
           );
         })}
       </div>
+
+      {/* Selettore colore completo */}
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={custom}
+          onChange={e => setCustom(e.target.value)}
+          className="w-10 h-10 rounded-lg border border-n-200 cursor-pointer p-0.5 bg-white"
+        />
+        <input
+          type="text"
+          value={custom}
+          onChange={e => {
+            const v = e.target.value;
+            setCustom(v);
+          }}
+          placeholder="#000000"
+          className="flex-1 border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+          maxLength={7}
+        />
+        <button
+          onClick={() => handleSelect(custom)}
+          disabled={saving || !/^#[0-9a-fA-F]{6}$/.test(custom)}
+          className="px-3 py-2 bg-ama-500 text-white rounded-xl text-sm font-medium disabled:opacity-40"
+        >
+          {saving ? '…' : 'Applica'}
+        </button>
+      </div>
+
       {current && (
-        <p className="text-xs text-n-300 mt-2">
-          Colore attuale: <span className="font-medium" style={{ color: current }}>{PALETTE.find(p => p.hex === current)?.label || current}</span>
-        </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: current }} />
+          <p className="text-xs text-n-300">Colore attuale: <span className="font-mono">{current}</span></p>
+        </div>
       )}
     </div>
   );
