@@ -89,7 +89,7 @@ export default function CalendarioAdmin() {
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json()).then(d => setTeachers(Array.isArray(d) ? d : [])).catch(() => {});
+      .then(r => r.json()).then(d => setTeachers((Array.isArray(d) ? d : []).filter(t => t.attivo !== false))).catch(() => {});
   }, [token]);
 
   const refetch = useCallback(async () => {
@@ -122,11 +122,14 @@ export default function CalendarioAdmin() {
   }, [teachers]);
 
   // Lezioni del giorno corrente, filtrate per insegnante
+  const activeTeacherIds = useMemo(() => new Set(teachers.map(t => String(t.id))), [teachers]);
+
   const dayEvents = useMemo(() => {
     return lezioni
       .filter(l => {
         if (!l.data) return false;
         if (String(l.data).slice(0,10) !== day) return false;
+        if (!activeTeacherIds.has(String(l.id_insegnante))) return false;
         if (selected.size > 0 && !selected.has(String(l.id_insegnante))) return false;
         return true;
       })
