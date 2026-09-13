@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Plus, Search, X, Check, Users } from 'lucide-react';
+import { ChevronRight, Plus, Search, X, Check, Users, Smartphone, Globe, AlertCircle, Clock } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -21,8 +21,12 @@ export default function AdminAllievi() {
   const [insegnanti, setInsegnanti] = useState([]);
   const [loading, setLoading]       = useState(true);
 
-  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi' | 'gruppi'
+  const [tab, setTab]       = useState('attivi'); // 'attivi' | 'non_attivi' | 'gruppi' | 'accessi'
   const [search, setSearch] = useState('');
+
+  // Accessi
+  const [accessi, setAccessi]           = useState([]);
+  const [accessiLoading, setAccessiLoading] = useState(false);
 
   // Modal nuovo allievo
   const [showModal, setShowModal] = useState(false);
@@ -63,6 +67,17 @@ export default function AdminAllievi() {
 
   useEffect(() => { carica(); }, [carica]);
   useEffect(() => { if (tab === 'gruppi') caricaGruppi(); }, [tab, caricaGruppi]);
+
+  const caricaAccessi = useCallback(async () => {
+    setAccessiLoading(true);
+    try {
+      const data = await apiFetch('/api/admin/accessi');
+      setAccessi(Array.isArray(data) ? data : []);
+    } catch {}
+    setAccessiLoading(false);
+  }, []);
+
+  useEffect(() => { if (tab === 'accessi') caricaAccessi(); }, [tab, caricaAccessi]);
 
   const attivi    = useMemo(() => allievi.filter(a => a.attivo !== false), [allievi]);
   const nonAttivi = useMemo(() => allievi.filter(a => a.attivo === false), [allievi]);
@@ -166,6 +181,7 @@ export default function AdminAllievi() {
         <TabButton id="attivi"     label="Attivi" />
         <TabButton id="non_attivi" label="Non attivi" />
         <TabButton id="gruppi"     label="Gruppi" />
+        <TabButton id="accessi"    label="Accessi" />
       </div>
 
       <div className="max-w-xl mx-auto px-4 pt-4 space-y-4">
@@ -215,6 +231,85 @@ export default function AdminAllievi() {
                   </div>
                 )}
               </>
+            )}
+
+            {tab === 'accessi' && (
+              accessiLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Legenda */}
+                  <div className="flex gap-3 flex-wrap text-xs text-n-500">
+                    <span className="flex items-center gap-1"><Smartphone size={12} className="text-emerald-500" /> PWA installata</span>
+                    <span className="flex items-center gap-1"><Globe size={12} className="text-blue-400" /> Browser</span>
+                    <span className="flex items-center gap-1"><AlertCircle size={12} className="text-amber-500" /> Mai acceduto</span>
+                  </div>
+
+                  {/* Contatori sommario */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'PWA', value: accessi.filter(a => a.pwa_installata).length, color: 'emerald', Icon: Smartphone },
+                      { label: 'Browser', value: accessi.filter(a => a.ultimo_accesso && !a.pwa_installata).length, color: 'blue', Icon: Globe },
+                      { label: 'Mai acceduto', value: accessi.filter(a => !a.ultimo_accesso).length, color: 'amber', Icon: AlertCircle },
+                    ].map(({ label, value, color, Icon }) => (
+                      <div key={label} className={`bg-${color}-50 border border-${color}-100 rounded-xl px-3 py-2.5 text-center`}>
+                        <Icon size={16} className={`text-${color}-500 mx-auto mb-1`} />
+                        <p className={`text-xl font-bold text-${color}-700`}>{value}</p>
+                        <p className="text-[10px] text-n-400 mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Lista */}
+                  <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+                    {accessi.map(a => {
+                      const maiAcceduto = !a.ultimo_accesso;
+                      const isPwa = !!a.pwa_installata;
+                      const ua = a.user_agent || '';
+                      const isIOS = /iphone|ipad|ipod/i.test(ua);
+                      const isAndroid = /android/i.test(ua);
+                      const osSuffix = isIOS ? ' · iOS' : isAndroid ? ' · Android' : '';
+
+                      return (
+                        <div key={a.id} className="flex items-center gap-3 px-4 py-3">
+                          {/* Icona stato */}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                            maiAcceduto ? 'bg-amber-50' : isPwa ? 'bg-emerald-50' : 'bg-blue-50'
+                          }`}>
+                            {maiAcceduto
+                              ? <AlertCircle size={15} className="text-amber-500" />
+                              : isPwa
+                              ? <Smartphone size={15} className="text-emerald-500" />
+                              : <Globe size={15} className="text-blue-400" />
+                            }
+                          </div>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-n-900 truncate">{a.cognome} {a.nome}</p>
+                            <p className="text-xs text-n-300 truncate">
+                              {maiAcceduto
+                                ? 'Mai effettuato il primo accesso'
+                                : isPwa
+                                ? `App installata${osSuffix}`
+                                : `Browser${osSuffix}`
+                              }
+                            </p>
+                          </div>
+                          {/* Ultimo accesso */}
+                          {!maiAcceduto && (
+                            <div className="flex items-center gap-1 text-[11px] text-n-300 shrink-0">
+                              <Clock size={11} />
+                              {fmtData(a.ultimo_accesso)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )
             )}
 
             {tab === 'gruppi' && (
