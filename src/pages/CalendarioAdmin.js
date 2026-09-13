@@ -13,14 +13,14 @@ const HOUR_H      = 64;  // px per hour
 const TOTAL_H     = (GRID_END - GRID_START) * HOUR_H;
 
 const COLORS = [
-  { bg: '#dbeafe', border: '#93c5fd', text: '#1e40af', chip: '#3b82f6' },
-  { bg: '#d1fae5', border: '#6ee7b7', text: '#065f46', chip: '#10b981' },
-  { bg: '#ede9fe', border: '#c4b5fd', text: '#4c1d95', chip: '#8b5cf6' },
-  { bg: '#fef3c7', border: '#fcd34d', text: '#92400e', chip: '#f59e0b' },
-  { bg: '#fee2e2', border: '#fca5a5', text: '#991b1b', chip: '#ef4444' },
-  { bg: '#cffafe', border: '#67e8f9', text: '#164e63', chip: '#06b6d4' },
-  { bg: '#ffedd5', border: '#fdba74', text: '#9a3412', chip: '#f97316' },
-  { bg: '#fce7f3', border: '#f9a8d4', text: '#9d174d', chip: '#ec4899' },
+  { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a', chip: '#2563eb' }, // blu
+  { bg: '#dcfce7', border: '#86efac', text: '#14532d', chip: '#16a34a' }, // verde
+  { bg: '#f3e8ff', border: '#d8b4fe', text: '#581c87', chip: '#9333ea' }, // viola
+  { bg: '#fee2e2', border: '#fca5a5', text: '#7f1d1d', chip: '#dc2626' }, // rosso
+  { bg: '#ffedd5', border: '#fdba74', text: '#7c2d12', chip: '#ea580c' }, // arancione
+  { bg: '#fdf4ff', border: '#f0abfc', text: '#701a75', chip: '#c026d3' }, // fucsia
+  { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a', chip: '#0d9488' }, // teal
+  { bg: '#fefce8', border: '#fde047', text: '#713f12', chip: '#ca8a04' }, // giallo ocra
 ];
 
 const GIORNI_LONG  = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
