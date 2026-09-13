@@ -250,9 +250,9 @@ export default function AdminAllievi() {
                   {/* Contatori sommario */}
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { label: 'PWA', value: accessi.filter(a => a.pwa_installata).length, color: 'emerald', Icon: Smartphone },
-                      { label: 'Browser', value: accessi.filter(a => a.ultimo_accesso && !a.pwa_installata).length, color: 'blue', Icon: Globe },
-                      { label: 'Mai acceduto', value: accessi.filter(a => !a.ultimo_accesso).length, color: 'amber', Icon: AlertCircle },
+                      { label: 'PWA', value: accessi.filter(a => !a.mai_acceduto && a.pwa_installata).length, color: 'emerald', Icon: Smartphone },
+                      { label: 'Browser', value: accessi.filter(a => !a.mai_acceduto && !a.pwa_installata).length, color: 'blue', Icon: Globe },
+                      { label: 'Mai acceduto', value: accessi.filter(a => a.mai_acceduto).length, color: 'amber', Icon: AlertCircle },
                     ].map(({ label, value, color, Icon }) => (
                       <div key={label} className={`bg-${color}-50 border border-${color}-100 rounded-xl px-3 py-2.5 text-center`}>
                         <Icon size={16} className={`text-${color}-500 mx-auto mb-1`} />
@@ -265,7 +265,7 @@ export default function AdminAllievi() {
                   {/* Lista */}
                   <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
                     {accessi.map(a => {
-                      const maiAcceduto = !a.ultimo_accesso;
+                      const maiAcceduto = !!a.mai_acceduto;
                       const isPwa = !!a.pwa_installata;
                       const ua = a.user_agent || '';
                       const isIOS = /iphone|ipad|ipod/i.test(ua);
