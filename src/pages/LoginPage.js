@@ -58,10 +58,9 @@ function LoginPage() {
       // username case-insensitive
       const normalizedUsername = (username || '').trim().toLowerCase();
 
-      const standaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
-      const standaloneNav = window.navigator.standalone === true;
-      const pwaInstallata = standaloneMedia || standaloneNav;
-      console.log('[PWA debug] display-mode:standalone =', standaloneMedia, '| navigator.standalone =', standaloneNav, '| pwaInstallata =', pwaInstallata);
+      const pwaInstallata =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
 
       const res = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
