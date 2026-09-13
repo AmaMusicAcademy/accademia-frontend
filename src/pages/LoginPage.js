@@ -58,12 +58,19 @@ function LoginPage() {
       // username case-insensitive
       const normalizedUsername = (username || '').trim().toLowerCase();
 
+      const standaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
+      const standaloneNav = window.navigator.standalone === true;
+      const pwaInstallata = standaloneMedia || standaloneNav;
+      console.log('[PWA debug] display-mode:standalone =', standaloneMedia, '| navigator.standalone =', standaloneNav, '| pwaInstallata =', pwaInstallata);
+
       const res = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: normalizedUsername,
-          password: password
+          password: password,
+          pwa_installata: pwaInstallata,
+          user_agent: navigator.userAgent,
         }),
       });
 
