@@ -26,6 +26,64 @@ const CAMPI = [
   { key: 'data_inizio',   label: 'Inizio collaborazione', type: 'date' },
 ];
 
+const PALETTE = [
+  { hex: '#2563eb', label: 'Blu' },
+  { hex: '#16a34a', label: 'Verde' },
+  { hex: '#9333ea', label: 'Viola' },
+  { hex: '#dc2626', label: 'Rosso' },
+  { hex: '#ea580c', label: 'Arancione' },
+  { hex: '#c026d3', label: 'Fucsia' },
+  { hex: '#0d9488', label: 'Teal' },
+  { hex: '#ca8a04', label: 'Ocra' },
+  { hex: '#0284c7', label: 'Azzurro' },
+  { hex: '#65a30d', label: 'Lime' },
+  { hex: '#db2777', label: 'Rosa' },
+  { hex: '#7c3aed', label: 'Indaco' },
+];
+
+function ColorePicker({ ins, id, onUpdated }) {
+  const [saving, setSaving] = useState(false);
+  const current = ins.colore || null;
+
+  const handleSelect = async (hex) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const updated = await apiFetch(`/api/insegnanti/${id}`, {
+        method: 'PATCH', body: JSON.stringify({ colore: hex }),
+      });
+      onUpdated(updated);
+    } catch {}
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="bg-white border rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-n-900 mb-3">Colore calendario</p>
+      <div className="flex flex-wrap gap-2">
+        {PALETTE.map(({ hex, label }) => {
+          const sel = current === hex;
+          return (
+            <button
+              key={hex}
+              title={label}
+              onClick={() => handleSelect(hex)}
+              disabled={saving}
+              className={`w-8 h-8 rounded-full transition-transform ${sel ? 'scale-125 ring-2 ring-offset-2' : 'active:scale-110'}`}
+              style={{ backgroundColor: hex, ringColor: hex }}
+            />
+          );
+        })}
+      </div>
+      {current && (
+        <p className="text-xs text-n-300 mt-2">
+          Colore attuale: <span className="font-medium" style={{ color: current }}>{PALETTE.find(p => p.hex === current)?.label || current}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function DettaglioInsegnante() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -189,6 +247,9 @@ export default function DettaglioInsegnante() {
             </div>
           )}
         </div>
+
+        {/* ── Colore calendario ── */}
+        <ColorePicker ins={ins} id={id} onUpdated={setIns} />
 
         {/* ── Tariffa oraria ── */}
         <div className="bg-white border rounded-xl px-4 py-3">

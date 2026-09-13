@@ -109,7 +109,15 @@ export default function CalendarioAdmin() {
 
   const colorMap = useMemo(() => {
     const map = {};
-    teachers.forEach((t, i) => { map[String(t.id)] = COLORS[i % COLORS.length]; });
+    teachers.forEach((t, i) => {
+      const base = t.colore || COLORS[i % COLORS.length].chip;
+      map[String(t.id)] = {
+        bg:     `${base}22`,
+        border: `${base}66`,
+        text:   base,
+        chip:   base,
+      };
+    });
     return map;
   }, [teachers]);
 
