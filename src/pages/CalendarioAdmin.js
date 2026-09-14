@@ -130,6 +130,7 @@ export default function CalendarioAdmin() {
         if (!l.data) return false;
         if (String(l.data).slice(0,10) !== day) return false;
         if (!activeTeacherIds.has(String(l.id_insegnante))) return false;
+        if (l.stato === 'rimandata') return false;
         if (selected.size > 0 && !selected.has(String(l.id_insegnante))) return false;
         return true;
       })
