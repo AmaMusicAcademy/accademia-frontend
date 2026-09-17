@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Plus, Search, X, Check, Users, Smartphone, Globe, AlertCircle, Clock, MessageCircle, Send } from 'lucide-react';
+import { ChevronRight, Plus, Search, X, Check, Users, Smartphone, Globe, AlertCircle, Clock } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -27,14 +27,6 @@ export default function AdminAllievi() {
   // Accessi
   const [accessi, setAccessi]           = useState([]);
   const [accessiLoading, setAccessiLoading] = useState(false);
-
-  // WhatsApp
-  const [waInvio, setWaInvio]           = useState({}); // { [allievoId]: 'loading'|'ok'|'err' }
-  const [waBulkLoading, setWaBulkLoading] = useState(false);
-  const [waBulkResult, setWaBulkResult] = useState(null);
-  const meseCorrente = new Date().getMonth() + 1;
-  const [waAnno, setWaAnno]             = useState(new Date().getFullYear());
-  const [waMese, setWaMese]             = useState(meseCorrente);
 
   // Modal nuovo allievo
   const [showModal, setShowModal] = useState(false);
@@ -86,34 +78,6 @@ export default function AdminAllievi() {
   }, []);
 
   useEffect(() => { if (tab === 'accessi') caricaAccessi(); }, [tab, caricaAccessi]);
-
-  const inviaWhatsapp = useCallback(async (allievoId) => {
-    setWaInvio(p => ({ ...p, [allievoId]: 'loading' }));
-    try {
-      await apiFetch(`/api/admin/whatsapp-reminder/${allievoId}`, {
-        method: 'POST',
-        body: JSON.stringify({ anno: waAnno, mese: waMese }),
-      });
-      setWaInvio(p => ({ ...p, [allievoId]: 'ok' }));
-    } catch {
-      setWaInvio(p => ({ ...p, [allievoId]: 'err' }));
-    }
-  }, [waAnno, waMese]);
-
-  const inviaWhatsappBulk = useCallback(async () => {
-    setWaBulkLoading(true);
-    setWaBulkResult(null);
-    try {
-      const r = await apiFetch('/api/admin/whatsapp-reminder-bulk', {
-        method: 'POST',
-        body: JSON.stringify({ anno: waAnno, mese: waMese }),
-      });
-      setWaBulkResult(r);
-    } catch {
-      setWaBulkResult({ errori: -1 });
-    }
-    setWaBulkLoading(false);
-  }, [waAnno, waMese]);
 
   const attivi    = useMemo(() => allievi.filter(a => a.attivo !== false), [allievi]);
   const nonAttivi = useMemo(() => allievi.filter(a => a.attivo === false), [allievi]);
@@ -276,47 +240,6 @@ export default function AdminAllievi() {
                 </div>
               ) : (
                 <>
-                  {/* Bulk WhatsApp panel */}
-                  <div className="bg-white border rounded-xl p-4 flex flex-col gap-3">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle size={16} className="text-green-600" />
-                      <span className="text-sm font-semibold text-n-800">Invia reminder pagamento via WhatsApp</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <select
-                        value={waMese}
-                        onChange={e => setWaMese(Number(e.target.value))}
-                        className="border rounded-lg px-2 py-1.5 text-sm bg-n-50 text-n-800"
-                      >
-                        {['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'].map((m, i) => (
-                          <option key={i} value={i+1}>{m}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        value={waAnno}
-                        onChange={e => setWaAnno(Number(e.target.value))}
-                        className="border rounded-lg px-2 py-1.5 text-sm bg-n-50 text-n-800 w-20"
-                      />
-                    </div>
-                    <button
-                      onClick={inviaWhatsappBulk}
-                      disabled={waBulkLoading}
-                      className="flex items-center gap-2 self-start bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-                    >
-                      <Send size={14} />
-                      {waBulkLoading ? 'Invio in corso…' : 'Invia a tutti (non-PWA, quota non pagata)'}
-                    </button>
-                    {waBulkResult && (
-                      <p className="text-xs text-n-500">
-                        {waBulkResult.errori === -1
-                          ? 'Errore durante l\'invio.'
-                          : `Inviati: ${waBulkResult.inviati ?? 0} · Errori: ${waBulkResult.errori ?? 0}`
-                        }
-                      </p>
-                    )}
-                  </div>
-
                   {/* Legenda */}
                   <div className="flex gap-3 flex-wrap text-xs text-n-500">
                     <span className="flex items-center gap-1"><Smartphone size={12} className="text-emerald-500" /> PWA installata</span>
@@ -380,26 +303,6 @@ export default function AdminAllievi() {
                               <Clock size={11} />
                               {fmtData(a.ultimo_accesso)}
                             </div>
-                          )}
-                          {/* WhatsApp button — solo per utenti Browser con telefono */}
-                          {!maiAcceduto && !isPwa && a.telefono && (
-                            <button
-                              onClick={() => inviaWhatsapp(a.id)}
-                              disabled={waInvio[a.id] === 'loading'}
-                              title="Invia reminder WhatsApp"
-                              className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                                waInvio[a.id] === 'ok'  ? 'bg-green-100 text-green-600' :
-                                waInvio[a.id] === 'err' ? 'bg-red-100 text-red-500' :
-                                'bg-green-50 text-green-600 active:bg-green-100'
-                              }`}
-                            >
-                              {waInvio[a.id] === 'ok'
-                                ? <Check size={13} />
-                                : waInvio[a.id] === 'err'
-                                ? <X size={13} />
-                                : <MessageCircle size={13} />
-                              }
-                            </button>
                           )}
                         </div>
                       );

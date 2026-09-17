@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard, MessageCircle, Check, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard, MessageCircle, Check, ToggleLeft, ToggleRight, Send } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 
@@ -175,6 +175,8 @@ function PannelloWhatsApp({ token }) {
   const [insoluti, setInsoluti] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [waInvio, setWaInvio] = useState({}); // { [id]: 'loading'|'ok'|'err' }
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkResult, setBulkResult] = useState(null);
 
   const toggleAbilitato = () => {
     const next = !abilitato;
@@ -199,6 +201,24 @@ function PannelloWhatsApp({ token }) {
   const vai = (dir) => {
     const { anno: na, mese: nm } = dir === 'prev' ? prevMese(anno, mese) : nextMese(anno, mese);
     setAnno(na); setMese(nm);
+  };
+
+  const inviaBulk = async () => {
+    setBulkLoading(true);
+    setBulkResult(null);
+    try {
+      const r = await fetch(`${BASE_URL}/api/admin/whatsapp-reminder-bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ anno, mese }),
+      });
+      const d = await r.json();
+      setBulkResult(d);
+      await caricaInsoluti(anno, mese);
+    } catch {
+      setBulkResult({ errori: -1 });
+    }
+    setBulkLoading(false);
   };
 
   const inviaWa = async (allievo) => {
@@ -244,6 +264,27 @@ function PannelloWhatsApp({ token }) {
             <p className="text-sm font-semibold text-n-900">{nomeMese(anno, mese)}</p>
             <button onClick={() => vai('next')} className="w-8 h-8 flex items-center justify-center rounded-lg text-n-600 active:bg-n-100 text-lg">›</button>
           </div>
+
+          {/* Invio massivo */}
+          {insoluti.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <button
+                onClick={inviaBulk}
+                disabled={bulkLoading}
+                className="flex items-center justify-center gap-2 bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50"
+              >
+                <Send size={14} />
+                {bulkLoading ? 'Invio in corso…' : `Invia a tutti (${insoluti.length})`}
+              </button>
+              {bulkResult && (
+                <p className="text-xs text-center text-n-400">
+                  {bulkResult.errori === -1
+                    ? 'Errore durante l\'invio.'
+                    : `Inviati: ${bulkResult.inviati ?? 0} · Errori: ${bulkResult.errori ?? 0}`}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Lista insoluti */}
           {loadingList ? (
