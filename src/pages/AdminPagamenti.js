@@ -170,8 +170,6 @@ function PannelloWhatsApp({ token }) {
   const [abilitato, setAbilitato] = useState(() => {
     try { return localStorage.getItem('wa_notifiche_auto') === 'true'; } catch { return false; }
   });
-  const [anno, setAnno] = useState(now.getFullYear());
-  const [mese, setMese] = useState(now.getMonth() + 1);
   const [insoluti, setInsoluti] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
   const [waInvio, setWaInvio] = useState({}); // { [id]: 'loading'|'ok'|'err' }
@@ -184,10 +182,10 @@ function PannelloWhatsApp({ token }) {
     try { localStorage.setItem('wa_notifiche_auto', String(next)); } catch {}
   };
 
-  const caricaInsoluti = useCallback(async (a, m) => {
+  const caricaInsoluti = useCallback(async () => {
     setLoadingList(true);
     try {
-      const r = await fetch(`${BASE_URL}/api/admin/whatsapp-insoluti?anno=${a}&mese=${m}`, {
+      const r = await fetch(`${BASE_URL}/api/admin/whatsapp-insoluti`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const d = await r.json();
@@ -196,12 +194,7 @@ function PannelloWhatsApp({ token }) {
     setLoadingList(false);
   }, [token]);
 
-  useEffect(() => { caricaInsoluti(anno, mese); }, [anno, mese, caricaInsoluti]);
-
-  const vai = (dir) => {
-    const { anno: na, mese: nm } = dir === 'prev' ? prevMese(anno, mese) : nextMese(anno, mese);
-    setAnno(na); setMese(nm);
-  };
+  useEffect(() => { if (abilitato) caricaInsoluti(); }, [abilitato, caricaInsoluti]);
 
   const inviaBulk = async () => {
     setBulkLoading(true);
@@ -210,11 +203,10 @@ function PannelloWhatsApp({ token }) {
       const r = await fetch(`${BASE_URL}/api/admin/whatsapp-reminder-bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ anno, mese }),
       });
       const d = await r.json();
       setBulkResult(d);
-      await caricaInsoluti(anno, mese);
+      await caricaInsoluti();
     } catch {
       setBulkResult({ errori: -1 });
     }
@@ -228,7 +220,6 @@ function PannelloWhatsApp({ token }) {
       await fetch(`${BASE_URL}/api/admin/whatsapp-reminder/${allievo.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ anno, mese }),
       });
       setWaInvio(p => ({ ...p, [allievo.id]: 'ok' }));
     } catch {
@@ -255,15 +246,8 @@ function PannelloWhatsApp({ token }) {
       {abilitato && (
         <div className="p-4 space-y-3">
           <p className="text-xs text-n-400">
-            Allievi senza PWA con quota non pagata — seleziona il mese e invia il reminder.
+            Allievi senza PWA con una o più quote non pagate — invia il reminder WhatsApp.
           </p>
-
-          {/* Navigatore mese */}
-          <div className="flex items-center justify-between bg-n-50 rounded-xl px-3 py-2">
-            <button onClick={() => vai('prev')} className="w-8 h-8 flex items-center justify-center rounded-lg text-n-600 active:bg-n-100 text-lg">‹</button>
-            <p className="text-sm font-semibold text-n-900">{nomeMese(anno, mese)}</p>
-            <button onClick={() => vai('next')} className="w-8 h-8 flex items-center justify-center rounded-lg text-n-600 active:bg-n-100 text-lg">›</button>
-          </div>
 
           {/* Invio massivo */}
           {insoluti.length > 0 && (
@@ -293,7 +277,7 @@ function PannelloWhatsApp({ token }) {
             </div>
           ) : insoluti.length === 0 ? (
             <div className="bg-n-50 rounded-xl p-4 text-center text-xs text-n-400">
-              Nessun allievo non-PWA con quota non pagata per {nomeMese(anno, mese)}.
+              Nessun allievo non-PWA con quote non pagate.
             </div>
           ) : (
             <div className="border rounded-xl overflow-hidden divide-y divide-gray-50">
@@ -305,7 +289,7 @@ function PannelloWhatsApp({ token }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-n-900 truncate">{a.cognome} {a.nome}</p>
                       <p className="text-xs text-n-300 truncate">
-                        {hasTel ? a.telefono : 'Nessun telefono'}
+                        {hasTel ? (a.mesiLabel || a.telefono) : 'Nessun telefono'}
                       </p>
                     </div>
                     <button
