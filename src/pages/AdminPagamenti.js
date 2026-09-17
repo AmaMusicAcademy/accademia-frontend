@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard } from 'lucide-react';
+import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard, MessageCircle, Check, ToggleLeft, ToggleRight } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 
@@ -159,6 +159,135 @@ function QuoteAllievi({ token }) {
               </button>
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PannelloWhatsApp({ token }) {
+  const now = new Date();
+  const [abilitato, setAbilitato] = useState(() => {
+    try { return localStorage.getItem('wa_notifiche_auto') === 'true'; } catch { return false; }
+  });
+  const [anno, setAnno] = useState(now.getFullYear());
+  const [mese, setMese] = useState(now.getMonth() + 1);
+  const [insoluti, setInsoluti] = useState([]);
+  const [loadingList, setLoadingList] = useState(false);
+  const [waInvio, setWaInvio] = useState({}); // { [id]: 'loading'|'ok'|'err' }
+
+  const toggleAbilitato = () => {
+    const next = !abilitato;
+    setAbilitato(next);
+    try { localStorage.setItem('wa_notifiche_auto', String(next)); } catch {}
+  };
+
+  const caricaInsoluti = useCallback(async (a, m) => {
+    setLoadingList(true);
+    try {
+      const r = await fetch(`${BASE_URL}/api/admin/whatsapp-insoluti?anno=${a}&mese=${m}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await r.json();
+      setInsoluti(Array.isArray(d) ? d : []);
+    } catch { setInsoluti([]); }
+    setLoadingList(false);
+  }, [token]);
+
+  useEffect(() => { caricaInsoluti(anno, mese); }, [anno, mese, caricaInsoluti]);
+
+  const vai = (dir) => {
+    const { anno: na, mese: nm } = dir === 'prev' ? prevMese(anno, mese) : nextMese(anno, mese);
+    setAnno(na); setMese(nm);
+  };
+
+  const inviaWa = async (allievo) => {
+    if (!allievo.telefono) return;
+    setWaInvio(p => ({ ...p, [allievo.id]: 'loading' }));
+    try {
+      await fetch(`${BASE_URL}/api/admin/whatsapp-reminder/${allievo.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ anno, mese }),
+      });
+      setWaInvio(p => ({ ...p, [allievo.id]: 'ok' }));
+    } catch {
+      setWaInvio(p => ({ ...p, [allievo.id]: 'err' }));
+    }
+  };
+
+  return (
+    <div className="bg-white border rounded-xl overflow-hidden">
+      {/* Header toggle */}
+      <div className="px-4 py-3 flex items-center justify-between border-b">
+        <div className="flex items-center gap-2">
+          <MessageCircle size={15} className="text-green-600" />
+          <p className="text-sm font-semibold text-n-900">Notifiche WhatsApp</p>
+        </div>
+        <button onClick={toggleAbilitato} className="flex items-center gap-1.5">
+          {abilitato
+            ? <ToggleRight size={28} className="text-green-500" />
+            : <ToggleLeft size={28} className="text-n-300" />
+          }
+        </button>
+      </div>
+
+      {abilitato && (
+        <div className="p-4 space-y-3">
+          <p className="text-xs text-n-400">
+            Allievi senza PWA con quota non pagata — seleziona il mese e invia il reminder.
+          </p>
+
+          {/* Navigatore mese */}
+          <div className="flex items-center justify-between bg-n-50 rounded-xl px-3 py-2">
+            <button onClick={() => vai('prev')} className="w-8 h-8 flex items-center justify-center rounded-lg text-n-600 active:bg-n-100 text-lg">‹</button>
+            <p className="text-sm font-semibold text-n-900">{nomeMese(anno, mese)}</p>
+            <button onClick={() => vai('next')} className="w-8 h-8 flex items-center justify-center rounded-lg text-n-600 active:bg-n-100 text-lg">›</button>
+          </div>
+
+          {/* Lista insoluti */}
+          {loadingList ? (
+            <div className="flex justify-center py-6">
+              <div className="w-6 h-6 border-4 border-green-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : insoluti.length === 0 ? (
+            <div className="bg-n-50 rounded-xl p-4 text-center text-xs text-n-400">
+              Nessun allievo non-PWA con quota non pagata per {nomeMese(anno, mese)}.
+            </div>
+          ) : (
+            <div className="border rounded-xl overflow-hidden divide-y divide-gray-50">
+              {insoluti.map(a => {
+                const stato = waInvio[a.id];
+                const hasTel = !!a.telefono;
+                return (
+                  <div key={a.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-n-900 truncate">{a.cognome} {a.nome}</p>
+                      <p className="text-xs text-n-300 truncate">
+                        {hasTel ? a.telefono : 'Nessun telefono'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => inviaWa(a)}
+                      disabled={!hasTel || stato === 'loading' || stato === 'ok'}
+                      title={hasTel ? 'Invia WhatsApp' : 'Numero mancante'}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors disabled:opacity-40 ${
+                        stato === 'ok'  ? 'bg-green-100 text-green-600' :
+                        stato === 'err' ? 'bg-red-100 text-red-500' :
+                        hasTel ? 'bg-green-50 text-green-600 active:bg-green-100' :
+                        'bg-n-100 text-n-300'
+                      }`}
+                    >
+                      {stato === 'ok'      ? <Check size={14} /> :
+                       stato === 'err'     ? <X size={14} /> :
+                       stato === 'loading' ? <RefreshCw size={14} className="animate-spin" /> :
+                       <MessageCircle size={14} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -800,6 +929,7 @@ export default function AdminPagamenti() {
         {tab === 'allievi' && (
           <div className="space-y-4">
             <PannelloNotifiche token={token} />
+            <PannelloWhatsApp token={token} />
             <QuoteAllievi token={token} />
           </div>
         )}
