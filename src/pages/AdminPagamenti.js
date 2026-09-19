@@ -320,151 +320,215 @@ function PannelloWhatsApp({ token }) {
 }
 
 function PannelloContanti({ token, onCountChange }) {
-  const [lista, setLista]       = useState([]);
+  const [pending, setPending]   = useState([]);
+  const [storico, setStorico]   = useState([]);
   const [loading, setLoading]   = useState(false);
-  const [azioni, setAzioni]     = useState({}); // { [id]: 'loading'|'ok'|'err' }
+  const [view, setView]         = useState('pending');
   const [allievi, setAllievi]   = useState([]);
-  const [abbinamento, setAbbinamento] = useState({}); // { [id]: allievo_id }
+  const [modal, setModal]       = useState(null);      // entry da confermare
+  const [formAllievo, setFormAllievo] = useState('');
+  const [abbinando, setAbbinando]     = useState(false);
+  const [rifiutando, setRifiutando]   = useState({});
+  const [annullando, setAnnullando]   = useState({});
+
+  const hdr = { Authorization: `Bearer ${token}` };
 
   const carica = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const d = await r.json();
-      setLista(Array.isArray(d) ? d : []);
-      onCountChange?.(Array.isArray(d) ? d.length : 0);
-    } catch { setLista([]); }
+      const [pend, stor] = await Promise.all([
+        fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, { headers: hdr }).then(r => r.json()),
+        fetch(`${BASE_URL}/api/admin/pagamenti-contanti-storico`, { headers: hdr }).then(r => r.json()),
+      ]);
+      const p = Array.isArray(pend) ? pend : [];
+      setPending(p);
+      setStorico(Array.isArray(stor) ? stor : []);
+      onCountChange?.(p.length);
+    } catch { setPending([]); setStorico([]); }
     setLoading(false);
   }, [token, onCountChange]);
 
   useEffect(() => { carica(); }, [carica]);
 
-  // Carica lista allievi per abbinamento manuale
   useEffect(() => {
-    fetch(`${BASE_URL}/api/admin/allievi-attivi`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${BASE_URL}/api/admin/allievi-attivi`, { headers: hdr })
       .then(r => r.json()).then(d => setAllievi(Array.isArray(d) ? d : [])).catch(() => {});
   }, [token]);
 
-  const agisci = async (id, azione, allievoId) => {
-    setAzioni(p => ({ ...p, [id]: 'loading' }));
+  const apriConferma = (p) => {
+    setModal(p);
+    setFormAllievo(p.allievo_id ? String(p.allievo_id) : '');
+  };
+
+  const conferma = async () => {
+    if (!formAllievo) return;
+    setAbbinando(true);
     try {
-      const body = azione === 'conferma' && allievoId ? JSON.stringify({ allievo_id: allievoId }) : '{}';
-      const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending/${id}/${azione}`, {
+      const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending/${modal.id}/conferma`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body,
+        headers: { ...hdr, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allievo_id: formAllievo }),
       });
       if (!r.ok) throw new Error();
-      setAzioni(p => ({ ...p, [id]: 'ok' }));
-      setTimeout(() => carica(), 600);
-    } catch {
-      setAzioni(p => ({ ...p, [id]: 'err' }));
-    }
+      setModal(null);
+      await carica();
+    } catch { /* ignora */ }
+    setAbbinando(false);
+  };
+
+  const rifiuta = async (id) => {
+    if (!window.confirm('Rifiutare questo pagamento? Verrà rimosso dalla lista.')) return;
+    setRifiutando(s => ({ ...s, [id]: true }));
+    try {
+      await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending/${id}/rifiuta`, { method: 'POST', headers: hdr });
+      await carica();
+    } catch { /* ignora */ }
+    setRifiutando(s => ({ ...s, [id]: false }));
+  };
+
+  const annulla = async (id) => {
+    if (!window.confirm('Annullare il pagamento registrato? Verrà rimosso dai pagamenti dell\'allievo.')) return;
+    setAnnullando(s => ({ ...s, [id]: true }));
+    try {
+      await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-storico/${id}/annulla`, { method: 'POST', headers: hdr });
+      await carica();
+    } catch { /* ignora */ }
+    setAnnullando(s => ({ ...s, [id]: false }));
+  };
+
+  const fmtData = (d) => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return dt.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (
-    <div className="bg-white border rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-amber-50">
-        <div className="flex items-center gap-2">
-          <Banknote size={16} className="text-amber-600" />
-          <span className="font-semibold text-sm text-n-900">Contanti in attesa</span>
-          {lista.length > 0 && (
-            <span className="text-xs bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">{lista.length}</span>
-          )}
-        </div>
-        <button onClick={carica} className="text-n-400 active:text-n-700">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-        </button>
+    <div className="space-y-4">
+      {/* Toggle Da abbinare / Storico */}
+      <div className="flex bg-white border rounded-xl overflow-hidden">
+        {[
+          { id: 'pending', label: `Da approvare${pending.length ? ` (${pending.length})` : ''}` },
+          { id: 'storico', label: 'Storico' },
+        ].map(({ id, label }) => (
+          <button key={id} onClick={() => setView(id)}
+            className={`flex-1 py-2.5 text-xs font-medium transition-colors ${
+              view === id ? 'bg-ama-500 text-white' : 'text-n-600'
+            }`}>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {loading && lista.length === 0 && (
+      {/* Lista */}
+      {loading ? (
         <div className="flex justify-center py-8">
-          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
         </div>
-      )}
-
-      {!loading && lista.length === 0 && (
-        <div className="px-4 py-8 text-center text-sm text-n-400">
-          <Banknote size={28} className="mx-auto mb-2 text-n-200" />
-          Nessun pagamento contanti in attesa di approvazione.
-        </div>
-      )}
-
-      <div className="divide-y">
-        {lista.map(p => {
-          const stato = azioni[p.id];
-          const allievoBadge = p.allievo_nome
-            ? `${p.allievo_nome} ${p.allievo_cognome}`
-            : null;
-          const abbinato = abbinamento[p.id] ?? p.allievo_id;
-
-          return (
-            <div key={p.id} className="px-4 py-3 space-y-2">
-              {/* Riga principale */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono text-n-400 truncate">{p.from_numero.replace('whatsapp:','')}</p>
-                  {p.insegnante_nome && (
-                    <p className="text-xs text-n-500">{p.insegnante_nome}</p>
-                  )}
-                  <p className="text-sm font-medium text-n-800 mt-0.5">"{p.testo_originale}"</p>
-                  <p className="text-xs text-n-500 mt-0.5">
-                    {MESI_NOME[p.mese - 1]} {p.anno}
-                    {p.include_tassa && <span className="ml-1 text-amber-600">+ tassa assoc.</span>}
-                  </p>
-                </div>
-                <p className="text-xs text-n-400 shrink-0 whitespace-nowrap">
-                  {new Date(p.ricevuto_il).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-
-              {/* Allievo trovato o da abbinare */}
-              {allievoBadge ? (
-                <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1">
-                  <Check size={11} /> {allievoBadge}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1 text-xs text-amber-600">
-                    <UserSearch size={12} /> Allievo "{p.allievo_cercato}" non trovato — seleziona:
+      ) : view === 'pending' ? (
+        pending.length === 0 ? (
+          <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+            <Banknote size={28} className="mx-auto mb-2 text-n-200" />
+            Nessun pagamento in attesa di approvazione.
+          </div>
+        ) : (
+          <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+            {pending.map(p => (
+              <div key={p.id} className="px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-n-900 truncate">
+                      {p.allievo_nome ? `${p.allievo_nome} ${p.allievo_cognome}` : (
+                        <span className="text-amber-600">"{p.allievo_cercato}" — non trovato</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-n-400">
+                      {p.insegnante_nome ?? p.from_numero.replace('whatsapp:', '')}
+                    </p>
+                    <p className="text-xs text-n-300 italic truncate">"{p.testo_originale}"</p>
                   </div>
-                  <select
-                    value={abbinamento[p.id] ?? ''}
-                    onChange={e => setAbbinamento(prev => ({ ...prev, [p.id]: e.target.value }))}
-                    className="w-full text-xs border rounded-lg px-2 py-1.5 bg-white"
-                  >
-                    <option value="">— seleziona allievo —</option>
-                    {allievi.map(a => (
-                      <option key={a.id} value={a.id}>{a.cognome} {a.nome}</option>
-                    ))}
-                  </select>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs font-semibold text-n-700">{MESI_NOME[p.mese - 1]} {p.anno}</p>
+                    {p.include_tassa && <p className="text-xs text-amber-600">+ tassa</p>}
+                    <p className="text-xs text-n-400">{fmtData(p.ricevuto_il)}</p>
+                  </div>
                 </div>
-              )}
-
-              {/* Azioni */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => agisci(p.id, 'conferma', abbinato)}
-                  disabled={stato === 'loading' || (!abbinato)}
-                  className="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold disabled:opacity-40"
-                >
-                  {stato === 'loading' ? 'Salvataggio…' : stato === 'ok' ? '✓ Confermato' : 'Conferma pagamento'}
-                </button>
-                <button
-                  onClick={() => agisci(p.id, 'rifiuta')}
-                  disabled={stato === 'loading'}
-                  className="py-2 px-3 rounded-xl border border-n-200 text-n-500 text-xs disabled:opacity-40"
-                >
-                  Rifiuta
+                <div className="flex gap-2">
+                  <button onClick={() => apriConferma(p)}
+                    className="flex-1 py-1.5 rounded-lg bg-ama-500 text-white text-xs font-medium">
+                    Conferma
+                  </button>
+                  <button onClick={() => rifiuta(p.id)} disabled={!!rifiutando[p.id]}
+                    className="flex-1 py-1.5 rounded-lg border border-n-200 text-n-500 text-xs font-medium disabled:opacity-40">
+                    {rifiutando[p.id] ? '…' : 'Rifiuta'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        storico.length === 0 ? (
+          <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
+            Nessun pagamento contanti registrato.
+          </div>
+        ) : (
+          <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+            {storico.map(p => (
+              <div key={p.id} className="px-4 py-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-n-900 truncate">{p.allievo_nome} {p.allievo_cognome}</p>
+                    <p className="text-xs text-n-400">{p.insegnante_nome ?? p.from_numero.replace('whatsapp:','')}</p>
+                    <p className="text-xs text-n-400">
+                      {fmtData(p.aggiornato_il)} · {MESI_NOME[p.mese - 1]} {p.anno}
+                      {p.include_tassa && ' + tassa'}
+                    </p>
+                  </div>
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium shrink-0">Confermato</span>
+                </div>
+                <button onClick={() => annulla(p.id)} disabled={!!annullando[p.id]}
+                  className="w-full py-1.5 rounded-lg border border-red-100 text-red-500 text-xs font-medium disabled:opacity-40">
+                  {annullando[p.id] ? '…' : 'Annulla pagamento'}
                 </button>
               </div>
-              {stato === 'err' && <p className="text-xs text-red-500 text-center">Errore, riprova</p>}
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Modal conferma / abbinamento allievo */}
+      {modal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end">
+          <div className="bg-white w-full rounded-t-2xl p-5 space-y-4 pb-10 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-n-900">Conferma pagamento contanti</p>
+              <button onClick={() => setModal(null)}><X size={18} className="text-n-400" /></button>
             </div>
-          );
-        })}
-      </div>
+            <div className="bg-n-50 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs text-n-400 italic">"{modal.testo_originale}"</p>
+              <p className="text-sm font-medium text-n-800">
+                {MESI_NOME[modal.mese - 1]} {modal.anno}
+                {modal.include_tassa && <span className="ml-1 text-amber-600">+ tassa associativa</span>}
+              </p>
+              <p className="text-xs text-n-500">{modal.insegnante_nome ?? modal.from_numero.replace('whatsapp:', '')}</p>
+            </div>
+            <div>
+              <label className="block text-xs text-n-600 mb-1">Allievo</label>
+              <select value={formAllievo} onChange={e => setFormAllievo(e.target.value)}
+                className="w-full border rounded-xl px-3 py-2.5 text-sm">
+                <option value="">— Seleziona —</option>
+                {allievi.map(a => (
+                  <option key={a.id} value={a.id}>{a.cognome} {a.nome}</option>
+                ))}
+              </select>
+            </div>
+            <button onClick={conferma} disabled={!formAllievo || abbinando}
+              className="w-full bg-ama-500 text-white py-3 rounded-xl text-sm font-semibold disabled:opacity-40">
+              {abbinando ? 'Salvataggio…' : 'Conferma pagamento'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1075,13 +1139,16 @@ export default function AdminPagamenti() {
   const token = useMemo(() => localStorage.getItem('token'), []);
   const [tab, setTab] = useState('allievi');
   const [contantiCount, setContantiCount] = useState(0);
+  const [qontoCount, setQontoCount]       = useState(0);
 
-  // Polling leggero per badge contanti
+  // Polling leggero per badge contanti e qonto
   useEffect(() => {
     const aggiorna = () => {
-      fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(r => r.json()).then(d => setContantiCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
+      const hdr = { Authorization: `Bearer ${token}` };
+      fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, { headers: hdr })
+        .then(r => r.json()).then(d => setContantiCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
+      fetch(`${BASE_URL}/api/qonto/non-abbinate`, { headers: hdr })
+        .then(r => r.json()).then(d => setQontoCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
     };
     aggiorna();
     const iv = setInterval(aggiorna, 30000);
@@ -1093,7 +1160,7 @@ export default function AdminPagamenti() {
     { id: 'tassa',    label: 'Tassa annuale' },
     { id: 'contanti', label: 'Contanti', badge: contantiCount },
     { id: 'stripe',   label: 'App (Stripe)' },
-    { id: 'qonto',    label: 'Qonto' },
+    { id: 'qonto',    label: 'Qonto', badge: qontoCount },
   ];
 
   return (
