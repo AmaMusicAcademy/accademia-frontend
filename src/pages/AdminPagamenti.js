@@ -319,7 +319,7 @@ function PannelloWhatsApp({ token }) {
   );
 }
 
-function PannelloContanti({ token }) {
+function PannelloContanti({ token, onCountChange }) {
   const [lista, setLista]       = useState([]);
   const [loading, setLoading]   = useState(false);
   const [azioni, setAzioni]     = useState({}); // { [id]: 'loading'|'ok'|'err' }
@@ -332,10 +332,12 @@ function PannelloContanti({ token }) {
       const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setLista(await r.json());
+      const d = await r.json();
+      setLista(Array.isArray(d) ? d : []);
+      onCountChange?.(Array.isArray(d) ? d.length : 0);
     } catch { setLista([]); }
     setLoading(false);
-  }, [token]);
+  }, [token, onCountChange]);
 
   useEffect(() => { carica(); }, [carica]);
 
@@ -362,8 +364,6 @@ function PannelloContanti({ token }) {
     }
   };
 
-  if (!loading && lista.length === 0) return null;
-
   return (
     <div className="bg-white border rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-amber-50">
@@ -378,6 +378,19 @@ function PannelloContanti({ token }) {
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {loading && lista.length === 0 && (
+        <div className="flex justify-center py-8">
+          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
+      {!loading && lista.length === 0 && (
+        <div className="px-4 py-8 text-center text-sm text-n-400">
+          <Banknote size={28} className="mx-auto mb-2 text-n-200" />
+          Nessun pagamento contanti in attesa di approvazione.
+        </div>
+      )}
 
       <div className="divide-y">
         {lista.map(p => {
@@ -1060,28 +1073,49 @@ function PagamentiStripe({ token }) {
 export default function AdminPagamenti() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem('token'), []);
-  const [tab, setTab] = useState('allievi'); // 'allievi' | 'tassa' | 'qonto' | 'stripe'
+  const [tab, setTab] = useState('allievi');
+  const [contantiCount, setContantiCount] = useState(0);
+
+  // Polling leggero per badge contanti
+  useEffect(() => {
+    const aggiorna = () => {
+      fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(r => r.json()).then(d => setContantiCount(Array.isArray(d) ? d.length : 0)).catch(() => {});
+    };
+    aggiorna();
+    const iv = setInterval(aggiorna, 30000);
+    return () => clearInterval(iv);
+  }, [token]);
+
+  const TABS = [
+    { id: 'allievi',  label: 'Quote mensili' },
+    { id: 'tassa',    label: 'Tassa annuale' },
+    { id: 'contanti', label: 'Contanti', badge: contantiCount },
+    { id: 'stripe',   label: 'App (Stripe)' },
+    { id: 'qonto',    label: 'Qonto' },
+  ];
 
   return (
     <div className="min-h-screen bg-n-100 flex flex-col justify-between pb-16">
       <PageHeader title="Pagamenti" backTo="/admin" />
 
-      {/* Tab switcher — scrollabile orizzontalmente */}
+      {/* Tab switcher */}
       <div className="flex bg-white border-b overflow-x-auto">
-        {[
-          { id: 'allievi', label: 'Quote mensili' },
-          { id: 'tassa',   label: 'Tassa annuale' },
-          { id: 'stripe',  label: 'App (Stripe)' },
-          { id: 'qonto',   label: 'Qonto' },
-        ].map(({ id, label }) => (
+        {TABS.map(({ id, label, badge }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5 ${
               tab === id ? 'border-blue-600 text-ama-500' : 'border-transparent text-n-600'
             }`}
           >
             {label}
+            {badge > 0 && (
+              <span className="text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold leading-none">
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1090,7 +1124,6 @@ export default function AdminPagamenti() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {tab === 'allievi' && (
           <div className="space-y-4">
-            <PannelloContanti token={token} />
             <PannelloNotifiche token={token} />
             <PannelloWhatsApp token={token} />
             <QuoteAllievi token={token} />
@@ -1099,10 +1132,13 @@ export default function AdminPagamenti() {
 
         {tab === 'tassa' && (
           <div className="space-y-4">
-            <PannelloContanti token={token} />
             <PannelloNotifiche token={token} />
             <TassaAnnuale token={token} />
           </div>
+        )}
+
+        {tab === 'contanti' && (
+          <PannelloContanti token={token} onCountChange={setContantiCount} />
         )}
 
         {tab === 'stripe' && (
