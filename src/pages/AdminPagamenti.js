@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard, MessageCircle, Check, ToggleLeft, ToggleRight, Send } from 'lucide-react';
+import { Bell, RefreshCw, Link2, AlertCircle, CheckCircle2, X, CreditCard, MessageCircle, Check, ToggleLeft, ToggleRight, Send, Banknote, UserSearch } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 
@@ -315,6 +315,143 @@ function PannelloWhatsApp({ token }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function PannelloContanti({ token }) {
+  const [lista, setLista]       = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [azioni, setAzioni]     = useState({}); // { [id]: 'loading'|'ok'|'err' }
+  const [allievi, setAllievi]   = useState([]);
+  const [abbinamento, setAbbinamento] = useState({}); // { [id]: allievo_id }
+
+  const carica = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLista(await r.json());
+    } catch { setLista([]); }
+    setLoading(false);
+  }, [token]);
+
+  useEffect(() => { carica(); }, [carica]);
+
+  // Carica lista allievi per abbinamento manuale
+  useEffect(() => {
+    fetch(`${BASE_URL}/api/admin/allievi-attivi`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json()).then(d => setAllievi(Array.isArray(d) ? d : [])).catch(() => {});
+  }, [token]);
+
+  const agisci = async (id, azione, allievoId) => {
+    setAzioni(p => ({ ...p, [id]: 'loading' }));
+    try {
+      const body = azione === 'conferma' && allievoId ? JSON.stringify({ allievo_id: allievoId }) : '{}';
+      const r = await fetch(`${BASE_URL}/api/admin/pagamenti-contanti-pending/${id}/${azione}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body,
+      });
+      if (!r.ok) throw new Error();
+      setAzioni(p => ({ ...p, [id]: 'ok' }));
+      setTimeout(() => carica(), 600);
+    } catch {
+      setAzioni(p => ({ ...p, [id]: 'err' }));
+    }
+  };
+
+  if (!loading && lista.length === 0) return null;
+
+  return (
+    <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-amber-50">
+        <div className="flex items-center gap-2">
+          <Banknote size={16} className="text-amber-600" />
+          <span className="font-semibold text-sm text-n-900">Contanti in attesa</span>
+          {lista.length > 0 && (
+            <span className="text-xs bg-amber-500 text-white px-1.5 py-0.5 rounded-full font-bold">{lista.length}</span>
+          )}
+        </div>
+        <button onClick={carica} className="text-n-400 active:text-n-700">
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      <div className="divide-y">
+        {lista.map(p => {
+          const stato = azioni[p.id];
+          const allievoBadge = p.allievo_nome
+            ? `${p.allievo_nome} ${p.allievo_cognome}`
+            : null;
+          const abbinato = abbinamento[p.id] ?? p.allievo_id;
+
+          return (
+            <div key={p.id} className="px-4 py-3 space-y-2">
+              {/* Riga principale */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-mono text-n-400 truncate">{p.from_numero.replace('whatsapp:','')}</p>
+                  {p.insegnante_nome && (
+                    <p className="text-xs text-n-500">{p.insegnante_nome}</p>
+                  )}
+                  <p className="text-sm font-medium text-n-800 mt-0.5">"{p.testo_originale}"</p>
+                  <p className="text-xs text-n-500 mt-0.5">
+                    {MESI_NOME[p.mese - 1]} {p.anno}
+                    {p.include_tassa && <span className="ml-1 text-amber-600">+ tassa assoc.</span>}
+                  </p>
+                </div>
+                <p className="text-xs text-n-400 shrink-0 whitespace-nowrap">
+                  {new Date(p.ricevuto_il).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+
+              {/* Allievo trovato o da abbinare */}
+              {allievoBadge ? (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-2 py-1">
+                  <Check size={11} /> {allievoBadge}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <UserSearch size={12} /> Allievo "{p.allievo_cercato}" non trovato — seleziona:
+                  </div>
+                  <select
+                    value={abbinamento[p.id] ?? ''}
+                    onChange={e => setAbbinamento(prev => ({ ...prev, [p.id]: e.target.value }))}
+                    className="w-full text-xs border rounded-lg px-2 py-1.5 bg-white"
+                  >
+                    <option value="">— seleziona allievo —</option>
+                    {allievi.map(a => (
+                      <option key={a.id} value={a.id}>{a.cognome} {a.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Azioni */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => agisci(p.id, 'conferma', abbinato)}
+                  disabled={stato === 'loading' || (!abbinato)}
+                  className="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-xs font-semibold disabled:opacity-40"
+                >
+                  {stato === 'loading' ? 'Salvataggio…' : stato === 'ok' ? '✓ Confermato' : 'Conferma pagamento'}
+                </button>
+                <button
+                  onClick={() => agisci(p.id, 'rifiuta')}
+                  disabled={stato === 'loading'}
+                  className="py-2 px-3 rounded-xl border border-n-200 text-n-500 text-xs disabled:opacity-40"
+                >
+                  Rifiuta
+                </button>
+              </div>
+              {stato === 'err' && <p className="text-xs text-red-500 text-center">Errore, riprova</p>}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -953,6 +1090,7 @@ export default function AdminPagamenti() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {tab === 'allievi' && (
           <div className="space-y-4">
+            <PannelloContanti token={token} />
             <PannelloNotifiche token={token} />
             <PannelloWhatsApp token={token} />
             <QuoteAllievi token={token} />
@@ -961,6 +1099,7 @@ export default function AdminPagamenti() {
 
         {tab === 'tassa' && (
           <div className="space-y-4">
+            <PannelloContanti token={token} />
             <PannelloNotifiche token={token} />
             <TassaAnnuale token={token} />
           </div>
