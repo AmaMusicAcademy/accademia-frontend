@@ -166,7 +166,7 @@ function IrAcSection({ irDevice, aula, target, ruolo }) {
 }
 
 // ── Card singola aula ────────────────────────────────────────────────────
-function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
+function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo, modalitaGlobale }) {
   const termometri = dispositivi.filter(d => d.aula_nome === aula && isTermometro(d));
   const irDevices  = dispositivi.filter(d => d.aula_nome === aula && isIRAC(d));
   const valvole    = dispositivi.filter(d => d.aula_nome === aula && !isTermometro(d) && !isIRAC(d));
@@ -178,7 +178,6 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
   const [loading, setLoading]       = useState(false);
   const [errore, setErrore]         = useState(null);
   const [targetTemp, setTargetTemp] = useState(parseFloat(target?.temperatura_target ?? 20));
-  const [modalita, setModalita]     = useState(target?.modalita ?? 'riscaldamento');
   const [salvando, setSalvando]     = useState(false);
 
   // Temperatura attuale dal termometro
@@ -225,7 +224,7 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
           device_id_valvola: valvola.deviceId,
           temperatura_target: targetTemp,
           attivo: true,
-          ...(ruolo === 'admin' ? { modalita } : {}),
+          ...(ruolo === 'admin' ? { modalita: modalitaGlobale } : {}),
         }),
       });
       onTargetChange(res);
@@ -383,27 +382,6 @@ function AulaCard({ aula, dispositivi, targets, onTargetChange, ruolo }) {
               </p>
             )}
           </div>
-
-          {/* Modalità impianto — solo admin */}
-          {ruolo === 'admin' && (
-            <div>
-              <p className="text-xs text-n-500 mb-2">Modalità impianto</p>
-              <div className="flex rounded-xl overflow-hidden border border-n-100 text-sm font-medium">
-                <button
-                  onClick={() => setModalita('riscaldamento')}
-                  className={`flex-1 py-2 transition-colors ${modalita === 'riscaldamento' ? 'bg-orange-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
-                >
-                  🔥 Riscaldamento
-                </button>
-                <button
-                  onClick={() => setModalita('raffrescamento')}
-                  className={`flex-1 py-2 transition-colors ${modalita === 'raffrescamento' ? 'bg-blue-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
-                >
-                  ❄️ Raffrescamento
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Azioni */}
           <div className="flex gap-2">
@@ -718,13 +696,19 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
   const [targets, setTargets]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [errore, setErrore]           = useState(null);
+  const [modalitaGlobale, setModalitaGlobale] = useState('riscaldamento');
+  const [salvandoModalita, setSalvandoModalita] = useState(false);
 
   useEffect(() => {
     apiFetch('/api/clima/dispositivi')
       .then(d => {
         setDispositivi(Array.isArray(d.dispositivi) ? d.dispositivi : []);
         setAule(Array.isArray(d.aule) ? d.aule : []);
-        setTargets(Array.isArray(d.targets) ? d.targets : []);
+        const t = Array.isArray(d.targets) ? d.targets : [];
+        setTargets(t);
+        // Imposta modalità globale dal primo target con valvola
+        const primoConModalita = t.find(x => x.modalita);
+        if (primoConModalita) setModalitaGlobale(primoConModalita.modalita);
       })
       .catch(e => setErrore(e.message))
       .finally(() => setLoading(false));
@@ -742,9 +726,37 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
     });
   };
 
+  const cambiaModalitaGlobale = async (nuovaModalita) => {
+    setModalitaGlobale(nuovaModalita);
+    setSalvandoModalita(true);
+    const auleConValvola = targets.filter(t => t.device_id_valvola);
+    for (const t of auleConValvola) {
+      try {
+        const res = await apiFetch('/api/clima/target', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            aula_nome: t.aula_nome,
+            device_id_termometro: t.device_id_termometro,
+            device_id_valvola: t.device_id_valvola,
+            temperatura_target: t.temperatura_target,
+            attivo: t.attivo,
+            modalita: nuovaModalita,
+          }),
+        });
+        handleTargetChange(res);
+      } catch { /* ignora errori singoli */ }
+    }
+    setSalvandoModalita(false);
+  };
+
   const auleConDisp = aule
     .map(a => a.nome)
     .filter(nome => dispositivi.some(d => d.aula_nome === nome));
+
+  const auleConValvola = auleConDisp.filter(nome =>
+    dispositivi.some(d => d.aula_nome === nome && !isTermometro(d) && !isIRAC(d))
+  );
 
   const senzaAula = dispositivi.filter(d => !d.aula_nome);
 
@@ -755,6 +767,30 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
       <PageHeader title="Controllo Clima" backTo={backTo} />
 
       <div className="p-4 max-w-xl mx-auto space-y-4">
+        {/* Toggle modalità globale valvole — solo admin */}
+        {ruolo === 'admin' && !loading && auleConValvola.length > 0 && (
+          <div className="bg-white border rounded-xl px-4 py-3">
+            <p className="text-xs text-n-500 mb-2">Modalità impianto valvole</p>
+            <div className="flex rounded-xl overflow-hidden border border-n-100 text-sm font-medium">
+              <button
+                onClick={() => cambiaModalitaGlobale('riscaldamento')}
+                disabled={salvandoModalita}
+                className={`flex-1 py-2.5 transition-colors disabled:opacity-50 ${modalitaGlobale === 'riscaldamento' ? 'bg-orange-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
+              >
+                🔥 Riscaldamento
+              </button>
+              <button
+                onClick={() => cambiaModalitaGlobale('raffrescamento')}
+                disabled={salvandoModalita}
+                className={`flex-1 py-2.5 transition-colors disabled:opacity-50 ${modalitaGlobale === 'raffrescamento' ? 'bg-blue-500 text-white' : 'bg-white text-n-500 active:bg-n-50'}`}
+              >
+                ❄️ Raffrescamento
+              </button>
+            </div>
+            {salvandoModalita && <p className="text-xs text-center text-n-400 mt-1">Aggiornamento in corso…</p>}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-7 h-7 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
@@ -793,6 +829,7 @@ export default function AdminClima({ ruolo = 'admin', backTo = '/admin' }) {
               targets={targets}
               onTargetChange={handleTargetChange}
               ruolo={ruolo}
+              modalitaGlobale={modalitaGlobale}
             />
           ))
         )}
