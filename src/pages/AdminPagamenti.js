@@ -213,15 +213,32 @@ function PannelloWhatsApp({ token }) {
     setBulkLoading(false);
   };
 
-  const inviaWa = async (allievo) => {
+  const inviaWa = async (allievo, force = false) => {
     if (!allievo.telefono) return;
     setWaInvio(p => ({ ...p, [allievo.id]: 'loading' }));
     try {
-      await fetch(`${BASE_URL}/api/admin/whatsapp-reminder/${allievo.id}`, {
+      const res = await fetch(`${BASE_URL}/api/admin/whatsapp-reminder/${allievo.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ force }),
       });
+      if (res.status === 409) {
+        const data = await res.json();
+        setWaInvio(p => ({ ...p, [allievo.id]: null }));
+        const data_fmt = new Date(data.data).toLocaleDateString('it-IT');
+        const conferma = window.confirm(
+          `Messaggio già inviato il ${data_fmt} (${data.giorni} giorni fa).\nInviare di nuovo?`
+        );
+        if (conferma) await inviaWa(allievo, true);
+        return;
+      }
+      if (!res.ok) { setWaInvio(p => ({ ...p, [allievo.id]: 'err' })); return; }
       setWaInvio(p => ({ ...p, [allievo.id]: 'ok' }));
+      // Aggiorna la data nella lista locale
+      setInsoluti(prev => prev.map(i => i.id === allievo.id
+        ? { ...i, wa_reminder_inviato_il: new Date().toISOString() }
+        : i
+      ));
     } catch {
       setWaInvio(p => ({ ...p, [allievo.id]: 'err' }));
     }
@@ -287,7 +304,14 @@ function PannelloWhatsApp({ token }) {
                 return (
                   <div key={a.id} className="flex items-center gap-3 px-3 py-2.5">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-n-900 truncate">{a.cognome} {a.nome}</p>
+                      <p className="text-sm font-semibold text-n-900 truncate">
+                        {a.cognome} {a.nome}
+                        {a.wa_reminder_inviato_il && (
+                          <span className="ml-1.5 font-normal text-xs text-n-400">
+                            — inviato {new Date(a.wa_reminder_inviato_il).toLocaleDateString('it-IT')}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-n-300 truncate">
                         {hasTel ? (a.mesiLabel || a.telefono) : 'Nessun telefono'}
                       </p>
