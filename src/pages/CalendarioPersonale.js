@@ -24,7 +24,6 @@ export default function CalendarioPersonale() {
   const [cognome, setCognome] = useState("");
   const [loading, setLoading] = useState(true);
   const [errore, setErrore] = useState(null);
-  const [calendarKey, setCalendarKey] = useState(0); // forza remount calendario
 
   const doLogout = useCallback(() => {
     localStorage.removeItem("token");
@@ -65,7 +64,6 @@ export default function CalendarioPersonale() {
         .filter(Boolean);
 
       setLezioni(enriched);
-      setCalendarKey((k) => k + 1); // re-render calendario con i dati
     } catch (err) {
       // 401/403 arrivano come Error() da apiFetch
       if (err?.status === 401 || err?.status === 403) {
@@ -82,32 +80,13 @@ export default function CalendarioPersonale() {
     fetchDati();
   }, [fetchDati]);
 
-  // chiamata subito dopo la creazione: aggiunge localmente e forza re-render, poi riallinea dal server
-  const handleLessonCreated = async (created) => {
-    const arr = Array.isArray(created) ? created : created ? [created] : [];
-    if (arr.length) {
-      const enrichedNew = arr.map(enrichOne).filter(Boolean);
-      setLezioni((prev) => {
-        const byKey = new Map(
-          prev.map((e) => [(e?.id ?? `${e.start}-${e.id_allievo ?? ""}`), e])
-        );
-        for (const e of enrichedNew) {
-          const key = e?.id ?? `${e.start}-${e.id_allievo ?? ""}`;
-          byKey.set(key, e);
-        }
-        return Array.from(byKey.values());
-      });
-      setCalendarKey((k) => k + 1);
-    }
-
+  const handleLessonCreated = async () => {
     await fetchDati();
-    setCalendarKey((k) => k + 1);
   };
 
   return (
     <div className="min-h-screen bg-n-100 pb-24">
       <CalendarioLezioni
-        key={calendarKey}     /* remount forzato, il calendario rilegge gli eventi */
         lezioni={lezioni}
         nome={nome}
         cognome={cognome}
