@@ -93,7 +93,7 @@ async function patchAnnulla(id, motivazione, token) {
 }
 
 // ── componente ─────────────────────────────────────────────────────────────
-export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
+export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAfterSave }) {
   const token = getToken();
   const isAdmin = (localStorage.getItem('ruolo') || '') === 'admin';
 
@@ -258,6 +258,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false }) {
 
   const handleSaved = (updated) => {
     setEditOpen(false);
+    if (onAfterSave) { onAfterSave(); return; }
     if (!updated) return;
     setEventi((prev) => {
       const filtered = prev.filter((e) => (e.id ?? e.extendedProps?.id) !== updated.id);

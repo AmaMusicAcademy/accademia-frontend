@@ -33,6 +33,7 @@ export default function CalendarioLezioni(props) {
     onOpenEdit: onOpenEditProp,     // opzionale (ADMIN)
     onRimanda: onRimandaProp,       // opzionale (ADMIN)
     onAnnulla: onAnnullaProp,       // opzionale (ADMIN)
+    onAfterSave,                    // opzionale: callback dopo modifica/elimina
   } = props || {};
 
   const controlled = typeof lezioniProp !== "undefined"; // se true -> ADMIN mode (no fetch interni)
@@ -237,9 +238,8 @@ export default function CalendarioLezioni(props) {
         onOpenEdit={onOpenEditProp ? onOpenEditProp : openEdit}
         onRimanda={onRimandaProp ? onRimandaProp : handleRimanda}
         onAnnulla={onAnnullaProp ? onAnnullaProp : handleAnnulla}
-        // 👇 nuovo flag: se CalendarioFull lo gestisce, può mostrare il docente
         mostraInsegnante={mostraInsegnante}
-        // NB: nessun cambio al resto delle props: il lato docente resta invariato
+        onAfterSave={onAfterSave}
       />
 
       {/* Modale usata SOLAMENTE in modalità docente (quando non forniamo handler esterni) */}

@@ -87,6 +87,7 @@ export default function CalendarioPersonale() {
   return (
     <div className="min-h-screen bg-n-100 pb-24">
       <CalendarioLezioni
+        onAfterSave={fetchDati}
         lezioni={lezioni}
         nome={nome}
         cognome={cognome}
