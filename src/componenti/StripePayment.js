@@ -43,7 +43,7 @@ function FormPagamento({ label, onSuccess, onError }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <PaymentElement options={{ layout: 'tabs' }} />
+      <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
       {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
@@ -100,7 +100,7 @@ function FormAbbonamento({ onSuccess, onError }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <PaymentElement options={{ layout: 'tabs' }} />
+      <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
       {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
