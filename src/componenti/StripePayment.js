@@ -198,6 +198,8 @@ export default function StripePayment({ mode, mesi = [], onSuccess, onError }) {
       '.Input:focus': { border: '1.5px solid #4f46e5', boxShadow: '0 0 0 3px rgba(79,70,229,0.1)' },
       '.Tab': { border: '1.5px solid #e5e7eb' },
       '.Tab--selected': { border: '1.5px solid #4f46e5', boxShadow: '0 0 0 2px rgba(79,70,229,0.15)' },
+      '.LinkOptInSection': { display: 'none' },
+      '.LinkOptInSection + *': { marginTop: '0' },
     },
   };
 
