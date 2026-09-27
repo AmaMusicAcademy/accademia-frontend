@@ -48,7 +48,11 @@ function FormPagamento({ label, onSuccess, onError }) {
         <Lock size={12} strokeWidth={2.5} />
         <span>Pagamento sicuro con crittografia SSL</span>
       </div>
-      <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
+      <PaymentElement options={{
+        layout: 'tabs',
+        wallets: { applePay: 'auto', googlePay: 'auto' },
+        terms: { card: 'never', paypal: 'never', sepaDebit: 'never', ideal: 'never', sofort: 'never', bancontact: 'never', auBecsDebit: 'never' },
+      }} />
       {errore && <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-md shadow-ama-500/30">
@@ -114,7 +118,11 @@ function FormAbbonamento({ onSuccess, onError }) {
         <Lock size={12} strokeWidth={2.5} />
         <span>Pagamento sicuro con crittografia SSL</span>
       </div>
-      <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
+      <PaymentElement options={{
+        layout: 'tabs',
+        wallets: { applePay: 'auto', googlePay: 'auto' },
+        terms: { card: 'never', paypal: 'never', sepaDebit: 'never', ideal: 'never', sofort: 'never', bancontact: 'never', auBecsDebit: 'never' },
+      }} />
       {errore && <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
         className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-md shadow-ama-500/30">
