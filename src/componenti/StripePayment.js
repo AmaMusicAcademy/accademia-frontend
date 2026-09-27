@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Lock } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
 let stripePromise = null;
@@ -43,14 +44,23 @@ function FormPagamento({ label, onSuccess, onError }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+        <Lock size={12} strokeWidth={2.5} />
+        <span>Pagamento sicuro con crittografia SSL</span>
+      </div>
       <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
-      {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
+      {errore && <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
-        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-md shadow-ama-500/30">
         {loading
           ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          : label}
+          : <><Lock size={14} strokeWidth={2.5} />{label}</>}
       </button>
+      <div className="flex items-center justify-center gap-1.5 text-xs text-n-400">
+        <span>Powered by</span>
+        <span className="font-semibold text-[#635BFF]">Stripe</span>
+        <span>· I tuoi dati sono al sicuro</span>
+      </div>
     </form>
   );
 }
@@ -100,14 +110,23 @@ function FormAbbonamento({ onSuccess, onError }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
+      <div className="flex items-center justify-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+        <Lock size={12} strokeWidth={2.5} />
+        <span>Pagamento sicuro con crittografia SSL</span>
+      </div>
       <PaymentElement options={{ layout: 'tabs', wallets: { applePay: 'auto', googlePay: 'auto' } }} />
-      {errore && <p className="text-sm text-red-500 text-center">{errore}</p>}
+      {errore && <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{errore}</p>}
       <button type="submit" disabled={loading || !stripe}
-        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+        className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 shadow-md shadow-ama-500/30">
         {loading
           ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          : 'Attiva addebito mensile'}
+          : <><Lock size={14} strokeWidth={2.5} />Attiva addebito mensile</>}
       </button>
+      <div className="flex items-center justify-center gap-1.5 text-xs text-n-400">
+        <span>Powered by</span>
+        <span className="font-semibold text-[#635BFF]">Stripe</span>
+        <span>· I tuoi dati sono al sicuro</span>
+      </div>
     </form>
   );
 }
@@ -149,14 +168,29 @@ export default function StripePayment({ mode, mesi = [], onSuccess, onError }) {
   if (errore) return <p className="text-center text-sm text-red-500 py-6">{errore}</p>;
 
   if (!clientSecret || !stripeObj) return (
-    <div className="flex justify-center py-10">
+    <div className="flex flex-col items-center justify-center py-10 gap-3">
       <div className="w-6 h-6 border-2 border-ama-500 border-t-transparent rounded-full animate-spin" />
+      <p className="text-xs text-n-400">Connessione sicura in corso…</p>
     </div>
   );
 
   const appearance = {
     theme: 'stripe',
-    variables: { colorPrimary: '#4f46e5', borderRadius: '12px', fontFamily: 'inherit' },
+    variables: {
+      colorPrimary: '#4f46e5',
+      borderRadius: '10px',
+      fontFamily: 'inherit',
+      colorBackground: '#ffffff',
+      colorText: '#1a1a2e',
+      colorDanger: '#ef4444',
+      spacingUnit: '4px',
+    },
+    rules: {
+      '.Input': { boxShadow: 'none', border: '1.5px solid #e5e7eb' },
+      '.Input:focus': { border: '1.5px solid #4f46e5', boxShadow: '0 0 0 3px rgba(79,70,229,0.1)' },
+      '.Tab': { border: '1.5px solid #e5e7eb' },
+      '.Tab--selected': { border: '1.5px solid #4f46e5', boxShadow: '0 0 0 2px rgba(79,70,229,0.15)' },
+    },
   };
 
   return (

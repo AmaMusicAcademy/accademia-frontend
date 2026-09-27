@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, XCircle, CreditCard, RefreshCw, AlertTriangle, X, Check, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, CreditCard, RefreshCw, AlertTriangle, X, Check, Repeat, ChevronDown, ChevronUp, Lock, ShieldCheck } from 'lucide-react';
 import AllievoLayout from '../../componenti/AllievoLayout';
 import StripePayment from '../../componenti/StripePayment';
 import { apiFetch } from '../../utils/api';
@@ -19,17 +19,26 @@ function ModalArretrati({ arretrati, quota, onClose, onPagato }) {
   const totale = arretrati.reduce((s, a) => s + parseFloat(a.importo || quota), 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
-      <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
+      <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col shadow-2xl" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 bg-n-200 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between px-5 py-3 border-b shrink-0">
           <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-ama-500" />
-            <h2 className="font-semibold text-n-900">
-              {step === 'ok' ? 'Pagamento completato' : 'Saldo arretrati'}
-            </h2>
+            {step === 'ok'
+              ? <ShieldCheck size={18} className="text-emerald-500" />
+              : <Lock size={18} className="text-ama-500" />}
+            <div>
+              <h2 className="font-semibold text-n-900 text-sm leading-tight">
+                {step === 'ok' ? 'Pagamento completato' : 'Saldo arretrati'}
+              </h2>
+              {step !== 'ok' && <p className="text-xs text-n-400">Connessione protetta · SSL/TLS</p>}
+            </div>
           </div>
-          <button onClick={onClose} className="text-n-300"><X size={20} /></button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-n-100 text-n-500"><X size={16} /></button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-4">
@@ -50,13 +59,13 @@ function ModalArretrati({ arretrati, quota, onClose, onPagato }) {
                   </div>
                 ))}
               </div>
-              <div className="bg-ama-100 border border-ama-100 rounded-xl px-4 py-3 flex items-center justify-between mb-5">
-                <span className="text-sm font-semibold text-indigo-800">Totale</span>
-                <span className="text-xl font-bold text-ama-700">€{totale.toFixed(2)}</span>
+              <div className="bg-gradient-to-r from-ama-500 to-indigo-600 rounded-xl px-4 py-3.5 flex items-center justify-between mb-5">
+                <span className="text-sm font-semibold text-white/80">Totale da saldare</span>
+                <span className="text-2xl font-bold text-white">€{totale.toFixed(2)}</span>
               </div>
               <button onClick={() => setStep('checkout')}
-                className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm">
-                Procedi al pagamento
+                className="w-full py-3.5 rounded-xl bg-ama-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-ama-500/30">
+                <Lock size={14} strokeWidth={2.5} /> Procedi al pagamento
               </button>
             </>
           )}
@@ -99,27 +108,36 @@ function ModalAbbonamento({ quota, onClose, onAttivato }) {
   const [step, setStep] = useState('checkout');
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
-      <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end" style={{ paddingBottom: 'calc(56px + env(safe-area-inset-bottom))' }} onClick={step === 'ok' ? onClose : undefined}>
+      <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl flex flex-col shadow-2xl" style={{ maxHeight: 'calc(92vh - 56px - env(safe-area-inset-bottom))' }}
         onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 bg-n-200 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between px-5 py-3 border-b shrink-0">
           <div className="flex items-center gap-2">
-            <Repeat size={18} className="text-ama-500" />
-            <h2 className="font-semibold text-n-900">
-              {step === 'ok' ? 'Abbonamento attivato' : 'Addebito automatico mensile'}
-            </h2>
+            {step === 'ok'
+              ? <ShieldCheck size={18} className="text-emerald-500" />
+              : <Lock size={18} className="text-ama-500" />}
+            <div>
+              <h2 className="font-semibold text-n-900 text-sm leading-tight">
+                {step === 'ok' ? 'Abbonamento attivato' : 'Addebito automatico mensile'}
+              </h2>
+              {step !== 'ok' && <p className="text-xs text-n-400">Connessione protetta · SSL/TLS</p>}
+            </div>
           </div>
-          <button onClick={onClose} className="text-n-300"><X size={20} /></button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-n-100 text-n-500"><X size={16} /></button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-5 py-4">
           {step === 'checkout' && (
             <>
-              <div className="bg-ama-100 border border-ama-100 rounded-xl px-4 py-3 mb-4">
-                <p className="text-xs text-n-600 mb-0.5">Importo mensile</p>
-                <p className="text-2xl font-bold text-ama-700">€{parseFloat(quota).toFixed(2)}</p>
-                <p className="text-xs text-n-600 mt-1">
-                  La carta verrà addebitata automaticamente ogni mese. Puoi annullare in qualsiasi momento contattando la segreteria.
+              <div className="bg-gradient-to-r from-ama-500 to-indigo-600 rounded-xl px-4 py-4 mb-4">
+                <p className="text-xs text-white/70 mb-0.5">Importo mensile</p>
+                <p className="text-3xl font-bold text-white">€{parseFloat(quota).toFixed(2)}</p>
+                <p className="text-xs text-white/70 mt-2">
+                  Addebito automatico ogni mese · Annullabile in qualsiasi momento
                 </p>
               </div>
               <StripePayment
