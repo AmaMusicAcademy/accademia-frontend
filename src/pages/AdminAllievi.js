@@ -244,33 +244,48 @@ export default function AdminAllievi() {
             )}
 
             {tab === 'analisi' && (() => {
-              // Raggruppa attivi per strumento
-              const strumentiMap = {};
+              // Split strumento per virgola — un allievo con più corsi conta in tutti
+              const corsiMap = {};
+              let totaleIscrizioni = 0;
+              let allievi2corsi = 0;
               for (const a of attivi) {
-                const s = (a.strumento || '').trim() || 'Non specificato';
-                strumentiMap[s] = (strumentiMap[s] || []);
-                strumentiMap[s].push(a);
+                const parti = (a.strumento || '')
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean);
+                const corsi = parti.length ? parti : ['Non specificato'];
+                if (corsi.length > 1) allievi2corsi++;
+                totaleIscrizioni += corsi.length;
+                for (const c of corsi) {
+                  if (!corsiMap[c]) corsiMap[c] = { allievi: [], count: 0 };
+                  corsiMap[c].allievi.push(a);
+                  corsiMap[c].count++;
+                }
               }
-              const strumenti = Object.entries(strumentiMap)
-                .sort((a, b) => b[1].length - a[1].length);
-              const max = strumenti[0]?.[1].length || 1;
+              const corsi = Object.entries(corsiMap)
+                .sort((a, b) => b[1].count - a[1].count);
+              const max = corsi[0]?.[1].count || 1;
               const totaleQuote = attivi.reduce((s, a) => s + parseFloat(a.quota_mensile || 0), 0);
 
               return (
                 <>
                   {/* KPI sommario */}
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white border rounded-xl px-3 py-3 text-center">
                       <p className="text-2xl font-bold text-n-900">{attivi.length}</p>
-                      <p className="text-xs text-n-400 mt-0.5">Attivi</p>
+                      <p className="text-xs text-n-400 mt-0.5">Allievi attivi</p>
                     </div>
                     <div className="bg-white border rounded-xl px-3 py-3 text-center">
-                      <p className="text-2xl font-bold text-n-900">{nonAttivi.length}</p>
-                      <p className="text-xs text-n-400 mt-0.5">Non attivi</p>
+                      <p className="text-2xl font-bold text-n-900">{totaleIscrizioni}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Iscrizioni corsi</p>
                     </div>
                     <div className="bg-white border rounded-xl px-3 py-3 text-center">
-                      <p className="text-2xl font-bold text-n-900">{strumenti.length}</p>
-                      <p className="text-xs text-n-400 mt-0.5">Strumenti</p>
+                      <p className="text-2xl font-bold text-n-900">{corsi.length}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Corsi distinti</p>
+                    </div>
+                    <div className="bg-white border rounded-xl px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-ama-500">{allievi2corsi}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Più corsi</p>
                     </div>
                   </div>
 
@@ -281,20 +296,23 @@ export default function AdminAllievi() {
                     </p>
                   </div>
 
-                  {/* Breakdown per strumento */}
+                  {/* Breakdown per corso */}
                   <div>
-                    <p className="text-xs font-semibold text-n-600 uppercase mb-2">Allievi per strumento</p>
+                    <p className="text-xs font-semibold text-n-600 uppercase mb-2">Iscrizioni per corso</p>
+                    <p className="text-xs text-n-400 mb-2">
+                      Un allievo con più corsi è conteggiato in ciascuno.
+                    </p>
                     <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
-                      {strumenti.map(([strumento, lista]) => {
-                        const pct = Math.round((lista.length / attivi.length) * 100);
-                        const barW = Math.round((lista.length / max) * 100);
+                      {corsi.map(([corso, { count }]) => {
+                        const pct = Math.round((count / attivi.length) * 100);
+                        const barW = Math.round((count / max) * 100);
                         return (
-                          <div key={strumento} className="px-4 py-3">
+                          <div key={corso} className="px-4 py-3">
                             <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-sm font-medium text-n-900">{strumento}</span>
+                              <span className="text-sm font-medium text-n-900">{corso}</span>
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-n-400">{pct}%</span>
-                                <span className="text-sm font-bold text-n-900 w-5 text-right">{lista.length}</span>
+                                <span className="text-sm font-bold text-n-900 w-5 text-right">{count}</span>
                               </div>
                             </div>
                             <div className="h-1.5 bg-n-100 rounded-full overflow-hidden">
