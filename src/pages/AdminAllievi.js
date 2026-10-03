@@ -167,7 +167,7 @@ export default function AdminAllievi() {
               className="flex items-center gap-1.5 text-sm font-medium text-ama-500">
               <Plus size={16} /> Nuovo
             </button>
-          ) : (
+          ) : tab === 'analisi' || tab === 'accessi' ? null : (
             <button onClick={() => { setShowModal(true); setErrore(''); }}
               className="flex items-center gap-1.5 text-sm font-medium text-ama-500">
               <Plus size={16} /> Nuovo
@@ -180,6 +180,7 @@ export default function AdminAllievi() {
       <div className="sticky top-0 z-20 bg-white border-b flex">
         <TabButton id="attivi"     label="Attivi" />
         <TabButton id="non_attivi" label="Non attivi" />
+        <TabButton id="analisi"    label="Analisi" />
         <TabButton id="gruppi"     label="Gruppi" />
         <TabButton id="accessi"    label="Accessi" />
       </div>
@@ -187,7 +188,7 @@ export default function AdminAllievi() {
       <div className="max-w-xl mx-auto px-4 pt-4 space-y-4">
 
         {/* Ricerca */}
-        {tab !== 'gruppi' && (
+        {tab !== 'gruppi' && tab !== 'analisi' && (
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-n-300" />
             <input value={search} onChange={e => setSearch(e.target.value)}
@@ -241,6 +242,75 @@ export default function AdminAllievi() {
                 )}
               </>
             )}
+
+            {tab === 'analisi' && (() => {
+              // Raggruppa attivi per strumento
+              const strumentiMap = {};
+              for (const a of attivi) {
+                const s = (a.strumento || '').trim() || 'Non specificato';
+                strumentiMap[s] = (strumentiMap[s] || []);
+                strumentiMap[s].push(a);
+              }
+              const strumenti = Object.entries(strumentiMap)
+                .sort((a, b) => b[1].length - a[1].length);
+              const max = strumenti[0]?.[1].length || 1;
+              const totaleQuote = attivi.reduce((s, a) => s + parseFloat(a.quota_mensile || 0), 0);
+
+              return (
+                <>
+                  {/* KPI sommario */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white border rounded-xl px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-n-900">{attivi.length}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Attivi</p>
+                    </div>
+                    <div className="bg-white border rounded-xl px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-n-900">{nonAttivi.length}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Non attivi</p>
+                    </div>
+                    <div className="bg-white border rounded-xl px-3 py-3 text-center">
+                      <p className="text-2xl font-bold text-n-900">{strumenti.length}</p>
+                      <p className="text-xs text-n-400 mt-0.5">Strumenti</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border rounded-xl px-3 py-3 text-center">
+                    <p className="text-xs text-n-400 mb-0.5">Quote mensili totali (attivi)</p>
+                    <p className="text-2xl font-bold text-emerald-600">
+                      {totaleQuote.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })}
+                    </p>
+                  </div>
+
+                  {/* Breakdown per strumento */}
+                  <div>
+                    <p className="text-xs font-semibold text-n-600 uppercase mb-2">Allievi per strumento</p>
+                    <div className="bg-white border rounded-xl overflow-hidden divide-y divide-gray-50">
+                      {strumenti.map(([strumento, lista]) => {
+                        const pct = Math.round((lista.length / attivi.length) * 100);
+                        const barW = Math.round((lista.length / max) * 100);
+                        return (
+                          <div key={strumento} className="px-4 py-3">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-sm font-medium text-n-900">{strumento}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-n-400">{pct}%</span>
+                                <span className="text-sm font-bold text-n-900 w-5 text-right">{lista.length}</span>
+                              </div>
+                            </div>
+                            <div className="h-1.5 bg-n-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-ama-500 rounded-full transition-all"
+                                style={{ width: `${barW}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             {tab === 'non_attivi' && (
               <>
