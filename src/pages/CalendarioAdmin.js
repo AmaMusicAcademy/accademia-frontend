@@ -1,30 +1,32 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import BottomNavAdmin from "../componenti/BottomNavAdmin";
 import EditLessonModal from "../componenti/EditLessonModal";
 import PageHeader from "../componenti/PageHeader";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
 
-const GRID_START  = 8;   // 08:00
-const GRID_END    = 21;  // 21:00
-const HOUR_H      = 64;  // px per hour
+const GRID_START  = 8;
+const GRID_END    = 21;
+const HOUR_H      = 64;
 const TOTAL_H     = (GRID_END - GRID_START) * HOUR_H;
 
 const COLORS = [
-  { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a', chip: '#2563eb' }, // blu
-  { bg: '#dcfce7', border: '#86efac', text: '#14532d', chip: '#16a34a' }, // verde
-  { bg: '#f3e8ff', border: '#d8b4fe', text: '#581c87', chip: '#9333ea' }, // viola
-  { bg: '#fee2e2', border: '#fca5a5', text: '#7f1d1d', chip: '#dc2626' }, // rosso
-  { bg: '#ffedd5', border: '#fdba74', text: '#7c2d12', chip: '#ea580c' }, // arancione
-  { bg: '#fdf4ff', border: '#f0abfc', text: '#701a75', chip: '#c026d3' }, // fucsia
-  { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a', chip: '#0d9488' }, // teal
-  { bg: '#fefce8', border: '#fde047', text: '#713f12', chip: '#ca8a04' }, // giallo ocra
+  { bg: '#dbeafe', border: '#93c5fd', text: '#1e3a8a', chip: '#2563eb' },
+  { bg: '#dcfce7', border: '#86efac', text: '#14532d', chip: '#16a34a' },
+  { bg: '#f3e8ff', border: '#d8b4fe', text: '#581c87', chip: '#9333ea' },
+  { bg: '#fee2e2', border: '#fca5a5', text: '#7f1d1d', chip: '#dc2626' },
+  { bg: '#ffedd5', border: '#fdba74', text: '#7c2d12', chip: '#ea580c' },
+  { bg: '#fdf4ff', border: '#f0abfc', text: '#701a75', chip: '#c026d3' },
+  { bg: '#ccfbf1', border: '#5eead4', text: '#134e4a', chip: '#0d9488' },
+  { bg: '#fefce8', border: '#fde047', text: '#713f12', chip: '#ca8a04' },
 ];
 
 const GIORNI_LONG  = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const GIORNI_SHORT = ['Lu','Ma','Me','Gi','Ve','Sa','Do'];
 const MESI_SHORT   = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const MESI_LONG    = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
 function toYMD(date) {
   const y = date.getFullYear();
@@ -54,23 +56,148 @@ function timeToMin(hhmm) {
   return h * 60 + m;
 }
 
-// Layout algorithm: assign column index to overlapping events
 function layoutEvents(events) {
   const sorted = [...events].sort((a,b) => a.startMin - b.startMin);
-  const cols = []; // cols[i] = endMin of last event in column i
-
+  const cols = [];
   return sorted.map(ev => {
     let col = cols.findIndex(endMin => endMin <= ev.startMin);
     if (col === -1) { col = cols.length; }
     cols[col] = ev.endMin;
     return { ...ev, col, totalCols: 0 };
   }).map((ev, _, arr) => {
-    // count how many columns are needed for overlapping group
-    const overlapping = arr.filter(e =>
-      e.startMin < ev.endMin && e.endMin > ev.startMin
-    );
+    const overlapping = arr.filter(e => e.startMin < ev.endMin && e.endMin > ev.startMin);
     return { ...ev, totalCols: Math.max(...overlapping.map(e => e.col)) + 1 };
   });
+}
+
+// ── Monthly calendar picker ───────────────────────────────────────────────────
+function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date(currentDay + 'T00:00:00');
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
+
+  const stepMonth = (delta) => {
+    setViewDate(prev => {
+      let m = prev.month + delta;
+      let y = prev.year;
+      if (m < 0) { m = 11; y--; }
+      if (m > 11) { m = 0; y++; }
+      return { year: y, month: m };
+    });
+  };
+
+  const { year, month } = viewDate;
+  const firstDay = new Date(year, month, 1);
+  // Monday-first: 0=Mon, 6=Sun
+  const firstDow = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const today = todayYMD();
+
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ymd = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cells.push(ymd);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm bg-white rounded-t-2xl pb-6 pt-4 px-4 shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center mb-3">
+          <div className="w-10 h-1 bg-n-200 rounded-full" />
+        </div>
+
+        {/* Month navigator */}
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => stepMonth(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 active:bg-n-100">
+            <ChevronLeft size={18} className="text-n-600" />
+          </button>
+          <span className="text-base font-semibold text-n-900">
+            {MESI_LONG[month]} {year}
+          </span>
+          <button onClick={() => stepMonth(1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 active:bg-n-100">
+            <ChevronRight size={18} className="text-n-600" />
+          </button>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {GIORNI_SHORT.map(g => (
+            <div key={g} className="text-center text-[10px] font-semibold text-n-400 py-1">{g}</div>
+          ))}
+        </div>
+
+        {/* Day grid */}
+        <div className="grid grid-cols-7 gap-y-1">
+          {cells.map((ymd, idx) => {
+            if (!ymd) return <div key={`e${idx}`} />;
+            const isToday = ymd === today;
+            const isSel   = ymd === currentDay;
+            const hasLesson = lessonDays.has(ymd);
+
+            return (
+              <button
+                key={ymd}
+                onClick={() => { onSelect(ymd); onClose(); }}
+                className="relative flex flex-col items-center justify-center py-1"
+              >
+                <span
+                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors
+                    ${isSel ? 'bg-ama-500 text-white' : isToday ? 'bg-ama-100 text-ama-700' : 'text-n-700 active:bg-n-100'}`}
+                >
+                  {new Date(ymd + 'T00:00:00').getDate()}
+                </span>
+                {hasLesson && !isSel && (
+                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-ama-500" />
+                )}
+                {hasLesson && isSel && (
+                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white/70" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Strumento dropdown ────────────────────────────────────────────────────────
+function StrumentoDropdown({ strumento, teachers, selected, colorMap, onToggle, onClose }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-start justify-start pt-24 pl-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-xl border border-n-100 overflow-hidden min-w-48"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="px-3 py-2 border-b bg-n-50">
+          <p className="text-xs font-semibold text-n-600 uppercase tracking-wide">{strumento}</p>
+        </div>
+        {teachers.map(t => {
+          const c = colorMap[String(t.id)] || COLORS[0];
+          const sel = selected.has(String(t.id));
+          return (
+            <button
+              key={t.id}
+              onClick={() => { onToggle(t.id); onClose(); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 active:bg-n-50"
+            >
+              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: c.chip }} />
+              <span className="text-sm text-n-800 flex-1 text-left">{t.nome} {t.cognome}</span>
+              {sel && <span className="w-2 h-2 rounded-full bg-ama-500 shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function CalendarioAdmin() {
@@ -84,8 +211,12 @@ export default function CalendarioAdmin() {
   const [editMode, setEditMode]     = useState("edit");
   const [editLesson, setEditLesson] = useState(null);
 
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dropdownStrumento, setDropdownStrumento] = useState(null);
+
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
+  const longPressTimers = useRef({});
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
@@ -111,18 +242,37 @@ export default function CalendarioAdmin() {
     const map = {};
     teachers.forEach((t, i) => {
       const base = t.colore || COLORS[i % COLORS.length].chip;
-      map[String(t.id)] = {
-        bg:     `${base}22`,
-        border: `${base}66`,
-        text:   base,
-        chip:   base,
-      };
+      map[String(t.id)] = { bg: `${base}22`, border: `${base}66`, text: base, chip: base };
     });
     return map;
   }, [teachers]);
 
-  // Lezioni del giorno corrente, filtrate per insegnante
+  // Group teachers by strumento
+  const teachersByStrumento = useMemo(() => {
+    const groups = {};
+    teachers.forEach(t => {
+      const s = t.strumento?.trim() || 'Altro';
+      if (!groups[s]) groups[s] = [];
+      groups[s].push(t);
+    });
+    return groups;
+  }, [teachers]);
+
   const activeTeacherIds = useMemo(() => new Set(teachers.map(t => String(t.id))), [teachers]);
+
+  // Days that have lessons (for calendar picker dots)
+  const lessonDays = useMemo(() => {
+    const set = new Set();
+    lezioni.forEach(l => {
+      if (!l.data) return;
+      if (l.stato === 'rimandata') return;
+      const tid = String(l.id_insegnante);
+      if (!activeTeacherIds.has(tid)) return;
+      if (selected.size > 0 && !selected.has(tid)) return;
+      set.add(String(l.data).slice(0, 10));
+    });
+    return set;
+  }, [lezioni, selected, activeTeacherIds]);
 
   const dayEvents = useMemo(() => {
     return lezioni
@@ -137,15 +287,10 @@ export default function CalendarioAdmin() {
       .map(l => {
         const oi = l.ora_inizio ? String(l.ora_inizio).slice(0,5) : null;
         const of = l.ora_fine   ? String(l.ora_fine).slice(0,5)   : null;
-        return {
-          ...l,
-          startMin: timeToMin(oi),
-          endMin:   timeToMin(of),
-          oi, of,
-        };
+        return { ...l, startMin: timeToMin(oi), endMin: timeToMin(of), oi, of };
       })
       .filter(l => l.startMin !== null && l.endMin !== null);
-  }, [lezioni, day, selected]);
+  }, [lezioni, day, selected, activeTeacherIds]);
 
   const laidOut = useMemo(() => layoutEvents(dayEvents), [dayEvents]);
 
@@ -157,46 +302,127 @@ export default function CalendarioAdmin() {
     });
   };
 
+  const toggleAllInStrumento = (strumento) => {
+    const group = teachersByStrumento[strumento] || [];
+    const ids = group.map(t => String(t.id));
+    const allSelected = ids.every(id => selected.has(id));
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allSelected) ids.forEach(id => next.delete(id));
+      else ids.forEach(id => next.add(id));
+      return next;
+    });
+  };
+
+  const isStrumentoActive = (strumento) => {
+    const group = teachersByStrumento[strumento] || [];
+    return group.length > 0 && group.every(t => selected.has(String(t.id)));
+  };
+
+  const isStrumentoPart = (strumento) => {
+    const group = teachersByStrumento[strumento] || [];
+    return group.some(t => selected.has(String(t.id))) && !isStrumentoActive(strumento);
+  };
+
+  // Long press handlers for strumento chips
+  const onStrumentoTouchStart = (strumento) => {
+    longPressTimers.current[strumento] = setTimeout(() => {
+      longPressTimers.current[strumento] = null;
+      setDropdownStrumento(strumento);
+    }, 500);
+  };
+
+  const onStrumentoTouchEnd = (strumento) => {
+    if (longPressTimers.current[strumento]) {
+      clearTimeout(longPressTimers.current[strumento]);
+      longPressTimers.current[strumento] = null;
+      toggleAllInStrumento(strumento);
+    }
+  };
+
   const openEdit = (l) => { setEditLesson(l); setEditMode('edit'); setEditOpen(true); };
   const openAdd  = () => { setEditLesson(null); setEditMode('create'); setEditOpen(true); };
 
-  // Indicatore ora corrente
   const nowMin = useMemo(() => {
     if (day !== todayYMD()) return null;
     const n = new Date();
     return n.getHours() * 60 + n.getMinutes();
   }, [day]);
 
-  const nowTop = nowMin !== null
-    ? ((nowMin - GRID_START * 60) / 60) * HOUR_H
-    : null;
+  const nowTop = nowMin !== null ? ((nowMin - GRID_START * 60) / 60) * HOUR_H : null;
+
+  const strumentiKeys = Object.keys(teachersByStrumento);
+  const multiGroup = strumentiKeys.length > 1 || (strumentiKeys.length === 1 && strumentiKeys[0] !== 'Altro');
 
   return (
-    <div className="min-h-screen bg-n-100 flex flex-col pb-20">
+    <div className="h-screen flex flex-col bg-n-100 overflow-hidden pb-16">
       <PageHeader title="Calendario" backTo={false} />
 
-      {/* Chip filtro insegnanti */}
+      {/* ── Row 1: Teacher selection ── */}
       {teachers.length > 0 && (
-        <div className="px-4 pt-3 pb-2 bg-white border-b">
+        <div className="shrink-0 px-4 pt-3 pb-2 bg-white border-b z-20">
           <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {teachers.map(t => {
-              const c   = colorMap[String(t.id)] || COLORS[0];
-              const sel = selected.has(String(t.id));
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => toggleTeacher(t.id)}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
-                  style={sel
-                    ? { backgroundColor: c.chip, color: '#fff' }
-                    : { backgroundColor: '#fff', color: c.chip, border: `1.5px solid ${c.chip}` }
-                  }
-                >
-                  {!sel && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.chip }} />}
-                  {t.nome} {t.cognome}
-                </button>
-              );
-            })}
+            {multiGroup ? (
+              // Grouped by strumento
+              strumentiKeys.map(strumento => {
+                const group = teachersByStrumento[strumento];
+                const active = isStrumentoActive(strumento);
+                const partial = isStrumentoPart(strumento);
+                return (
+                  <button
+                    key={strumento}
+                    onTouchStart={() => onStrumentoTouchStart(strumento)}
+                    onTouchEnd={() => onStrumentoTouchEnd(strumento)}
+                    onClick={() => {}} // handled by touch; fallback for desktop
+                    onMouseDown={() => onStrumentoTouchStart(strumento)}
+                    onMouseUp={() => onStrumentoTouchEnd(strumento)}
+                    onMouseLeave={() => {
+                      if (longPressTimers.current[strumento]) {
+                        clearTimeout(longPressTimers.current[strumento]);
+                        longPressTimers.current[strumento] = null;
+                      }
+                    }}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all select-none"
+                    style={
+                      active
+                        ? { backgroundColor: '#4f46e5', color: '#fff' }
+                        : partial
+                        ? { backgroundColor: '#4f46e51a', color: '#4f46e5', border: '1.5px solid #4f46e5' }
+                        : { backgroundColor: '#fff', color: '#6b7280', border: '1.5px solid #e5e7eb' }
+                    }
+                  >
+                    {/* Color dots for teachers in group */}
+                    <span className="flex gap-0.5">
+                      {group.slice(0, 3).map(t => (
+                        <span key={t.id} className="w-2 h-2 rounded-full" style={{ backgroundColor: (colorMap[String(t.id)] || COLORS[0]).chip }} />
+                      ))}
+                    </span>
+                    {strumento}
+                    {group.length > 1 && <span className="ml-0.5 text-[10px] opacity-70">{group.length}</span>}
+                  </button>
+                );
+              })
+            ) : (
+              // No instrument grouping → flat list
+              teachers.map(t => {
+                const c   = colorMap[String(t.id)] || COLORS[0];
+                const sel = selected.has(String(t.id));
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => toggleTeacher(t.id)}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                    style={sel
+                      ? { backgroundColor: c.chip, color: '#fff' }
+                      : { backgroundColor: '#fff', color: c.chip, border: `1.5px solid ${c.chip}` }
+                    }
+                  >
+                    {!sel && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.chip }} />}
+                    {t.nome} {t.cognome}
+                  </button>
+                );
+              })
+            )}
             {selected.size > 0 && (
               <button
                 onClick={() => setSelected(new Set())}
@@ -209,17 +435,21 @@ export default function CalendarioAdmin() {
         </div>
       )}
 
-      {/* Navigatore giorno */}
-      <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b">
+      {/* ── Row 2: Day navigator ── */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-2.5 bg-white border-b z-20">
         <button
           onClick={() => setDay(d => addDays(d, -1))}
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-n-50 active:bg-n-100"
         >
           <ChevronLeft size={18} className="text-n-600" />
         </button>
-        <div className="text-center">
+        <button
+          onClick={() => setShowCalendar(true)}
+          className="flex-1 text-center px-2 active:opacity-70"
+        >
           <p className="text-sm font-semibold text-n-900">{fmtHeader(day)}</p>
-        </div>
+          <p className="text-[10px] text-n-400 mt-0.5">Tocca per scegliere la data</p>
+        </button>
         <button
           onClick={() => setDay(d => addDays(d, 1))}
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-n-50 active:bg-n-100"
@@ -228,7 +458,7 @@ export default function CalendarioAdmin() {
         </button>
       </div>
 
-      {/* Griglia oraria */}
+      {/* ── Time grid ── */}
       <div className="flex-1 overflow-y-auto bg-white">
         {loading ? (
           <div className="flex justify-center py-16">
@@ -236,8 +466,6 @@ export default function CalendarioAdmin() {
           </div>
         ) : (
           <div className="relative flex" style={{ height: TOTAL_H }}>
-
-            {/* Colonna orari */}
             <div className="w-12 shrink-0 relative border-r border-n-100">
               {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
                 <div
@@ -252,37 +480,24 @@ export default function CalendarioAdmin() {
               ))}
             </div>
 
-            {/* Area eventi */}
             <div className="flex-1 relative">
-
-              {/* Righe orarie */}
               {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
-                <div
-                  key={i}
-                  className="absolute left-0 right-0 border-t border-n-100"
-                  style={{ top: i * HOUR_H }}
-                />
+                <div key={i} className="absolute left-0 right-0 border-t border-n-100" style={{ top: i * HOUR_H }} />
               ))}
 
-              {/* Linea ora corrente */}
               {nowTop !== null && nowTop >= 0 && nowTop <= TOTAL_H && (
-                <div
-                  className="absolute left-0 right-0 z-10 flex items-center"
-                  style={{ top: nowTop }}
-                >
+                <div className="absolute left-0 right-0 z-10 flex items-center" style={{ top: nowTop }}>
                   <div className="w-2 h-2 rounded-full bg-red-500 -ml-1" />
                   <div className="flex-1 h-px bg-red-500" />
                 </div>
               )}
 
-              {/* Nessuna lezione */}
               {laidOut.length === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-sm text-n-300">Nessuna lezione</p>
                 </div>
               )}
 
-              {/* Blocchi lezione */}
               {laidOut.map(l => {
                 const c = colorMap[String(l.id_insegnante)] || COLORS[0];
                 const top    = Math.max(0, (l.startMin - GRID_START * 60) / 60 * HOUR_H);
@@ -290,26 +505,15 @@ export default function CalendarioAdmin() {
                 const colW   = 100 / l.totalCols;
                 const left   = `${l.col * colW}%`;
                 const width  = `calc(${colW}% - 4px)`;
-                const nomeAllievo = l.nome_allievo
-                  ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim()
-                  : l.title || '—';
-                const nomeIns = l.nome_insegnante
-                  ? `${l.nome_insegnante} ${l.cognome_insegnante || ''}`.trim()
-                  : '';
+                const nomeAllievo = l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim() : l.title || '—';
+                const nomeIns = l.nome_insegnante ? `${l.nome_insegnante} ${l.cognome_insegnante || ''}`.trim() : '';
 
                 return (
                   <button
                     key={l.id}
                     onClick={() => openEdit(l)}
                     className="absolute rounded-lg px-2 py-1 text-left overflow-hidden active:opacity-70 transition-opacity"
-                    style={{
-                      top,
-                      height,
-                      left,
-                      width,
-                      backgroundColor: c.bg,
-                      border: `1.5px solid ${c.border}`,
-                    }}
+                    style={{ top, height, left, width, backgroundColor: c.bg, border: `1.5px solid ${c.border}` }}
                   >
                     <p className="text-xs font-semibold leading-tight truncate" style={{ color: c.text }}>
                       {l.oi} – {l.of}
@@ -319,8 +523,7 @@ export default function CalendarioAdmin() {
                     </p>
                     {height > 36 && nomeIns && (
                       <p className="text-[10px] leading-tight truncate opacity-70" style={{ color: c.text }}>
-                        {nomeIns}
-                        {l.aula ? ` · Aula ${l.aula}` : ''}
+                        {nomeIns}{l.aula ? ` · Aula ${l.aula}` : ''}
                       </p>
                     )}
                   </button>
@@ -330,6 +533,28 @@ export default function CalendarioAdmin() {
           </div>
         )}
       </div>
+
+      {/* ── Monthly calendar picker overlay ── */}
+      {showCalendar && (
+        <MonthPicker
+          currentDay={day}
+          lessonDays={lessonDays}
+          onSelect={setDay}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
+
+      {/* ── Strumento dropdown overlay ── */}
+      {dropdownStrumento && (
+        <StrumentoDropdown
+          strumento={dropdownStrumento}
+          teachers={teachersByStrumento[dropdownStrumento] || []}
+          selected={selected}
+          colorMap={colorMap}
+          onToggle={toggleTeacher}
+          onClose={() => setDropdownStrumento(null)}
+        />
+      )}
 
       <EditLessonModal
         open={editOpen}

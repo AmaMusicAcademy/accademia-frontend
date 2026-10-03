@@ -19,6 +19,7 @@ const CAMPI = [
   { key: 'nome',          label: 'Nome',                  type: 'text' },
   { key: 'cognome',       label: 'Cognome',               type: 'text' },
   { key: 'username',      label: 'Username',              type: 'text' },
+  { key: 'strumento',     label: 'Strumento',             type: 'text' },
   { key: 'email',         label: 'Email',                 type: 'email' },
   { key: 'telefono',      label: 'Telefono',              type: 'tel' },
   { key: 'indirizzo',     label: 'Indirizzo',             type: 'text' },
