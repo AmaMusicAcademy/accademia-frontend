@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Plus, Search, X, Check, Users, Smartphone, Globe, AlertCircle, Clock } from 'lucide-react';
+import { ChevronRight, Plus, Search, X, Check, Users, Smartphone, Globe, AlertCircle, Clock, Euro } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import PageHeader from '../componenti/PageHeader';
 import { apiFetch } from '../utils/api';
@@ -205,6 +205,30 @@ export default function AdminAllievi() {
           <>
             {tab === 'attivi' && (
               <>
+                {/* Riepilogo attivi */}
+                {!search && (() => {
+                  const totaleQuote = attivi.reduce((s, a) => s + parseFloat(a.quota_mensile || 0), 0);
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white border rounded-xl px-4 py-3 flex items-center gap-3">
+                        <Users size={18} className="text-ama-500 shrink-0" />
+                        <div>
+                          <p className="text-xs text-n-400">Allievi attivi</p>
+                          <p className="text-xl font-bold text-n-900">{attivi.length}</p>
+                        </div>
+                      </div>
+                      <div className="bg-white border rounded-xl px-4 py-3 flex items-center gap-3">
+                        <Euro size={18} className="text-emerald-500 shrink-0" />
+                        <div>
+                          <p className="text-xs text-n-400">Quote / mese</p>
+                          <p className="text-xl font-bold text-n-900">
+                            {totaleQuote.toLocaleString('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <p className="text-xs font-semibold text-n-600 uppercase">Attivi ({filtra(attivi).length})</p>
                 {filtra(attivi).length === 0 ? (
                   <div className="bg-white border border-dashed rounded-xl p-8 text-center text-sm text-n-300">
