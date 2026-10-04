@@ -704,7 +704,7 @@ export default function CalendarioAdmin() {
                 const top = Math.max(0, (dragProva.startMin - GRID_START * 60) / 60 * HOUR_H);
                 const height = (45 / 60) * HOUR_H - 2;
                 const ghostC = dragProva.allConflict
-                  ? { bg: '#fee2e2', border: '#ef4444', text: '#dc2626' }
+                  ? { bg: '#f3f4f6', border: '#374151', text: '#111827' }
                   : dragProva.freeTeacherId && colorMap[dragProva.freeTeacherId]
                     ? { bg: `${colorMap[dragProva.freeTeacherId].chip}30`, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].chip }
                     : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
