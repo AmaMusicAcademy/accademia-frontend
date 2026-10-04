@@ -61,15 +61,17 @@ export default function CalendarioLezioni(props) {
       setToken(t);
 
       let id;
+      let insId;
       try {
         const decoded = jwtDecode(t);
         id = decoded.id || decoded.userId;
+        insId = decoded.insegnanteId || null;
       } catch {
         doLogout();
         return;
       }
       if (!id) throw new Error("ID utente non presente nel token");
-      setTeacherId(id);
+      setTeacherId(insId || id);
     } catch (e) {
       setErrore(e.message || "Errore autenticazione");
     }

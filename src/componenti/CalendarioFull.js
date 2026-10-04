@@ -13,6 +13,14 @@ const API_BASE = process.env.REACT_APP_API_URL || (window.location.hostname === 
 function getToken() {
   try { return localStorage.getItem("token") || null; } catch { return null; }
 }
+function getInsegnanteIdFromToken() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload?.insegnanteId || null;
+  } catch { return null; }
+}
 const ymd  = (d) => String(d || "").slice(0, 10);
 const hhmm = (t) => t ? String(t).slice(0, 5) : "";
 
@@ -543,7 +551,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
         onSaved={handleSaved}
         lesson={editLesson}
         mode={editMode}
-        lockedTeacherId={isAdmin ? null : (localStorage.getItem('insegnanteId') || undefined)}
+        lockedTeacherId={isAdmin ? null : (getInsegnanteIdFromToken() || undefined)}
       />
 
       <AssenteModal
