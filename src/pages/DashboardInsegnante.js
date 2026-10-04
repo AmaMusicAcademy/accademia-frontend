@@ -2,11 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, Users, TrendingUp, ChevronRight,
-  MapPin, RefreshCw, DoorOpen, RotateCcw,
+  MapPin, RefreshCw, DoorOpen, RotateCcw, X, FlaskConical,
 } from 'lucide-react';
 import InsegnanteLayout from '../componenti/InsegnanteLayout';
 import RiprogrammaModal from '../componenti/RiprogrammaModal';
 import AssenteModal from '../componenti/AssenteModal';
+import CampanellaNotifiche from '../componenti/CampanellaNotifiche';
 import { apiFetch, getInsegnanteId } from '../utils/api';
 
 const MESI  = ['','Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -127,6 +128,15 @@ export default function DashboardInsegnante() {
   const [riprogrammaLezione, setRiprogrammaLezione] = useState(null);
   const [assenteOpen, setAssenteOpen] = useState(false);
   const [recuperiWarning, setRecupériWarning] = useState(false);
+  const [lezioneProvaDettaglio, setLezioneProvaDettaglio] = useState(null);
+
+  const openLezioneProva = useCallback(async (lezioneId) => {
+    try {
+      const all = await apiFetch(`/api/insegnanti/${getInsegnanteId()}/lezioni`);
+      const lez = (Array.isArray(all) ? all : []).find(l => l.id === lezioneId || String(l.id) === String(lezioneId));
+      if (lez) setLezioneProvaDettaglio(lez);
+    } catch { /* ignora */ }
+  }, []);
 
   const caricaOccupazione = useCallback(async (aulaArr, data) => {
     const results = await Promise.all(
@@ -246,9 +256,12 @@ export default function DashboardInsegnante() {
             <p className="text-sm text-n-600">Ciao,</p>
             <h1 className="text-2xl font-bold text-n-900">{profilo?.nome || '—'}</h1>
           </div>
-          <button onClick={carica} className="p-2 text-n-300" aria-label="Aggiorna">
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <CampanellaNotifiche onOpenLezione={openLezioneProva} />
+            <button onClick={carica} className="p-2 text-n-300" aria-label="Aggiorna">
+              <RefreshCw size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Stat cards */}
@@ -509,6 +522,56 @@ export default function DashboardInsegnante() {
               >
                 Conferma
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modale dettaglio lezione prova */}
+      {lezioneProvaDettaglio && (
+        <div className="fixed inset-x-0 top-0 bottom-16 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={() => setLezioneProvaDettaglio(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm bg-white rounded-t-2xl pt-4 pb-8 px-5 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-center mb-3">
+              <div className="w-10 h-1 bg-n-200 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <FlaskConical size={16} className="text-amber-600" />
+                </div>
+                <p className="text-base font-bold text-n-900">Lezione prova</p>
+              </div>
+              <button onClick={() => setLezioneProvaDettaglio(null)} className="w-8 h-8 flex items-center justify-center rounded-full bg-n-100 text-n-500">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-2">
+              {lezioneProvaDettaglio.nome_allievo_prova && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-n-500">Allievo</span>
+                  <span className="font-medium text-n-900">{lezioneProvaDettaglio.nome_allievo_prova}</span>
+                </div>
+              )}
+              {lezioneProvaDettaglio.telefono_prova && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-n-500">Telefono</span>
+                  <span className="font-medium text-n-900">{lezioneProvaDettaglio.telefono_prova}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-n-500">Data</span>
+                <span className="font-medium text-n-900">{String(lezioneProvaDettaglio.data || '').slice(0, 10).split('-').reverse().join('/')}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-n-500">Orario</span>
+                <span className="font-medium text-n-900">{String(lezioneProvaDettaglio.ora_inizio || '').slice(0,5)} – {String(lezioneProvaDettaglio.ora_fine || '').slice(0,5)}</span>
+              </div>
+              {lezioneProvaDettaglio.note && (
+                <div className="pt-2 border-t border-n-100">
+                  <p className="text-xs text-n-500 mb-1">Note</p>
+                  <p className="text-sm text-n-800">{lezioneProvaDettaglio.note}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
