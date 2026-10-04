@@ -438,6 +438,12 @@ export default function CalendarioAdmin() {
   const onGridPointerDown = useCallback((e) => {
     if (e.button !== 0 && e.pointerType !== 'touch') return;
     if (dragState.current?.active) return;
+    // Ignora click sulla scrollbar (clientX oltre la larghezza del contenuto)
+    if (gridRef.current) {
+      const rect = gridRef.current.getBoundingClientRect();
+      const scrollbarWidth = gridRef.current.offsetWidth - gridRef.current.clientWidth;
+      if (e.clientX > rect.right - scrollbarWidth - 2) return;
+    }
     const startClientY = e.clientY;
     const timer = setTimeout(() => {
       if (!dragState.current) return;
