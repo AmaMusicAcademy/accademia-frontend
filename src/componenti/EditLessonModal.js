@@ -363,6 +363,22 @@ export default function EditLessonModal({
             </div>
           )}
 
+          {/* INFO LEZIONE PROVA */}
+          {lesson?.stato === 'prova' && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Lezione prova</p>
+              {lesson.nome_allievo_prova && (
+                <p className="text-sm text-n-800"><span className="font-medium">Allievo:</span> {lesson.nome_allievo_prova}</p>
+              )}
+              {lesson.telefono_prova && (
+                <p className="text-sm text-n-800"><span className="font-medium">Telefono:</span> {lesson.telefono_prova}</p>
+              )}
+              {lesson.note && (
+                <p className="text-sm text-n-800"><span className="font-medium">Note:</span> {lesson.note}</p>
+              )}
+            </div>
+          )}
+
           {/* TIPO LEZIONE — solo su nuova lezione */}
           {!lesson?.id && (
             <div className="flex rounded-xl border overflow-hidden">

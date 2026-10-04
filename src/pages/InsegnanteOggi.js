@@ -106,6 +106,8 @@ export default function InsegnanteOggi() {
             {lezioni.map(l => {
               const nome = l.tipo === 'collettiva'
                 ? (l.nome_gruppo || 'Gruppo')
+                : l.stato === 'prova'
+                ? (l.nome_allievo_prova || 'Lezione prova')
                 : `${l.nome_allievo || ''} ${l.cognome_allievo || ''}`.trim();
 
               const isSvolta = l.stato === 'svolta';
@@ -144,6 +146,18 @@ export default function InsegnanteOggi() {
                       )}
                     </p>
                   </div>
+
+                  {/* Dettagli lezione prova */}
+                  {l.stato === 'prova' && (
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 mb-3 space-y-0.5">
+                      {l.telefono_prova && (
+                        <p className="text-sm text-n-700"><span className="font-medium">Tel:</span> {l.telefono_prova}</p>
+                      )}
+                      {l.note && (
+                        <p className="text-sm text-n-700"><span className="font-medium">Note:</span> {l.note}</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Bottoni azione */}
                   {isAppuntamentata && (

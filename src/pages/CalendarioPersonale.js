@@ -57,6 +57,7 @@ export default function CalendarioPersonale() {
             l.stato === "appuntamentata" ||
             l.stato === "svolta" ||
             l.stato === "annullata" ||
+            l.stato === "prova" ||
             (l.stato === "rimandata" && l.riprogrammata === true);
           return statoValido && safeDateStr(l.data) && l.ora_inizio && l.ora_fine;
         })
