@@ -42,6 +42,63 @@ const PALETTE = [
   { hex: '#7c3aed', label: 'Indaco' },
 ];
 
+const GIORNI_SETT = [
+  { label: 'Lu', dow: 1 }, { label: 'Ma', dow: 2 }, { label: 'Me', dow: 3 },
+  { label: 'Gi', dow: 4 }, { label: 'Ve', dow: 5 }, { label: 'Sa', dow: 6 },
+  { label: 'Do', dow: 0 },
+];
+
+function parseDow(str) {
+  if (!str) return new Set();
+  return new Set(str.split(',').map(Number).filter(n => !isNaN(n)));
+}
+
+function DisponibilitaPicker({ ins, id, onUpdated }) {
+  const [saving, setSaving] = useState(false);
+  const [dows, setDows] = useState(() => parseDow(ins.disponibilita));
+
+  const toggle = async (dow) => {
+    if (saving) return;
+    const next = new Set(dows);
+    if (next.has(dow)) next.delete(dow); else next.add(dow);
+    setDows(next);
+    setSaving(true);
+    try {
+      const val = [...next].join(',') || null;
+      const updated = await apiFetch(`/api/insegnanti/${id}`, {
+        method: 'PATCH', body: JSON.stringify({ disponibilita: val }),
+      });
+      onUpdated(updated);
+    } catch { setDows(dows); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="bg-white border rounded-xl px-4 py-3">
+      <p className="text-sm font-semibold text-n-900 mb-3">Disponibilità settimanale</p>
+      <div className="flex gap-2">
+        {GIORNI_SETT.map(({ label, dow }) => {
+          const on = dows.has(dow);
+          return (
+            <button
+              key={dow}
+              onClick={() => toggle(dow)}
+              disabled={saving}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors disabled:opacity-60
+                ${on ? 'bg-ama-500 text-white' : 'bg-n-100 text-n-400'}`}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {dows.size === 0 && (
+        <p className="text-xs text-n-300 mt-2">Nessuna disponibilità impostata</p>
+      )}
+    </div>
+  );
+}
+
 function ColorePicker({ ins, id, onUpdated }) {
   const [saving, setSaving] = useState(false);
   const [custom, setCustom] = useState(ins.colore || '#2563eb');
@@ -282,6 +339,9 @@ export default function DettaglioInsegnante() {
             </div>
           )}
         </div>
+
+        {/* ── Disponibilità settimanale ── */}
+        <DisponibilitaPicker ins={ins} id={id} onUpdated={setIns} />
 
         {/* ── Colore calendario ── */}
         <ColorePicker ins={ins} id={id} onUpdated={setIns} />

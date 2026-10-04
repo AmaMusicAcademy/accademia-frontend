@@ -45,6 +45,11 @@ function fmtHeader(ymd) {
   return `${label} ${d.getDate()} ${MESI_SHORT[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function parseDow(str) {
+  if (!str) return new Set();
+  return new Set(str.split(',').map(Number).filter(n => !isNaN(n)));
+}
+
 function snapTo15(min) {
   return Math.round(min / 15) * 15;
 }
@@ -82,7 +87,7 @@ function layoutEvents(events) {
 }
 
 // ── Monthly calendar picker ───────────────────────────────────────────────────
-function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
+function MonthPicker({ currentDay, lessonDays, availableDows, onSelect, onClose }) {
   const [viewDate, setViewDate] = useState(() => {
     const d = new Date(currentDay + 'T00:00:00');
     return { year: d.getFullYear(), month: d.getMonth() };
@@ -99,11 +104,8 @@ function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
   };
 
   const { year, month } = viewDate;
-  const firstDay = new Date(year, month, 1);
-  // Monday-first: 0=Mon, 6=Sun
-  const firstDow = (firstDay.getDay() + 6) % 7;
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const today = todayYMD();
 
   const cells = [];
@@ -117,63 +119,75 @@ function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-sm bg-white rounded-t-2xl pb-6 pt-4 px-4 shadow-xl"
+        className="relative w-full max-w-sm bg-white rounded-t-2xl pt-4 px-4 shadow-xl flex flex-col"
+        style={{ maxHeight: 'calc(100dvh - 2rem)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-3 shrink-0">
           <div className="w-10 h-1 bg-n-200 rounded-full" />
         </div>
 
         {/* Month navigator */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 shrink-0">
           <button onClick={() => stepMonth(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 active:bg-n-100">
             <ChevronLeft size={18} className="text-n-600" />
           </button>
-          <span className="text-base font-semibold text-n-900">
-            {MESI_LONG[month]} {year}
-          </span>
+          <span className="text-base font-semibold text-n-900">{MESI_LONG[month]} {year}</span>
           <button onClick={() => stepMonth(1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-n-50 active:bg-n-100">
             <ChevronRight size={18} className="text-n-600" />
           </button>
         </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7 mb-1">
-          {GIORNI_SHORT.map(g => (
-            <div key={g} className="text-center text-[10px] font-semibold text-n-400 py-1">{g}</div>
-          ))}
-        </div>
+        {/* Scrollable grid */}
+        <div className="flex-1 overflow-y-auto pb-6">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 mb-1">
+            {GIORNI_SHORT.map(g => (
+              <div key={g} className="text-center text-[10px] font-semibold text-n-400 py-1">{g}</div>
+            ))}
+          </div>
 
-        {/* Day grid */}
-        <div className="grid grid-cols-7 gap-y-1">
-          {cells.map((ymd, idx) => {
-            if (!ymd) return <div key={`e${idx}`} />;
-            const isToday = ymd === today;
-            const isSel   = ymd === currentDay;
-            const hasLesson = lessonDays.has(ymd);
+          {/* Day grid */}
+          <div className="grid grid-cols-7 gap-y-1">
+            {cells.map((ymd, idx) => {
+              if (!ymd) return <div key={`e${idx}`} />;
+              const dow = new Date(ymd + 'T00:00:00').getDay();
+              const isToday = ymd === today;
+              const isSel   = ymd === currentDay;
+              const hasLesson = lessonDays.has(ymd);
+              const isAvail = availableDows.size > 0 && availableDows.has(dow);
 
-            return (
-              <button
-                key={ymd}
-                onClick={() => { onSelect(ymd); onClose(); }}
-                className="relative flex flex-col items-center justify-center py-1"
-              >
-                <span
-                  className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors
-                    ${isSel ? 'bg-ama-500 text-white' : isToday ? 'bg-ama-100 text-ama-700' : 'text-n-700 active:bg-n-100'}`}
+              return (
+                <button
+                  key={ymd}
+                  onClick={() => { onSelect(ymd); onClose(); }}
+                  className="relative flex flex-col items-center justify-center py-1"
                 >
-                  {new Date(ymd + 'T00:00:00').getDate()}
-                </span>
-                {hasLesson && !isSel && (
-                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-ama-500" />
-                )}
-                {hasLesson && isSel && (
-                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white/70" />
-                )}
-              </button>
-            );
-          })}
+                  <span
+                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors
+                      ${isSel ? 'bg-ama-500 text-white' : isToday ? 'bg-ama-100 text-ama-700' : 'text-n-700 active:bg-n-100'}`}
+                    style={isAvail && !isSel ? { boxShadow: '0 0 0 2px #4f46e5' } : undefined}
+                  >
+                    {new Date(ymd + 'T00:00:00').getDate()}
+                  </span>
+                  {hasLesson && !isSel && (
+                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-ama-500" />
+                  )}
+                  {hasLesson && isSel && (
+                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white/70" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {availableDows.size > 0 && (
+            <p className="text-[10px] text-n-400 text-center mt-3">
+              <span className="inline-block w-3 h-3 rounded-full border-2 border-ama-500 align-middle mr-1" />
+              Giorni con disponibilità
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -284,6 +298,30 @@ export default function CalendarioAdmin() {
 
   const activeTeacherIds = useMemo(() => new Set(teachers.map(t => String(t.id))), [teachers]);
 
+  // Teachers available on current day (for prova drag)
+  const dayDow = useMemo(() => new Date(day + 'T00:00:00').getDay(), [day]);
+
+  const teachersForProva = useMemo(() => {
+    return teachers.filter(t => {
+      const dows = parseDow(t.disponibilita);
+      const availToday = dows.size === 0 || dows.has(dayDow); // if no dispo set, assume available
+      const inSelected = selected.size === 0 || selected.has(String(t.id));
+      return availToday && inSelected;
+    });
+  }, [teachers, dayDow, selected]);
+
+  // Days-of-week where at least one selected/filtered teacher is available (for calendar picker)
+  const availableDows = useMemo(() => {
+    const toCheck = selected.size > 0 ? teachers.filter(t => selected.has(String(t.id))) : teachers;
+    const dows = new Set();
+    toCheck.forEach(t => {
+      const td = parseDow(t.disponibilita);
+      if (td.size === 0) { [0,1,2,3,4,5,6].forEach(d => dows.add(d)); }
+      else td.forEach(d => dows.add(d));
+    });
+    return dows;
+  }, [teachers, selected]);
+
   // Days that have lessons (for calendar picker dots)
   const lessonDays = useMemo(() => {
     const set = new Set();
@@ -387,18 +425,16 @@ export default function CalendarioAdmin() {
     }
   };
 
-  // Conflict detection for drag-to-create
+  // Conflict detection for drag-to-create (uses only teachers available today)
   const getConflictStatus = useCallback((startM, endM) => {
-    const toCheck = selected.size > 0
-      ? [...selected]
-      : teachers.map(t => String(t.id));
-    if (toCheck.length === 0) return { allConflict: false, freeTeacherId: null };
-    const free = toCheck.filter(tid =>
+    if (teachersForProva.length === 0) return { allConflict: true, freeTeacherId: null, noAvail: true };
+    const ids = teachersForProva.map(t => String(t.id));
+    const free = ids.filter(tid =>
       !dayEvents.some(e => String(e.id_insegnante) === tid && e.startMin < endM && e.endMin > startM)
     );
-    if (free.length === 0) return { allConflict: true, freeTeacherId: null };
-    return { allConflict: false, freeTeacherId: free[0] };
-  }, [selected, teachers, dayEvents]);
+    if (free.length === 0) return { allConflict: true, freeTeacherId: null, noAvail: false };
+    return { allConflict: false, freeTeacherId: free[0], noAvail: false };
+  }, [teachersForProva, dayEvents]);
 
   const clientYToStartMin = useCallback((clientY) => {
     if (!gridRef.current) return GRID_START * 60;
@@ -445,21 +481,19 @@ export default function CalendarioAdmin() {
     if (!dragState.current) return;
     clearTimeout(dragState.current.longPressTimer);
     const wasActive = dragState.current.active;
-    const startM = dragState.current.active
-      ? clientYToStartMin(e.clientY)
-      : null;
+    const startM = dragState.current.active ? clientYToStartMin(e.clientY) : null;
     dragState.current = null;
     setDragProva(null);
     if (wasActive && startM !== null) {
-      // Determine pre-selected teacher
-      const toCheck = selected.size > 0 ? [...selected] : teachers.map(t => String(t.id));
-      const free = toCheck.filter(tid =>
+      // Pre-select: single selected teacher, or the only free available teacher
+      const ids = teachersForProva.map(t => String(t.id));
+      const free = ids.filter(tid =>
         !dayEvents.some(ev => String(ev.id_insegnante) === tid && ev.startMin < startM + 45 && ev.endMin > startM)
       );
-      const preselected = selected.size === 1 ? [...selected][0] : (free.length === 1 ? free[0] : null);
+      const preselected = ids.length === 1 ? ids[0] : (free.length === 1 ? free[0] : null);
       setProvaModal({ startMin: startM, preselectedTeacherId: preselected });
     }
-  }, [clientYToStartMin, selected, teachers, dayEvents]);
+  }, [clientYToStartMin, teachersForProva, dayEvents]);
 
   const openEdit = (l) => { setEditLesson(l); setEditMode('edit'); setEditOpen(true); };
   const openAdd  = () => { setEditLesson(null); setEditMode('create'); setEditOpen(true); };
@@ -687,7 +721,7 @@ export default function CalendarioAdmin() {
                     </p>
                     {dragProva.allConflict && (
                       <p className="text-[10px] mt-0.5 font-semibold" style={{ color: ghostC.text }}>
-                        Slot occupato
+                        {dragProva.noAvail ? 'Nessun ins. disponibile' : 'Slot occupato'}
                       </p>
                     )}
                   </div>
@@ -703,6 +737,7 @@ export default function CalendarioAdmin() {
         <MonthPicker
           currentDay={day}
           lessonDays={lessonDays}
+          availableDows={availableDows}
           onSelect={setDay}
           onClose={() => setShowCalendar(false)}
         />
@@ -737,7 +772,7 @@ export default function CalendarioAdmin() {
           onSaved={async () => { setProvaModal(null); await refetch(); }}
           startMin={provaModal.startMin}
           data={day}
-          teachers={teachers}
+          teachers={teachersForProva.length > 0 ? teachersForProva : teachers}
           preselectedTeacherId={provaModal.preselectedTeacherId}
         />
       )}

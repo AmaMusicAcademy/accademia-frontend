@@ -64,16 +64,17 @@ export default function LezionProvaModal({ open, onClose, onSaved, startMin, dat
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-sm bg-white rounded-t-2xl pb-8 pt-4 px-4 shadow-xl"
+        className="relative w-full max-w-sm bg-white rounded-t-2xl pt-4 shadow-xl flex flex-col"
+        style={{ maxHeight: 'calc(100dvh - 2rem)' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="flex justify-center mb-1">
+        <div className="flex justify-center mb-1 shrink-0">
           <div className="w-10 h-1 bg-n-200 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 mt-2">
+        <div className="flex items-center justify-between mb-4 mt-2 px-4 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center">
               <FlaskConical size={16} className="text-amber-600" />
@@ -88,7 +89,9 @@ export default function LezionProvaModal({ open, onClose, onSaved, startMin, dat
           </button>
         </div>
 
-        <div className="space-y-3">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-4">
+        <div className="space-y-3 pb-4">
           {/* Nome allievo */}
           <div>
             <label className="block text-xs font-medium text-n-600 mb-1">Nome allievo *</label>
@@ -198,7 +201,11 @@ export default function LezionProvaModal({ open, onClose, onSaved, startMin, dat
           </div>
 
           {errore && <p className="text-sm text-red-500 text-center bg-red-50 rounded-xl px-3 py-2">{errore}</p>}
+        </div>
+        </div>
 
+        {/* Sticky save button */}
+        <div className="shrink-0 px-4 pt-2 pb-6 border-t bg-white">
           <button
             onClick={handleSave}
             disabled={loading}
