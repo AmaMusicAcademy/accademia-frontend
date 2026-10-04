@@ -710,7 +710,7 @@ export default function CalendarioAdmin() {
                     : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
                 return (
                   <div
-                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg"
+                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg flex flex-col items-end text-right"
                     style={{ top, height, backgroundColor: ghostC.bg, border: `2px dashed ${ghostC.border}` }}
                   >
                     <p className="text-xs font-bold leading-tight" style={{ color: ghostC.text }}>
