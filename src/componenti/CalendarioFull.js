@@ -379,7 +379,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
                   const orario = `${ep.oraInizio || hhmm(ep.ora_inizio)} – ${ep.oraFine || hhmm(ep.ora_fine)}`;
                   const realId = ev.id ?? ep.id;
                   const loading = azioneLoading === realId;
-                  const isAppuntamentata = label === "appuntamentata";
+                  const isAppuntamentata = label === "appuntamentata" || label === "prova";
                   const isRimandata      = label === "rimandata";
                   const isAnnullata      = label === "annullata";
                   const isSvolta         = label === "svolta";
@@ -401,9 +401,11 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
                             <span className="text-sm font-semibold text-n-900">
                               {isCollettiva
                                 ? (ep.nome_gruppo || "Gruppo")
-                                : (ep.nome_allievo && ep.cognome_allievo)
-                                  ? `${ep.nome_allievo} ${ep.cognome_allievo}`
-                                  : "Allievo"}
+                                : label === "prova"
+                                  ? (ep.nome_allievo_prova || "Lezione prova")
+                                  : (ep.nome_allievo && ep.cognome_allievo)
+                                    ? `${ep.nome_allievo} ${ep.cognome_allievo}`
+                                    : "Allievo"}
                             </span>
                             {isCollettiva && (
                               <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
@@ -437,6 +439,12 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
 
                           {ep.motivazione && label !== "svolta" && (
                             <p className="text-xs text-n-300 mt-1 italic">{ep.motivazione}</p>
+                          )}
+                          {label === "prova" && (ep.telefono_prova || ep.note) && (
+                            <div className="mt-1 space-y-0.5">
+                              {ep.telefono_prova && <p className="text-xs text-n-600"><span className="font-medium">Tel:</span> {ep.telefono_prova}</p>}
+                              {ep.note && <p className="text-xs text-n-600"><span className="font-medium">Note:</span> {ep.note}</p>}
+                            </div>
                           )}
                         </div>
 
