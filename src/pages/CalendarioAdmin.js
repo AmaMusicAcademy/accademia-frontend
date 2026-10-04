@@ -438,12 +438,6 @@ export default function CalendarioAdmin() {
   const onGridPointerDown = useCallback((e) => {
     if (e.button !== 0 && e.pointerType !== 'touch') return;
     if (dragState.current?.active) return;
-    // Ignora click sulla scrollbar (clientX oltre la larghezza del contenuto)
-    if (gridRef.current) {
-      const rect = gridRef.current.getBoundingClientRect();
-      const scrollbarWidth = gridRef.current.offsetWidth - gridRef.current.clientWidth;
-      if (e.clientX > rect.right - scrollbarWidth - 2) return;
-    }
     const startClientY = e.clientY;
     const timer = setTimeout(() => {
       if (!dragState.current) return;
@@ -607,24 +601,26 @@ export default function CalendarioAdmin() {
       <div
         ref={gridRef}
         className="flex-1 overflow-y-auto bg-white"
-        onPointerDown={onGridPointerDown}
-        onPointerMove={onGridPointerMove}
-        onPointerUp={onGridPointerUp}
-        onPointerCancel={() => {
-          if (dragState.current) {
-            clearTimeout(dragState.current.longPressTimer);
-            dragState.current = null;
-          }
-          setDragProva(null);
-        }}
-        style={{ touchAction: dragProva ? 'none' : 'pan-y' }}
       >
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="relative flex" style={{ height: TOTAL_H }}>
+          <div
+            className="relative flex"
+            style={{ height: TOTAL_H, touchAction: dragProva ? 'none' : 'pan-y' }}
+            onPointerDown={onGridPointerDown}
+            onPointerMove={onGridPointerMove}
+            onPointerUp={onGridPointerUp}
+            onPointerCancel={() => {
+              if (dragState.current) {
+                clearTimeout(dragState.current.longPressTimer);
+                dragState.current = null;
+              }
+              setDragProva(null);
+            }}
+          >
             <div className="w-12 shrink-0 relative border-r border-n-100">
               {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
                 <div
