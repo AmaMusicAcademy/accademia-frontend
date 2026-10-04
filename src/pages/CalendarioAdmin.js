@@ -477,12 +477,12 @@ export default function CalendarioAdmin() {
     if (wasActive && startM !== null) {
       justDragged.current = true;
       // Pre-select: single selected teacher, or the only free available teacher
-      const ids = teachersForProva.map(t => String(t.id));
-      const free = ids.filter(tid =>
-        !dayEvents.some(ev => String(ev.id_insegnante) === tid && ev.startMin < startM + 45 && ev.endMin > startM)
+      const freeTeachers = teachersForProva.filter(t =>
+        !dayEvents.some(ev => String(ev.id_insegnante) === String(t.id) && ev.startMin < startM + 45 && ev.endMin > startM)
       );
-      const preselected = ids.length === 1 ? ids[0] : (free.length === 1 ? free[0] : null);
-      setProvaModal({ startMin: startM, preselectedTeacherId: preselected });
+      const availableTeachers = freeTeachers.length > 0 ? freeTeachers : teachersForProva;
+      const preselected = availableTeachers.length === 1 ? String(availableTeachers[0].id) : null;
+      setProvaModal({ startMin: startM, preselectedTeacherId: preselected, freeTeachers: availableTeachers });
     }
   }, [clientYToStartMin, teachersForProva, dayEvents]);
 
@@ -804,7 +804,7 @@ export default function CalendarioAdmin() {
           onSaved={async () => { setProvaModal(null); await refetch(); }}
           startMin={provaModal.startMin}
           data={day}
-          teachers={teachersForProva.length > 0 ? teachersForProva : teachers}
+          teachers={provaModal.freeTeachers || (teachersForProva.length > 0 ? teachersForProva : teachers)}
           preselectedTeacherId={provaModal.preselectedTeacherId}
         />
       )}
