@@ -697,8 +697,8 @@ export default function CalendarioAdmin() {
                 const ghostC = dragProva.allConflict
                   ? { bg: '#1f2937', border: '#4b5563', text: '#d1d5db' }
                   : dragProva.freeTeacherId && colorMap[dragProva.freeTeacherId]
-                    ? { bg: colorMap[dragProva.freeTeacherId].bg, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].text }
-                    : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
+                    ? { bg: '#ffffff', border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].text }
+                    : { bg: '#ffffff', border: '#f59e0b', text: '#b45309' };
                 const freeTeachers = dragProva.freeTeachers || [];
                 // Split teachers into columns based on available height (~13px per row)
                 const innerH = height - 8;
