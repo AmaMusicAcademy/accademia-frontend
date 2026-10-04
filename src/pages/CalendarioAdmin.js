@@ -167,27 +167,17 @@ function MonthPicker({ currentDay, lessonDays, availableDows, onSelect, onClose 
                   <span
                     className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-medium transition-colors
                       ${isSel ? 'bg-ama-500 text-white' : isToday ? 'bg-ama-100 text-ama-700' : 'text-n-700 active:bg-n-100'}`}
-                    style={isAvail && !isSel ? { boxShadow: '0 0 0 2px #4f46e5' } : undefined}
                   >
                     {new Date(ymd + 'T00:00:00').getDate()}
                   </span>
-                  {hasLesson && !isSel && (
-                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-ama-500" />
-                  )}
-                  {hasLesson && isSel && (
-                    <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-white/70" />
+                  {hasLesson && (
+                    <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${isSel ? 'bg-white/80' : 'bg-red-500'}`} />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {availableDows.size > 0 && (
-            <p className="text-[10px] text-n-400 text-center mt-3">
-              <span className="inline-block w-3 h-3 rounded-full border-2 border-ama-500 align-middle mr-1" />
-              Giorni con disponibilità
-            </p>
-          )}
         </div>
       </div>
     </div>
