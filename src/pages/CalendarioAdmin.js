@@ -417,13 +417,12 @@ export default function CalendarioAdmin() {
 
   // Conflict detection for drag-to-create (uses only teachers available today)
   const getConflictStatus = useCallback((startM, endM) => {
-    if (teachersForProva.length === 0) return { allConflict: true, freeTeacherId: null, noAvail: true };
-    const ids = teachersForProva.map(t => String(t.id));
-    const free = ids.filter(tid =>
-      !dayEvents.some(e => String(e.id_insegnante) === tid && e.startMin < endM && e.endMin > startM)
+    if (teachersForProva.length === 0) return { allConflict: true, freeTeacherId: null, freeTeachers: [], noAvail: true };
+    const freeTeachers = teachersForProva.filter(t =>
+      !dayEvents.some(e => String(e.id_insegnante) === String(t.id) && e.startMin < endM && e.endMin > startM)
     );
-    if (free.length === 0) return { allConflict: true, freeTeacherId: null, noAvail: false };
-    return { allConflict: false, freeTeacherId: free[0], noAvail: false };
+    if (freeTeachers.length === 0) return { allConflict: true, freeTeacherId: null, freeTeachers: [], noAvail: false };
+    return { allConflict: false, freeTeacherId: String(freeTeachers[0].id), freeTeachers, noAvail: false };
   }, [teachersForProva, dayEvents]);
 
   const clientYToStartMin = useCallback((clientY) => {
@@ -444,8 +443,8 @@ export default function CalendarioAdmin() {
       dragState.current.active = true;
       gridRef.current?.setPointerCapture(dragState.current.pointerId);
       const startM = clientYToStartMin(startClientY);
-      const { allConflict, freeTeacherId } = getConflictStatus(startM, startM + 45);
-      setDragProva({ startMin: startM, allConflict, freeTeacherId });
+      const { allConflict, freeTeacherId, freeTeachers } = getConflictStatus(startM, startM + 45);
+      setDragProva({ startMin: startM, allConflict, freeTeacherId, freeTeachers });
     }, 500);
     dragState.current = { active: false, pointerId: e.pointerId, startClientY, longPressTimer: timer };
   }, [clientYToStartMin, getConflictStatus]);
@@ -463,8 +462,8 @@ export default function CalendarioAdmin() {
     }
     e.preventDefault();
     const startM = clientYToStartMin(e.clientY);
-    const { allConflict, freeTeacherId } = getConflictStatus(startM, startM + 45);
-    setDragProva({ startMin: startM, allConflict, freeTeacherId });
+    const { allConflict, freeTeacherId, freeTeachers } = getConflictStatus(startM, startM + 45);
+    setDragProva({ startMin: startM, allConflict, freeTeacherId, freeTeachers });
   }, [clientYToStartMin, getConflictStatus]);
 
   const onGridPointerUp = useCallback((e) => {
@@ -700,6 +699,7 @@ export default function CalendarioAdmin() {
                   : dragProva.freeTeacherId && colorMap[dragProva.freeTeacherId]
                     ? { bg: `${colorMap[dragProva.freeTeacherId].chip}30`, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].chip }
                     : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
+                const freeTeachers = dragProva.freeTeachers || [];
                 return (
                   <div
                     className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg flex flex-col items-end text-right"
@@ -711,10 +711,22 @@ export default function CalendarioAdmin() {
                     <p className="text-[11px] font-medium mt-0.5" style={{ color: ghostC.text }}>
                       {minToHHMM(dragProva.startMin)} – {minToHHMM(dragProva.startMin + 45)}
                     </p>
-                    {dragProva.allConflict && (
+                    {dragProva.allConflict ? (
                       <p className="text-[10px] mt-0.5 font-semibold" style={{ color: ghostC.text }}>
                         {dragProva.noAvail ? 'Nessun ins. disponibile' : 'Slot occupato'}
                       </p>
+                    ) : freeTeachers.length > 0 && (
+                      <div className="mt-1 flex flex-col items-end gap-0.5">
+                        {freeTeachers.map(t => (
+                          <span
+                            key={t.id}
+                            className="text-[10px] font-medium leading-tight px-1 py-0.5 rounded"
+                            style={{ backgroundColor: colorMap[String(t.id)]?.chip ? `${colorMap[String(t.id)].chip}25` : 'transparent', color: colorMap[String(t.id)]?.chip || ghostC.text }}
+                          >
+                            {t.nome} {t.cognome}
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
                 );
