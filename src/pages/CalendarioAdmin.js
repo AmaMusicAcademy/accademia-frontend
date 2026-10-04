@@ -217,6 +217,8 @@ export default function CalendarioAdmin() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
   const longPressTimers = useRef({});
+  const touchStartX = useRef({});
+  const touchMoved = useRef({});
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
@@ -325,18 +327,32 @@ export default function CalendarioAdmin() {
   };
 
   // Long press handlers for strumento chips
-  const onStrumentoTouchStart = (strumento) => {
+  const onStrumentoTouchStart = (e, strumento) => {
+    touchStartX.current[strumento] = e.touches[0].clientX;
+    touchMoved.current[strumento] = false;
     longPressTimers.current[strumento] = setTimeout(() => {
       longPressTimers.current[strumento] = null;
-      setDropdownStrumento(strumento);
+      if (!touchMoved.current[strumento]) setDropdownStrumento(strumento);
     }, 500);
   };
 
-  const onStrumentoTouchEnd = (strumento) => {
+  const onStrumentoTouchMove = (e, strumento) => {
+    const dx = Math.abs(e.touches[0].clientX - (touchStartX.current[strumento] || 0));
+    if (dx > 8) {
+      touchMoved.current[strumento] = true;
+      if (longPressTimers.current[strumento]) {
+        clearTimeout(longPressTimers.current[strumento]);
+        longPressTimers.current[strumento] = null;
+      }
+    }
+  };
+
+  const onStrumentoTouchEnd = (e, strumento) => {
+    e.preventDefault(); // prevent synthetic click
     if (longPressTimers.current[strumento]) {
       clearTimeout(longPressTimers.current[strumento]);
       longPressTimers.current[strumento] = null;
-      toggleAllInStrumento(strumento);
+      if (!touchMoved.current[strumento]) toggleAllInStrumento(strumento);
     }
   };
 
@@ -371,17 +387,17 @@ export default function CalendarioAdmin() {
                 return (
                   <button
                     key={strumento}
-                    onTouchStart={() => onStrumentoTouchStart(strumento)}
-                    onTouchEnd={() => onStrumentoTouchEnd(strumento)}
-                    onClick={() => {}} // handled by touch; fallback for desktop
-                    onMouseDown={() => onStrumentoTouchStart(strumento)}
-                    onMouseUp={() => onStrumentoTouchEnd(strumento)}
-                    onMouseLeave={() => {
+                    onTouchStart={(e) => onStrumentoTouchStart(e, strumento)}
+                    onTouchMove={(e) => onStrumentoTouchMove(e, strumento)}
+                    onTouchEnd={(e) => onStrumentoTouchEnd(e, strumento)}
+                    onTouchCancel={() => {
+                      touchMoved.current[strumento] = true;
                       if (longPressTimers.current[strumento]) {
                         clearTimeout(longPressTimers.current[strumento]);
                         longPressTimers.current[strumento] = null;
                       }
                     }}
+                    onClick={() => toggleAllInStrumento(strumento)}
                     className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all select-none"
                     style={
                       active
