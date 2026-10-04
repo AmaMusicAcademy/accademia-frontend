@@ -61,7 +61,7 @@ export default function LezionProvaModal({ open, onClose, onSaved, startMin, dat
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
+    <div className="fixed inset-x-0 top-0 bottom-16 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-sm bg-white rounded-t-2xl pt-4 shadow-xl flex flex-col"
