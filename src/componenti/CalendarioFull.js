@@ -551,7 +551,7 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
         onSaved={handleSaved}
         lesson={editLesson}
         mode={editMode}
-        lockedTeacherId={isAdmin ? null : (getInsegnanteIdFromToken() || undefined)}
+        lockedTeacherId={null}
       />
 
       <AssenteModal

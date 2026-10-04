@@ -252,7 +252,7 @@ export default function CalendarioLezioni(props) {
           onSaved={handleSaved}
           lesson={editLesson}
           mode={editMode}
-          lockedTeacherId={teacherId || undefined}
+          lockedTeacherId={null}
         />
       )}
     </>
