@@ -695,39 +695,59 @@ export default function CalendarioAdmin() {
                 const top = Math.max(0, (dragProva.startMin - GRID_START * 60) / 60 * HOUR_H);
                 const height = (45 / 60) * HOUR_H - 2;
                 const ghostC = dragProva.allConflict
-                  ? { bg: '#111827', border: '#4b5563', text: '#d1d5db' }
+                  ? { bg: '#1f2937', border: '#4b5563', text: '#d1d5db' }
                   : dragProva.freeTeacherId && colorMap[dragProva.freeTeacherId]
-                    ? { bg: `${colorMap[dragProva.freeTeacherId].chip}30`, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].chip }
+                    ? { bg: colorMap[dragProva.freeTeacherId].bg, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].text }
                     : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
                 const freeTeachers = dragProva.freeTeachers || [];
+                // Split teachers into columns based on available height (~13px per row)
+                const innerH = height - 8;
+                const rowH = 13;
+                const perCol = Math.max(1, Math.floor(innerH / rowH));
+                const teacherCols = [];
+                for (let i = 0; i < freeTeachers.length; i += perCol) {
+                  teacherCols.push(freeTeachers.slice(i, i + perCol));
+                }
                 return (
                   <div
-                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg flex flex-col items-start text-left"
-                    style={{ top, height, backgroundColor: 'transparent', border: `2px dashed ${ghostC.border}` }}
+                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg overflow-hidden"
+                    style={{ top, height, backgroundColor: ghostC.bg, border: `2px dashed ${ghostC.border}` }}
                   >
-                    <p className="text-xs font-bold leading-tight" style={{ color: ghostC.text }}>
-                      Lezione prova · 45min
-                    </p>
-                    <p className="text-[11px] font-medium mt-0.5" style={{ color: ghostC.text }}>
-                      {minToHHMM(dragProva.startMin)} – {minToHHMM(dragProva.startMin + 45)}
-                    </p>
-                    {dragProva.allConflict ? (
-                      <p className="text-[10px] mt-0.5 font-semibold" style={{ color: ghostC.text }}>
-                        {dragProva.noAvail ? 'Nessun ins. disponibile' : 'Slot occupato'}
-                      </p>
-                    ) : freeTeachers.length > 0 && (
-                      <div className="mt-1 flex flex-col items-start gap-0.5">
-                        {freeTeachers.map(t => (
-                          <span
-                            key={t.id}
-                            className="text-[10px] font-medium leading-tight"
-                            style={{ color: colorMap[String(t.id)]?.chip || ghostC.text }}
-                          >
-                            {t.nome} {t.cognome}
-                          </span>
-                        ))}
+                    <div className="flex h-full gap-2">
+                      {/* Teacher columns (left) */}
+                      {dragProva.allConflict ? (
+                        <div className="flex flex-col justify-center">
+                          <p className="text-[10px] font-semibold" style={{ color: ghostC.text }}>
+                            {dragProva.noAvail ? 'Nessun ins. disponibile' : 'Slot occupato'}
+                          </p>
+                        </div>
+                      ) : (
+                        teacherCols.map((col, ci) => (
+                          <div key={ci} className="flex flex-col shrink-0" style={{ gap: 1 }}>
+                            {col.map(t => (
+                              <span
+                                key={t.id}
+                                className="text-[10px] font-semibold leading-tight whitespace-nowrap"
+                                style={{ color: colorMap[String(t.id)]?.chip || ghostC.text }}
+                              >
+                                {t.nome} {t.cognome}
+                              </span>
+                            ))}
+                          </div>
+                        ))
+                      )}
+                      {/* Spacer */}
+                      <div className="flex-1" />
+                      {/* Time info (right) */}
+                      <div className="flex flex-col items-end shrink-0 justify-between">
+                        <p className="text-[10px] font-bold leading-tight text-right" style={{ color: ghostC.text }}>
+                          Lezione prova
+                        </p>
+                        <p className="text-[11px] font-semibold leading-tight text-right" style={{ color: ghostC.text }}>
+                          {minToHHMM(dragProva.startMin)}–{minToHHMM(dragProva.startMin + 45)}
+                        </p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })()}
