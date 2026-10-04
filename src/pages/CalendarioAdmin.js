@@ -103,7 +103,7 @@ function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-sm bg-white rounded-t-2xl pb-6 pt-4 px-4 shadow-xl"
@@ -172,9 +172,10 @@ function MonthPicker({ currentDay, lessonDays, onSelect, onClose }) {
 // ── Strumento dropdown ────────────────────────────────────────────────────────
 function StrumentoDropdown({ strumento, teachers, selected, colorMap, onToggle, onClose }) {
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-start pt-24 pl-4" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-start justify-start pt-24 pl-4" style={{ transform: 'translate3d(0,0,0)' }} onClick={onClose}>
       <div
         className="bg-white rounded-xl shadow-xl border border-n-100 overflow-hidden min-w-48"
+        style={{ transform: 'translate3d(0,0,0)' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="px-3 py-2 border-b bg-n-50">
@@ -217,8 +218,9 @@ export default function CalendarioAdmin() {
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
   const longPressTimers = useRef({});
-  const touchStartX = useRef({});
-  const touchMoved = useRef({});
+  const pointerStartX = useRef({});
+  const pointerMoved = useRef({});
+  const pointerIsTouch = useRef({});
 
   useEffect(() => {
     fetch(`${BASE_URL}/api/insegnanti`, { headers: { Authorization: `Bearer ${token}` } })
@@ -326,20 +328,22 @@ export default function CalendarioAdmin() {
     return group.some(t => selected.has(String(t.id))) && !isStrumentoActive(strumento);
   };
 
-  // Long press handlers for strumento chips
-  const onStrumentoTouchStart = (e, strumento) => {
-    touchStartX.current[strumento] = e.touches[0].clientX;
-    touchMoved.current[strumento] = false;
+  // Long press handlers for strumento chips (pointer events = touch + mouse unified)
+  const onStrumentoPointerDown = (e, strumento) => {
+    pointerStartX.current[strumento] = e.clientX;
+    pointerMoved.current[strumento] = false;
+    pointerIsTouch.current[strumento] = e.pointerType === 'touch';
+    e.currentTarget.setPointerCapture(e.pointerId);
     longPressTimers.current[strumento] = setTimeout(() => {
       longPressTimers.current[strumento] = null;
-      if (!touchMoved.current[strumento]) setDropdownStrumento(strumento);
+      if (!pointerMoved.current[strumento]) setDropdownStrumento(strumento);
     }, 500);
   };
 
-  const onStrumentoTouchMove = (e, strumento) => {
-    const dx = Math.abs(e.touches[0].clientX - (touchStartX.current[strumento] || 0));
+  const onStrumentoPointerMove = (e, strumento) => {
+    const dx = Math.abs(e.clientX - (pointerStartX.current[strumento] || 0));
     if (dx > 8) {
-      touchMoved.current[strumento] = true;
+      pointerMoved.current[strumento] = true;
       if (longPressTimers.current[strumento]) {
         clearTimeout(longPressTimers.current[strumento]);
         longPressTimers.current[strumento] = null;
@@ -347,12 +351,19 @@ export default function CalendarioAdmin() {
     }
   };
 
-  const onStrumentoTouchEnd = (e, strumento) => {
-    e.preventDefault(); // prevent synthetic click
+  const onStrumentoPointerUp = (e, strumento) => {
     if (longPressTimers.current[strumento]) {
       clearTimeout(longPressTimers.current[strumento]);
       longPressTimers.current[strumento] = null;
-      if (!touchMoved.current[strumento]) toggleAllInStrumento(strumento);
+      if (!pointerMoved.current[strumento]) toggleAllInStrumento(strumento);
+    }
+  };
+
+  const onStrumentoPointerCancel = (strumento) => {
+    pointerMoved.current[strumento] = true;
+    if (longPressTimers.current[strumento]) {
+      clearTimeout(longPressTimers.current[strumento]);
+      longPressTimers.current[strumento] = null;
     }
   };
 
@@ -387,17 +398,11 @@ export default function CalendarioAdmin() {
                 return (
                   <button
                     key={strumento}
-                    onTouchStart={(e) => onStrumentoTouchStart(e, strumento)}
-                    onTouchMove={(e) => onStrumentoTouchMove(e, strumento)}
-                    onTouchEnd={(e) => onStrumentoTouchEnd(e, strumento)}
-                    onTouchCancel={() => {
-                      touchMoved.current[strumento] = true;
-                      if (longPressTimers.current[strumento]) {
-                        clearTimeout(longPressTimers.current[strumento]);
-                        longPressTimers.current[strumento] = null;
-                      }
-                    }}
-                    onClick={() => toggleAllInStrumento(strumento)}
+                    onPointerDown={(e) => onStrumentoPointerDown(e, strumento)}
+                    onPointerMove={(e) => onStrumentoPointerMove(e, strumento)}
+                    onPointerUp={(e) => onStrumentoPointerUp(e, strumento)}
+                    onPointerCancel={() => onStrumentoPointerCancel(strumento)}
+                    onClick={(e) => e.preventDefault()}
                     className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all select-none"
                     style={
                       active
