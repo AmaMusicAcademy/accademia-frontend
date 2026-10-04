@@ -237,6 +237,7 @@ export default function CalendarioAdmin() {
   // { startMin, preselectedTeacherId }
   const gridRef = useRef(null);
   const dragState = useRef(null);
+  const justDragged = useRef(false);
   // { active, pointerId, startClientY, longPressTimer }
 
   const navigate = useNavigate();
@@ -474,6 +475,7 @@ export default function CalendarioAdmin() {
     dragState.current = null;
     setDragProva(null);
     if (wasActive && startM !== null) {
+      justDragged.current = true;
       // Pre-select: single selected teacher, or the only free available teacher
       const ids = teachersForProva.map(t => String(t.id));
       const free = ids.filter(tid =>
@@ -619,6 +621,12 @@ export default function CalendarioAdmin() {
               }
               setDragProva(null);
             }}
+            onClick={(e) => {
+              if (justDragged.current) {
+                justDragged.current = false;
+                e.stopPropagation();
+              }
+            }}
           >
             <div className="w-12 shrink-0 relative border-r border-n-100">
               {Array.from({ length: GRID_END - GRID_START }, (_, i) => (
@@ -666,7 +674,7 @@ export default function CalendarioAdmin() {
                 return (
                   <button
                     key={l.id}
-                    onClick={() => openEdit(l)}
+                    onClick={(e) => { if (justDragged.current) { justDragged.current = false; return; } openEdit(l); }}
                     className="absolute rounded-lg px-2 py-1 text-left overflow-hidden active:opacity-70 transition-opacity"
                     style={{
                       top, height, left, width,
