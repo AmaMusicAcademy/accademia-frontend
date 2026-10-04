@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import BottomNavAdmin from "../componenti/BottomNavAdmin";
 import EditLessonModal from "../componenti/EditLessonModal";
+import LezionProvaModal from "../componenti/LezionProvaModal";
 import PageHeader from "../componenti/PageHeader";
 
 const BASE_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:3000' : 'https://app-docenti.onrender.com');
@@ -42,6 +43,16 @@ function fmtHeader(ymd) {
   const t = todayYMD();
   const label = ymd === t ? 'Oggi' : GIORNI_LONG[d.getDay()];
   return `${label} ${d.getDate()} ${MESI_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function snapTo15(min) {
+  return Math.round(min / 15) * 15;
+}
+
+function minToHHMM(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
 function addDays(ymd, n) {
@@ -215,6 +226,15 @@ export default function CalendarioAdmin() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [dropdownStrumento, setDropdownStrumento] = useState(null);
 
+  // Drag-to-create lezione prova
+  const [dragProva, setDragProva] = useState(null);
+  // { startMin, allConflict, freeTeacherId }
+  const [provaModal, setProvaModal] = useState(null);
+  // { startMin, preselectedTeacherId }
+  const gridRef = useRef(null);
+  const dragState = useRef(null);
+  // { active, pointerId, startClientY, longPressTimer }
+
   const navigate = useNavigate();
   const token = useMemo(() => localStorage.getItem("token"), []);
   const longPressTimers = useRef({});
@@ -367,6 +387,80 @@ export default function CalendarioAdmin() {
     }
   };
 
+  // Conflict detection for drag-to-create
+  const getConflictStatus = useCallback((startM, endM) => {
+    const toCheck = selected.size > 0
+      ? [...selected]
+      : teachers.map(t => String(t.id));
+    if (toCheck.length === 0) return { allConflict: false, freeTeacherId: null };
+    const free = toCheck.filter(tid =>
+      !dayEvents.some(e => String(e.id_insegnante) === tid && e.startMin < endM && e.endMin > startM)
+    );
+    if (free.length === 0) return { allConflict: true, freeTeacherId: null };
+    return { allConflict: false, freeTeacherId: free[0] };
+  }, [selected, teachers, dayEvents]);
+
+  const clientYToStartMin = useCallback((clientY) => {
+    if (!gridRef.current) return GRID_START * 60;
+    const rect = gridRef.current.getBoundingClientRect();
+    const y = clientY - rect.top + gridRef.current.scrollTop;
+    const rawMin = GRID_START * 60 + (y / HOUR_H) * 60;
+    const snapped = snapTo15(rawMin);
+    return Math.max(GRID_START * 60, Math.min(GRID_END * 60 - 45, snapped));
+  }, []);
+
+  const onGridPointerDown = useCallback((e) => {
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    if (dragState.current?.active) return;
+    const startClientY = e.clientY;
+    const timer = setTimeout(() => {
+      if (!dragState.current) return;
+      dragState.current.active = true;
+      gridRef.current?.setPointerCapture(dragState.current.pointerId);
+      const startM = clientYToStartMin(startClientY);
+      const { allConflict, freeTeacherId } = getConflictStatus(startM, startM + 45);
+      setDragProva({ startMin: startM, allConflict, freeTeacherId });
+    }, 500);
+    dragState.current = { active: false, pointerId: e.pointerId, startClientY, longPressTimer: timer };
+  }, [clientYToStartMin, getConflictStatus]);
+
+  const onGridPointerMove = useCallback((e) => {
+    if (!dragState.current) return;
+    const dy = Math.abs(e.clientY - dragState.current.startClientY);
+    if (!dragState.current.active) {
+      // Cancel long press if scrolling
+      if (dy > 12) {
+        clearTimeout(dragState.current.longPressTimer);
+        dragState.current = null;
+      }
+      return;
+    }
+    e.preventDefault();
+    const startM = clientYToStartMin(e.clientY);
+    const { allConflict, freeTeacherId } = getConflictStatus(startM, startM + 45);
+    setDragProva({ startMin: startM, allConflict, freeTeacherId });
+  }, [clientYToStartMin, getConflictStatus]);
+
+  const onGridPointerUp = useCallback((e) => {
+    if (!dragState.current) return;
+    clearTimeout(dragState.current.longPressTimer);
+    const wasActive = dragState.current.active;
+    const startM = dragState.current.active
+      ? clientYToStartMin(e.clientY)
+      : null;
+    dragState.current = null;
+    setDragProva(null);
+    if (wasActive && startM !== null) {
+      // Determine pre-selected teacher
+      const toCheck = selected.size > 0 ? [...selected] : teachers.map(t => String(t.id));
+      const free = toCheck.filter(tid =>
+        !dayEvents.some(ev => String(ev.id_insegnante) === tid && ev.startMin < startM + 45 && ev.endMin > startM)
+      );
+      const preselected = selected.size === 1 ? [...selected][0] : (free.length === 1 ? free[0] : null);
+      setProvaModal({ startMin: startM, preselectedTeacherId: preselected });
+    }
+  }, [clientYToStartMin, selected, teachers, dayEvents]);
+
   const openEdit = (l) => { setEditLesson(l); setEditMode('edit'); setEditOpen(true); };
   const openAdd  = () => { setEditLesson(null); setEditMode('create'); setEditOpen(true); };
 
@@ -480,7 +574,21 @@ export default function CalendarioAdmin() {
       </div>
 
       {/* ── Time grid ── */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div
+        ref={gridRef}
+        className="flex-1 overflow-y-auto bg-white"
+        onPointerDown={onGridPointerDown}
+        onPointerMove={onGridPointerMove}
+        onPointerUp={onGridPointerUp}
+        onPointerCancel={() => {
+          if (dragState.current) {
+            clearTimeout(dragState.current.longPressTimer);
+            dragState.current = null;
+          }
+          setDragProva(null);
+        }}
+        style={{ touchAction: dragProva ? 'none' : 'pan-y' }}
+      >
         {loading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-4 border-ama-500 border-t-transparent rounded-full animate-spin" />
@@ -513,7 +621,7 @@ export default function CalendarioAdmin() {
                 </div>
               )}
 
-              {laidOut.length === 0 && (
+              {laidOut.length === 0 && !dragProva && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-sm text-n-300">Nessuna lezione</p>
                 </div>
@@ -526,7 +634,8 @@ export default function CalendarioAdmin() {
                 const colW   = 100 / l.totalCols;
                 const left   = `${l.col * colW}%`;
                 const width  = `calc(${colW}% - 4px)`;
-                const nomeAllievo = l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim() : l.title || '—';
+                const isProva = l.stato === 'prova';
+                const nomeAllievo = l.nome_allievo ? `${l.nome_allievo} ${l.cognome_allievo || ''}`.trim() : (isProva ? 'Lezione prova' : l.title || '—');
                 const nomeIns = l.nome_insegnante ? `${l.nome_insegnante} ${l.cognome_insegnante || ''}`.trim() : '';
 
                 return (
@@ -534,10 +643,15 @@ export default function CalendarioAdmin() {
                     key={l.id}
                     onClick={() => openEdit(l)}
                     className="absolute rounded-lg px-2 py-1 text-left overflow-hidden active:opacity-70 transition-opacity"
-                    style={{ top, height, left, width, backgroundColor: c.bg, border: `1.5px solid ${c.border}` }}
+                    style={{
+                      top, height, left, width,
+                      backgroundColor: c.bg,
+                      border: isProva ? `1.5px dashed ${c.border}` : `1.5px solid ${c.border}`,
+                    }}
                   >
                     <p className="text-xs font-semibold leading-tight truncate" style={{ color: c.text }}>
                       {l.oi} – {l.of}
+                      {isProva && <span className="ml-1 text-[9px] bg-amber-100 text-amber-700 rounded px-1">PROVA</span>}
                     </p>
                     <p className="text-xs font-medium leading-tight truncate" style={{ color: c.text }}>
                       {nomeAllievo}
@@ -550,6 +664,35 @@ export default function CalendarioAdmin() {
                   </button>
                 );
               })}
+
+              {/* Ghost block for drag-to-create prova */}
+              {dragProva && (() => {
+                const top = Math.max(0, (dragProva.startMin - GRID_START * 60) / 60 * HOUR_H);
+                const height = (45 / 60) * HOUR_H - 2;
+                const ghostC = dragProva.allConflict
+                  ? { bg: '#fee2e2', border: '#ef4444', text: '#dc2626' }
+                  : dragProva.freeTeacherId && colorMap[dragProva.freeTeacherId]
+                    ? { bg: `${colorMap[dragProva.freeTeacherId].chip}30`, border: colorMap[dragProva.freeTeacherId].chip, text: colorMap[dragProva.freeTeacherId].chip }
+                    : { bg: '#fef3c7', border: '#f59e0b', text: '#b45309' };
+                return (
+                  <div
+                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg"
+                    style={{ top, height, backgroundColor: ghostC.bg, border: `2px dashed ${ghostC.border}` }}
+                  >
+                    <p className="text-xs font-bold leading-tight" style={{ color: ghostC.text }}>
+                      Lezione prova · 45min
+                    </p>
+                    <p className="text-[11px] font-medium mt-0.5" style={{ color: ghostC.text }}>
+                      {minToHHMM(dragProva.startMin)} – {minToHHMM(dragProva.startMin + 45)}
+                    </p>
+                    {dragProva.allConflict && (
+                      <p className="text-[10px] mt-0.5 font-semibold" style={{ color: ghostC.text }}>
+                        Slot occupato
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -586,6 +729,18 @@ export default function CalendarioAdmin() {
         allowRecurring={true}
         showTeacherSelect={true}
       />
+
+      {provaModal && (
+        <LezionProvaModal
+          open={true}
+          onClose={() => setProvaModal(null)}
+          onSaved={async () => { setProvaModal(null); await refetch(); }}
+          startMin={provaModal.startMin}
+          data={day}
+          teachers={teachers}
+          preselectedTeacherId={provaModal.preselectedTeacherId}
+        />
+      )}
 
       <BottomNavAdmin onAdd={openAdd} />
     </div>
