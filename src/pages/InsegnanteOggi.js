@@ -111,7 +111,7 @@ export default function InsegnanteOggi() {
                 : `${l.nome_allievo || ''} ${l.cognome_allievo || ''}`.trim();
 
               const isSvolta = l.stato === 'svolta';
-              const isAppuntamentata = l.stato === 'appuntamentata';
+              const isAppuntamentata = l.stato === 'appuntamentata' || l.stato === 'prova';
               const isBusy = !!busy[l.id];
 
               return (
