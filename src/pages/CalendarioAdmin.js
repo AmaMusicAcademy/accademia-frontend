@@ -702,8 +702,8 @@ export default function CalendarioAdmin() {
                 const freeTeachers = dragProva.freeTeachers || [];
                 return (
                   <div
-                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg flex flex-col items-end text-right"
-                    style={{ top, height, backgroundColor: ghostC.bg, border: `2px dashed ${ghostC.border}` }}
+                    className="absolute left-1 right-1 rounded-lg px-2 py-1 pointer-events-none z-20 shadow-lg flex flex-col items-start text-left"
+                    style={{ top, height, backgroundColor: 'transparent', border: `2px dashed ${ghostC.border}` }}
                   >
                     <p className="text-xs font-bold leading-tight" style={{ color: ghostC.text }}>
                       Lezione prova · 45min
@@ -716,12 +716,12 @@ export default function CalendarioAdmin() {
                         {dragProva.noAvail ? 'Nessun ins. disponibile' : 'Slot occupato'}
                       </p>
                     ) : freeTeachers.length > 0 && (
-                      <div className="mt-1 flex flex-col items-end gap-0.5">
+                      <div className="mt-1 flex flex-col items-start gap-0.5">
                         {freeTeachers.map(t => (
                           <span
                             key={t.id}
-                            className="text-[10px] font-medium leading-tight px-1 py-0.5 rounded"
-                            style={{ backgroundColor: colorMap[String(t.id)]?.chip ? `${colorMap[String(t.id)].chip}25` : 'transparent', color: colorMap[String(t.id)]?.chip || ghostC.text }}
+                            className="text-[10px] font-medium leading-tight"
+                            style={{ color: colorMap[String(t.id)]?.chip || ghostC.text }}
                           >
                             {t.nome} {t.cognome}
                           </span>
