@@ -18,13 +18,24 @@ export default function CampanellaNotifiche({ onOpenLezione }) {
   const [nonLette, setNonLette] = useState(0);
   const ref = useRef(null);
 
+  const aggiornaAppBadge = useCallback((count) => {
+    try {
+      if ('setAppBadge' in navigator) {
+        if (count > 0) navigator.setAppBadge(count);
+        else navigator.clearAppBadge();
+      }
+    } catch { /* ignora */ }
+  }, []);
+
   const carica = useCallback(async () => {
     try {
       const data = await apiFetch('/api/insegnante/notifiche');
+      const nl = data.nonLette || 0;
       setNotifiche(data.notifiche || []);
-      setNonLette(data.nonLette || 0);
+      setNonLette(nl);
+      aggiornaAppBadge(nl);
     } catch { /* ignora */ }
-  }, []);
+  }, [aggiornaAppBadge]);
 
   useEffect(() => { carica(); }, [carica]);
 
@@ -45,13 +56,18 @@ export default function CampanellaNotifiche({ onOpenLezione }) {
   const segnaLetta = async (id) => {
     try { await apiFetch(`/api/insegnante/notifiche/${id}/letto`, { method: 'PATCH' }); } catch { /* ignora */ }
     setNotifiche(prev => prev.map(n => n.id === id ? { ...n, letto: true } : n));
-    setNonLette(prev => Math.max(0, prev - 1));
+    setNonLette(prev => {
+      const nuove = Math.max(0, prev - 1);
+      aggiornaAppBadge(nuove);
+      return nuove;
+    });
   };
 
   const segnaLetteTutte = async () => {
     try { await apiFetch('/api/insegnante/notifiche/letto-tutte', { method: 'PATCH' }); } catch { /* ignora */ }
     setNotifiche(prev => prev.map(n => ({ ...n, letto: true })));
     setNonLette(0);
+    aggiornaAppBadge(0);
   };
 
   const handleClick = async (n) => {
