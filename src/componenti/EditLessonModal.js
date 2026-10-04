@@ -583,7 +583,7 @@ export default function EditLessonModal({
           >
             {saving ? "Salvataggio…" : "Salva"}
           </button>
-          {lesson?.id && (
+          {lesson?.id && !lockedTeacherId && (
             <button
               onClick={() => setConfirmDel(true)}
               disabled={saving || deleting}
