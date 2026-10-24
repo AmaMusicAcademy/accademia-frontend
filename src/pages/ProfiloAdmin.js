@@ -403,7 +403,7 @@ export default function ProfiloAdmin() {
 
       {/* Dialog conferma ripristino lezione rimandata */}
       {confirmRipristina && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-0 pb-0">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/40 px-0 pb-0">
           <div className="bg-white rounded-t-2xl shadow-xl p-6 w-full max-w-md">
             <p className="text-base font-bold text-n-900 mb-1">Ripristina lezione</p>
             <p className="text-sm text-n-600 mb-1">
@@ -423,7 +423,7 @@ export default function ProfiloAdmin() {
               <button
                 onClick={() => handleRipristina(confirmRipristina)}
                 disabled={ripristinandoId === confirmRipristina.id}
-                className="flex-1 py-3 bg-ama-600 text-white rounded-xl font-medium text-sm active:bg-ama-700 disabled:opacity-60"
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-medium text-sm active:bg-blue-700 disabled:opacity-60"
               >
                 {ripristinandoId === confirmRipristina.id ? 'Ripristino…' : 'Conferma'}
               </button>
