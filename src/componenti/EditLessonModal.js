@@ -364,7 +364,7 @@ export default function EditLessonModal({
           )}
 
           {/* INFO LEZIONE PROVA */}
-          {lesson?.stato === 'prova' && (
+          {lesson?.nome_allievo_prova && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1.5">
               <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Lezione prova</p>
               {lesson.nome_allievo_prova && (
