@@ -11,6 +11,30 @@ const API_BASE =
 function getToken() {
   try { return localStorage.getItem("token") || null; } catch { return null; }
 }
+function getRuolo() {
+  try {
+    const t = localStorage.getItem("token");
+    if (!t) return null;
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    return payload.ruolo || null;
+  } catch { return null; }
+}
+
+// Transizioni di stato consentite all'admin
+const TRANSIZIONI_STATO = {
+  appuntamentata: ['svolta', 'rimandata', 'annullata'],
+  prova:          ['svolta', 'rimandata', 'annullata'],
+  rimandata:      ['appuntamentata', 'svolta', 'annullata'],
+  svolta:         ['appuntamentata', 'rimandata', 'annullata'],
+  annullata:      ['appuntamentata'],
+};
+const STATO_LABEL = {
+  appuntamentata: 'Appuntamentata',
+  prova:          'Prova',
+  svolta:         'Svolta',
+  rimandata:      'Rimandata',
+  annullata:      'Annullata',
+};
 async function fetchJSON(url, token, opts = {}) {
   const res = await fetch(url, {
     ...opts,
@@ -40,8 +64,11 @@ export default function EditLessonModal({
   lockedTeacherId = null,
 }) {
   const token = getToken();
+  const ruolo = getRuolo();
+  const isAdmin = ruolo === 'admin';
 
   const [saving, setSaving]         = useState(false);
+  const [nuovoStato, setNuovoStato] = useState(null); // null = nessun cambio
   const [deleting, setDeleting]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [serieDialog, setSerieDialog] = useState(false);
@@ -81,6 +108,7 @@ export default function EditLessonModal({
   // reset su open/lesson o quando si blocca l'insegnante
   useEffect(() => {
     if (!open) return;
+    setNuovoStato(null);
     const tipo = lesson?.tipo || 'individuale';
     setTipoLezione(tipo);
     setForm({
@@ -310,6 +338,14 @@ export default function EditLessonModal({
         await fetchJSON(url, token, { method, body: JSON.stringify(buildPayload(form.data, form.aula, null, null)) });
       }
 
+      // Cambio stato admin (separato, solo se richiesto)
+      if (isAdmin && nuovoStato && lesson?.id) {
+        await fetchJSON(`${API_BASE}/api/lezioni/${lesson.id}/stato`, token, {
+          method: 'PATCH',
+          body: JSON.stringify({ stato: nuovoStato }),
+        });
+      }
+
       onSaved && onSaved();
     } catch (e) {
       setError(e.message || "Errore nel salvataggio.");
@@ -376,6 +412,33 @@ export default function EditLessonModal({
               {lesson.note && (
                 <p className="text-sm text-n-800"><span className="font-medium">Note:</span> {lesson.note}</p>
               )}
+            </div>
+          )}
+
+          {/* CAMBIO STATO — solo admin su lezione esistente */}
+          {isAdmin && lesson?.id && lesson?.stato && (
+            <div className="rounded-xl border border-n-200 bg-n-50 p-3">
+              <p className="text-xs font-semibold text-n-500 uppercase tracking-wide mb-2">Stato lezione</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-n-700 font-medium">
+                  {STATO_LABEL[lesson.stato] || lesson.stato}
+                </span>
+                {(TRANSIZIONI_STATO[lesson.stato] || []).length > 0 && (
+                  <>
+                    <span className="text-n-300 text-xs">→</span>
+                    <select
+                      value={nuovoStato || ''}
+                      onChange={e => setNuovoStato(e.target.value || null)}
+                      className="border border-n-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-ama-400 bg-white"
+                    >
+                      <option value="">Nessun cambio</option>
+                      {(TRANSIZIONI_STATO[lesson.stato] || []).map(s => (
+                        <option key={s} value={s}>{STATO_LABEL[s]}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+              </div>
             </div>
           )}
 

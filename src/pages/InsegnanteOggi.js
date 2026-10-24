@@ -208,6 +208,13 @@ export default function InsegnanteOggi() {
           lezione={assenteLezione}
           onClose={() => setAssenteLezione(null)}
           onSaved={() => { setAssenteLezione(null); carica(); }}
+          nomeAllievo={
+            assenteLezione.tipo === 'collettiva'
+              ? (assenteLezione.nome_gruppo || 'Gruppo')
+              : assenteLezione.stato === 'prova'
+              ? (assenteLezione.nome_allievo_prova || 'Lezione prova')
+              : `${assenteLezione.nome_allievo || ''} ${assenteLezione.cognome_allievo || ''}`.trim()
+          }
         />
       )}
 

@@ -559,6 +559,13 @@ export default function CalendarioFull({ lezioni, mostraInsegnante = false, onAf
         onClose={() => setAssenteEv(null)}
         onRimanda={onAssenteRimanda}
         onAnnulla={onAssenteAnnulla}
+        nomeAllievo={assenteEv
+          ? assenteEv.tipo === 'collettiva'
+            ? (assenteEv.nome_gruppo || 'Gruppo')
+            : assenteEv.nome_allievo_prova
+            ? assenteEv.nome_allievo_prova
+            : `${assenteEv.nome_allievo || ''} ${assenteEv.cognome_allievo || ''}`.trim()
+          : null}
       />
 
       {recuperiWarning && (

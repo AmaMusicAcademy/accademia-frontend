@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, RotateCcw, Ban } from 'lucide-react';
 
-export default function AssenteModal({ open, onClose, onAnnulla, onRimanda }) {
+export default function AssenteModal({ open, onClose, onAnnulla, onRimanda, nomeAllievo }) {
   const [motivazione, setMotivazione] = useState('');
   const [errore, setErrore] = useState(false);
 
@@ -22,7 +22,12 @@ export default function AssenteModal({ open, onClose, onAnnulla, onRimanda }) {
 
         {/* header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="text-base font-semibold text-n-900">Allievo assente</h2>
+          <div>
+            <h2 className="text-base font-semibold text-n-900">Allievo assente</h2>
+            {nomeAllievo && (
+              <p className="text-sm text-n-500 mt-0.5">{nomeAllievo}</p>
+            )}
+          </div>
           <button onClick={handleClose} className="text-n-300 active:text-gray-700">
             <X size={20} />
           </button>
