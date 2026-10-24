@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
-import EditLessonModal from '../componenti/EditLessonModal';
 
 const MESI_NOME = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
@@ -116,7 +115,8 @@ export default function ProfiloAdmin() {
   const [drawerRiprog, setDrawerRiprog] = useState(false);
   const [lezioniRiprog, setLezioniRiprog] = useState([]);
   const [loadingRiprog, setLoadingRiprog] = useState(false);
-  const [editLezioneRiprog, setEditLezioneRiprog] = useState(null);
+  const [confirmRipristina, setConfirmRipristina] = useState(null); // lezione da ripristinare
+  const [ripristinandoId, setRipristinandoId] = useState(null);
   const [showTerminaDialog, setShowTerminaDialog] = useState(false);
   const [terminaLoading, setTerminaLoading] = useState(false);
   const [terminaRisultato, setTerminaRisultato] = useState(null);
@@ -142,6 +142,23 @@ export default function ProfiloAdmin() {
       setLezioniRiprog(Array.isArray(lista) ? lista : []);
     } catch { setLezioniRiprog([]); }
     finally { setLoadingRiprog(false); }
+  };
+
+  const handleRipristina = async (l) => {
+    setRipristinandoId(l.id);
+    try {
+      await apiFetch(`/api/lezioni/${l.id}/stato`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stato: 'appuntamentata' }),
+      });
+      setConfirmRipristina(null);
+      const lista = await apiFetch('/api/admin/lezioni-da-riprogrammare');
+      setLezioniRiprog(Array.isArray(lista) ? lista : []);
+    } catch (e) {
+      alert(e.message || 'Errore nel ripristino');
+    } finally {
+      setRipristinandoId(null);
+    }
   };
 
   const handleDownload = async (anno, tipo) => {
@@ -291,10 +308,10 @@ export default function ProfiloAdmin() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-n-300">{fmtData(l.data)}</span>
                           <button
-                            onClick={() => setEditLezioneRiprog(l)}
+                            onClick={() => setConfirmRipristina(l)}
                             className="text-xs px-2 py-0.5 rounded-lg border border-n-200 text-n-600 active:bg-n-50"
                           >
-                            Modifica
+                            Ripristina
                           </button>
                         </div>
                       </div>
@@ -384,21 +401,36 @@ export default function ProfiloAdmin() {
 
       <BottomNavAdmin />
 
-      {/* Modal modifica lezione rimandata */}
-      <EditLessonModal
-        open={!!editLezioneRiprog}
-        onClose={() => setEditLezioneRiprog(null)}
-        onSaved={async () => {
-          setEditLezioneRiprog(null);
-          // Ricarica la lista rimandiate
-          try {
-            const lista = await apiFetch('/api/admin/lezioni-da-riprogrammare');
-            setLezioniRiprog(Array.isArray(lista) ? lista : []);
-          } catch { /* ignora */ }
-        }}
-        lesson={editLezioneRiprog}
-        mode="edit"
-      />
+      {/* Dialog conferma ripristino lezione rimandata */}
+      {confirmRipristina && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-0 pb-0">
+          <div className="bg-white rounded-t-2xl shadow-xl p-6 w-full max-w-md">
+            <p className="text-base font-bold text-n-900 mb-1">Ripristina lezione</p>
+            <p className="text-sm text-n-600 mb-1">
+              <span className="font-medium">{confirmRipristina.cognome_allievo} {confirmRipristina.nome_allievo}</span>
+              {' — '}{confirmRipristina.data ? new Date(confirmRipristina.data).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
+              {' '}{confirmRipristina.ora_inizio?.slice(0,5)}–{confirmRipristina.ora_fine?.slice(0,5)}
+            </p>
+            <p className="text-sm text-n-500 mb-5">La lezione tornerà in stato <span className="font-semibold text-n-700">appuntamentata</span> e riapparirà nel calendario.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmRipristina(null)}
+                disabled={ripristinandoId === confirmRipristina.id}
+                className="flex-1 py-3 bg-n-100 text-gray-700 rounded-xl font-medium text-sm active:bg-n-200 disabled:opacity-60"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={() => handleRipristina(confirmRipristina)}
+                disabled={ripristinandoId === confirmRipristina.id}
+                className="flex-1 py-3 bg-ama-600 text-white rounded-xl font-medium text-sm active:bg-ama-700 disabled:opacity-60"
+              >
+                {ripristinandoId === confirmRipristina.id ? 'Ripristino…' : 'Conferma'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
