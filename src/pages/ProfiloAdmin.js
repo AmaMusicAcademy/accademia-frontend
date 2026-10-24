@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import BottomNavAdmin from '../componenti/BottomNavAdmin';
 import { apiFetch } from '../utils/api';
+import EditLessonModal from '../componenti/EditLessonModal';
 
 const MESI_NOME = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 
@@ -115,6 +116,7 @@ export default function ProfiloAdmin() {
   const [drawerRiprog, setDrawerRiprog] = useState(false);
   const [lezioniRiprog, setLezioniRiprog] = useState([]);
   const [loadingRiprog, setLoadingRiprog] = useState(false);
+  const [editLezioneRiprog, setEditLezioneRiprog] = useState(null);
   const [showTerminaDialog, setShowTerminaDialog] = useState(false);
   const [terminaLoading, setTerminaLoading] = useState(false);
   const [terminaRisultato, setTerminaRisultato] = useState(null);
@@ -286,7 +288,15 @@ export default function ProfiloAdmin() {
                     <div key={l.id} className="px-4 py-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-n-900">{l.cognome_allievo} {l.nome_allievo}</span>
-                        <span className="text-xs text-n-300">{fmtData(l.data)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-n-300">{fmtData(l.data)}</span>
+                          <button
+                            onClick={() => setEditLezioneRiprog(l)}
+                            className="text-xs px-2 py-0.5 rounded-lg border border-n-200 text-n-600 active:bg-n-50"
+                          >
+                            Modifica
+                          </button>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-n-300">{l.ora_inizio?.slice(0,5)}–{l.ora_fine?.slice(0,5)}</span>
@@ -373,6 +383,22 @@ export default function ProfiloAdmin() {
       )}
 
       <BottomNavAdmin />
+
+      {/* Modal modifica lezione rimandata */}
+      <EditLessonModal
+        open={!!editLezioneRiprog}
+        onClose={() => setEditLezioneRiprog(null)}
+        onSaved={async () => {
+          setEditLezioneRiprog(null);
+          // Ricarica la lista rimandiate
+          try {
+            const lista = await apiFetch('/api/admin/lezioni-da-riprogrammare');
+            setLezioniRiprog(Array.isArray(lista) ? lista : []);
+          } catch { /* ignora */ }
+        }}
+        lesson={editLezioneRiprog}
+        mode="edit"
+      />
     </div>
   );
 }
