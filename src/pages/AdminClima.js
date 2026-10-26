@@ -440,6 +440,8 @@ function ACPanel() {
   const [loading, setLoading]       = useState(true);
   const [azione, setAzione]         = useState(null); // 'accendi' | 'spegni'
   const [showConfig, setShowConfig] = useState(false);
+  const [automazioneAttiva, setAutomazioneAttiva] = useState(true);
+  const [toggling, setToggling]     = useState(false);
 
   // Lista dispositivi SwitchBot per la configurazione
   const [sbDevices, setSbDevices]   = useState(null);
@@ -456,6 +458,7 @@ function ACPanel() {
       setStato(d.stato);
       setDispositivi(d.dispositivi || []);
       setOggi(d.oggi);
+      setAutomazioneAttiva(d.automazione_attiva !== false);
     } catch { /* ignora */ }
     setLoading(false);
   }, []);
@@ -500,6 +503,19 @@ function ACPanel() {
     setForm(f => ({ ...f, device_id: deviceId }));
   };
 
+  const toggleAutomazione = async () => {
+    setToggling(true);
+    try {
+      const nuovoValore = !automazioneAttiva;
+      await apiFetch('/api/ac/automazione', {
+        method: 'POST',
+        body: JSON.stringify({ attiva: nuovoValore }),
+      });
+      setAutomazioneAttiva(nuovoValore);
+    } catch (e) { alert('Errore: ' + e.message); }
+    setToggling(false);
+  };
+
   const acceso = stato?.acceso ?? false;
 
   return (
@@ -521,6 +537,25 @@ function ACPanel() {
             <Settings size={15} />
           </button>
         </div>
+      </div>
+
+      {/* Toggle automazione */}
+      <div className={`flex items-center justify-between px-4 py-2.5 border-b ${automazioneAttiva ? 'bg-white' : 'bg-amber-50'}`}>
+        <div>
+          <p className="text-xs font-medium text-n-800">Automazione lezioni</p>
+          <p className="text-xs text-n-400">
+            {automazioneAttiva
+              ? 'Accensione/spegnimento automatico in base agli orari'
+              : 'Disattivata — solo controllo manuale'}
+          </p>
+        </div>
+        <button
+          onClick={toggleAutomazione}
+          disabled={toggling}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${automazioneAttiva ? 'bg-blue-500' : 'bg-n-200'}`}
+        >
+          <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${automazioneAttiva ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
       </div>
 
       <div className="p-4 space-y-3">
